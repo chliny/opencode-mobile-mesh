@@ -1,3 +1,3 @@
-v0.4.13 — Waitlist signups no longer get lost
+v0.4.14 — Quieter, more useful crash reporting
 
-Joining the OpenCode Connect waitlist now survives a flaky connection: a signup that fails is saved on your device and re-sent automatically the next time you open the app. The email-app fallback only opens if you choose it after repeated retries.
+Connection problems on your own network are no longer filed as crash reports, and a repeating error is now reported once instead of hundreds of times. Real crashes are still reported in full, so genuine problems still get fixed.
