@@ -29,10 +29,14 @@ returns 0 results) and the app is not on IzzyOnDroid, so those channels contribu
    the owner manually re-downloads. The hourly reconciler
    (`VibeBrowserProductPage/.github/workflows/waitlist-mailto-reconcile.yml`) is what keeps those
    signups from being lost, and it is not a temporary measure.
-3. **Stale builds are not the only source of mailto signups.** In current builds the fallback also
-   fires on network error, timeout (8s) and 5xx (`src/lib/waitlist.ts:shouldFallbackToMailto`).
-   A user on v0.4.12 with flaky mobile data takes the same lossy path. Any plan that assumes
-   "ship an update and the leak closes" is wrong.
+3. **Stale builds are not the only source of mailto signups** — they are, as of AGE-87, the only
+   *remaining* one. Until v0.4.12 the fallback also fired on network error, timeout (8s) and 5xx,
+   so a user on a current build with flaky mobile data took the same lossy path. That path is gone:
+   a failed signup is now persisted on-device (`opencode.waitlist.pending.v1`, AsyncStorage) and
+   retried on every app foreground (`src/lib/waitlist.ts` queue section, flushed from
+   `app/_layout.tsx`). `mailto:` is only ever opened by an explicit user tap after repeated
+   retry failures. Expect the reconciler's `synced_count` to trend toward the sideload cohort only.
+   Any plan that assumes "ship an update and the leak closes" is still wrong for those ~436 devices.
 
 ## Method / reproducing
 
