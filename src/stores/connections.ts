@@ -26,6 +26,7 @@ const MAX_RECENT_DIRS = 10
 const CONNECTION_TEST_TIMEOUT_MS = 40_000
 
 let routeGeneration = 0
+let routeRefreshQueue = Promise.resolve()
 
 // Cached auth so we can create directory-scoped clients without async SecureStore lookups
 interface ClientBase {
@@ -461,50 +462,54 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     await SecureStore.setItemAsync(RECENT_DIRS_KEY, JSON.stringify(updated))
   },
 
-  refreshActiveRoute: async () => {
-    const generation = ++routeGeneration
-    const active = get().activeConnection
-    if (!active) {
-      await embeddedZeroTier.stop()
-      if (generation === routeGeneration) set({ routeStatus: "idle", routeError: null })
-      return
-    }
+  refreshActiveRoute: () => {
+    const run = routeRefreshQueue.then(async () => {
+      const generation = ++routeGeneration
+      const active = get().activeConnection
+      try {
+        if (!active) {
+          await embeddedZeroTier.stop()
+          if (generation === routeGeneration) set({ routeStatus: "idle", routeError: null })
+          return
+        }
 
-    set({ routeStatus: "checking", routeError: null })
-    try {
-      const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
-      const auth = buildAuth(active.username, password)
-      const resolved = await resolveConnectionRoute(active)
-      if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
+        set({ routeStatus: "checking", routeError: null })
+        const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
+        const auth = buildAuth(active.username, password)
+        const resolved = await resolveConnectionRoute(active)
+        if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
 
-      if (resolved.route === "lan") await embeddedZeroTier.stop()
-      if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
+        if (resolved.route === "lan") await embeddedZeroTier.stop()
+        if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
 
-      if (get().clientBase?.baseUrl === resolved.baseUrl) {
-        set({ routeStatus: resolved.route, routeError: null })
-        return
+        if (get().clientBase?.baseUrl === resolved.baseUrl) {
+          set({ routeStatus: resolved.route, routeError: null })
+          return
+        }
+
+        const built = buildClient(resolved.baseUrl, active.directory, auth)
+        const [project, paths] = await Promise.all([
+          built.client.project.current().catch(() => null),
+          built.client.path.get().catch(() => null),
+        ])
+        if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
+        set({
+          client: built.client,
+          clientBase: built.base,
+          currentProject: project,
+          serverHome: paths?.home || null,
+          routeStatus: resolved.route,
+          routeError: null,
+        })
+      } catch (error) {
+        if (generation !== routeGeneration) return
+        set({
+          routeStatus: "error",
+          routeError: error instanceof Error ? error.message : String(error),
+        })
       }
-
-      const built = buildClient(resolved.baseUrl, active.directory, auth)
-      const [project, paths] = await Promise.all([
-        built.client.project.current().catch(() => null),
-        built.client.path.get().catch(() => null),
-      ])
-      if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
-      set({
-        client: built.client,
-        clientBase: built.base,
-        currentProject: project,
-        serverHome: paths?.home || null,
-        routeStatus: resolved.route,
-        routeError: null,
-      })
-    } catch (error) {
-      if (generation !== routeGeneration) return
-      set({
-        routeStatus: "error",
-        routeError: error instanceof Error ? error.message : String(error),
-      })
-    }
+    })
+    routeRefreshQueue = run.catch(() => {})
+    return run
   },
 }))
