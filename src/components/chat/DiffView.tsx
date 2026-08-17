@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Platform, ScrollView } from "react-native"
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config"
 import { computeDiff } from "./diff-compute"
+import { ContentViewerButton } from "./ContentViewerButton"
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace"
 
@@ -15,8 +16,13 @@ export function DiffView({ before, after, isDark }: Props) {
 
   if (lines.length === 0) return null
 
+  const fullDiff = lines.map((line) => `${line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}${line.text}`).join("\n")
+
   return (
     <View style={[s.container, isDark && s.containerDark]}>
+      <View style={s.header}>
+        <ContentViewerButton title="diff" content={fullDiff} language="diff" isDark={isDark} />
+      </View>
       <ScrollView {...WIDE_CONTENT_SCROLL_CONFIG} testID="diff-view-scroll">
         <View>
           {lines.map((line, idx) => (
@@ -58,6 +64,7 @@ const s = StyleSheet.create({
     marginTop: 6,
   },
   containerDark: { backgroundColor: "#1a1a1a" },
+  header: { alignItems: "flex-end", paddingHorizontal: 8, paddingTop: 6 },
 
   line: {
     flexDirection: "row",

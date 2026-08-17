@@ -6,7 +6,10 @@
     "delete": "Delete",
     "retry": "Retry",
     "save": "Save",
-    "shareReport": "Share report"
+    "shareReport": "Share report",
+    "back": "Back",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "settings": {
     "sections": {
@@ -407,6 +410,11 @@
       "fallbackTitle": "Tool",
       "patternOnly": "Pattern: {{pattern}}",
       "patternWithPath": "Pattern: {{pattern}} in {{path}}"
+    },
+    "contentViewer": {
+      "open": "Open full screen",
+      "output": "Output",
+      "empty": "Content is no longer available"
     },
     "sessionInfo": {
       "noUsageData": "No usage data yet",
