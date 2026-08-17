@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { ApiError, type Session, type Message, type Part, type Event, type MessageWithParts, type Client } from "../lib/sdk"
 import { useConnections } from "./connections"
 import { useSettings } from "./settings"
@@ -76,6 +77,20 @@ export const abortedSessions = new Set<string>()
 // overwrite the messages/currentSession of a newer selection. Each call takes
 // the next value and only commits its result if still the latest.
 let selectSeq = 0
+let loadSeq = 0
+
+const SESSION_CACHE_PREFIX = "opencode_session_list_"
+
+function sessionCacheKey(): string | null {
+  const connection = useConnections.getState().activeConnection
+  if (!connection) return null
+  return `${SESSION_CACHE_PREFIX}${connection.id}`
+}
+
+function persistSessionCache(sessions: Session[]): void {
+  const key = sessionCacheKey()
+  if (key) void AsyncStorage.setItem(key, JSON.stringify(sessions)).catch(() => {})
+}
 
 // Get the right client for a session's directory
 function clientFor(directory?: string): Client | null {
@@ -98,6 +113,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
   error: null,
 
   loadSessions: async () => {
+    const seq = ++loadSeq
     const connState = useConnections.getState()
     // Use a directory-less client so the server returns sessions from ALL projects,
     // not just the one matching the active connection's directory header.
@@ -107,14 +123,32 @@ export const useSessions = create<SessionsState>((set, get) => ({
       return
     }
 
+    const cacheKey = sessionCacheKey()
+    if (cacheKey) {
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey)
+        if (seq !== loadSeq) return
+        if (cached) {
+          const sessions = JSON.parse(cached) as Session[]
+          if (Array.isArray(sessions)) set({ sessions, isLoading: false, error: null })
+        }
+      } catch {
+        // Cache is only a fast-path; the server remains the source of truth.
+      }
+    }
+
     try {
-      set({ isLoading: true, error: null })
+      if (get().sessions.length === 0) set({ isLoading: true, error: null })
       // A directory-less list includes sessions across projects. Each row carries
       // its own directory into the session route so subsequent operations stay scoped.
       const sessions = await client.session.list({ roots: true, limit: 50 })
+      if (seq !== loadSeq) return
       set({ sessions, isLoading: false })
+      persistSessionCache(sessions)
     } catch (error) {
-      set({ error: "Failed to load sessions", isLoading: false })
+      if (seq !== loadSeq) return
+      // Keep cached sessions visible during a temporary ZeroTier/network outage.
+      set({ error: get().sessions.length > 0 ? null : "Failed to load sessions", isLoading: false })
     }
   },
 
@@ -249,6 +283,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
         messages: state.currentSession?.id === sessionID ? [] : state.messages,
         parts: state.currentSession?.id === sessionID ? {} : state.parts,
       }))
+      persistSessionCache(get().sessions)
     } catch (error) {
       set({ error: "Failed to delete session" })
     }
