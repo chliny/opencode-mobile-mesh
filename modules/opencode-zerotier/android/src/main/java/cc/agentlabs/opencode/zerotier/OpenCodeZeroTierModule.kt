@@ -171,6 +171,7 @@ class OpenCodeZeroTierModule : Module() {
     val remotePort = (options["remotePort"] as? Number)?.toInt() ?: 0
     require(remotePort in 1..65535) { "Invalid ZeroTier server port" }
     val planetId = (options["planetId"] as? String)?.takeIf { it.isNotBlank() }
+    val forceRestart = options["forceRestart"] as? Boolean ?: false
     if (planetId != null) {
       require(planetId.matches(Regex("^[a-f0-9]{64}$"))) { "Invalid planet id" }
       require(resolvePlanetFile(planetId)?.isFile == true) { "Configured planet file is missing" }
@@ -179,7 +180,7 @@ class OpenCodeZeroTierModule : Module() {
     val key = listOf(profileId, networkIdText, remoteHost, remotePort, planetId ?: "default").joinToString("|")
 
     val existingNode = node
-    if (currentKey == key && existingNode != null) {
+    if (!forceRestart && currentKey == key && existingNode != null) {
       if (
         status["state"] == "ready" &&
         existingNode.isOnline() &&

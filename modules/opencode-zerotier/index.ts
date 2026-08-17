@@ -7,6 +7,7 @@ export interface ZeroTierStartOptions {
   remotePort: number
   planetId?: string
   timeoutMs?: number
+  forceRestart?: boolean
 }
 
 export interface ZeroTierStatus {

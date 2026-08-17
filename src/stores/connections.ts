@@ -87,7 +87,10 @@ function buildClient(
   return { client, base }
 }
 
-async function resolveConnectionRoute(connection: ServerConnection): Promise<{ baseUrl: string; route: "lan" | "zerotier" }> {
+async function resolveConnectionRoute(
+  connection: ServerConnection,
+  forceRestart = false,
+): Promise<{ baseUrl: string; route: "lan" | "zerotier" }> {
   if (!connection.zerotier) return { baseUrl: connection.url, route: "lan" }
 
   const target = parseZeroTierTarget({ networkId: connection.zerotier.networkId, url: connection.url })
@@ -101,6 +104,7 @@ async function resolveConnectionRoute(connection: ServerConnection): Promise<{ b
     remoteHost: target.host.replace(/^\[|\]$/g, ""),
     remotePort: target.port,
     planetId: connection.zerotier.planet?.id,
+    forceRestart,
   })
   if (result.state === "awaiting_authorization") {
     throw new Error(
@@ -476,7 +480,19 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         set({ routeStatus: "checking", routeError: null })
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
         const auth = buildAuth(active.username, password)
-        const resolved = await resolveConnectionRoute(active)
+        let forceRestart = false
+        if (active.zerotier && get().clientBase?.baseUrl) {
+          const currentClient = get().client
+          if (currentClient) {
+            try {
+              await currentClient.global.health(5_000)
+            } catch {
+              forceRestart = true
+              addBreadcrumb({ category: "zerotier", level: "warning", message: "relay health check failed" })
+            }
+          }
+        }
+        const resolved = await resolveConnectionRoute(active, forceRestart)
         if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
 
         if (resolved.route === "lan") await embeddedZeroTier.stop()
