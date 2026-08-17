@@ -7,6 +7,9 @@ import { addBreadcrumb } from "../lib/sentry"
 import { AnalyticsEvent, classifyConnectionError, track, type ConnectionTestSource } from "../lib/analytics"
 import { buildAuth } from "../lib/auth"
 import { stripTrailingSlash } from "../lib/path-utils"
+import { embeddedZeroTier } from "@opencode-ai/zerotier"
+import { parseZeroTierTarget, relayBaseUrl } from "../lib/zerotier-routing"
+import i18n from "../lib/i18n/config"
 
 const CONNECTIONS_KEY = "opencode_connections"
 const PASSWORDS_PREFIX = "opencode_password_"
@@ -17,7 +20,12 @@ const MAX_RECENT_DIRS = 10
 // a first-run bounce driver. The interactive connect flow can afford to fail
 // faster since a real server responds to /global/health in well under a
 // second; this does NOT affect the timeout used for real session traffic.
-const CONNECTION_TEST_TIMEOUT_MS = 12_000
+// libzt's supported Java socket API uses a 30-second connect timeout. Keep the
+// health probe alive long enough for the relay to report its native error
+// instead of returning an unrelated localhost timeout first.
+const CONNECTION_TEST_TIMEOUT_MS = 40_000
+
+let routeGeneration = 0
 
 // Cached auth so we can create directory-scoped clients without async SecureStore lookups
 interface ClientBase {
@@ -35,6 +43,8 @@ interface ConnectionsState {
   recentDirectories: string[]
   isLoading: boolean
   error: string | null
+  routeStatus: "idle" | "checking" | "lan" | "zerotier" | "error"
+  routeError: string | null
 
   // Actions
   loadConnections: () => Promise<void>
@@ -57,6 +67,9 @@ interface ConnectionsState {
   switchDirectory: (directory?: string) => Promise<void>
   // Record a directory as recently used
   addRecentDirectory: (directory: string) => Promise<void>
+  // Re-establish the active transport. ZeroTier profiles always use the
+  // embedded libzt relay; stale concurrent attempts are ignored.
+  refreshActiveRoute: () => Promise<void>
 }
 
 function generateId(): string {
@@ -73,6 +86,32 @@ function buildClient(
   return { client, base }
 }
 
+async function resolveConnectionRoute(connection: ServerConnection): Promise<{ baseUrl: string; route: "lan" | "zerotier" }> {
+  if (!connection.zerotier) return { baseUrl: connection.url, route: "lan" }
+
+  const target = parseZeroTierTarget({ networkId: connection.zerotier.networkId, url: connection.url })
+  const normalizedNetworkId = connection.zerotier.networkId.trim().toLowerCase()
+  // Stable across "test" and "save" so the node authorized during the test
+  // remains the same identity after the connection receives its database ID.
+  const profileId = `zt-${normalizedNetworkId}-${connection.zerotier.planet?.id.slice(0, 16) || "default"}`
+  const result = await embeddedZeroTier.start({
+    profileId,
+    networkId: normalizedNetworkId,
+    remoteHost: target.host.replace(/^\[|\]$/g, ""),
+    remotePort: target.port,
+    planetId: connection.zerotier.planet?.id,
+  })
+  if (result.state === "awaiting_authorization") {
+    throw new Error(
+      result.error || i18n.t("connection.zerotier.authorizationRequired", { nodeId: result.nodeId || "unknown" }),
+    )
+  }
+  if (result.state !== "ready" || !result.baseUrl) {
+    throw new Error(result.error || "Embedded ZeroTier did not become ready")
+  }
+  return { baseUrl: relayBaseUrl(result.baseUrl, target), route: "zerotier" }
+}
+
 export const useConnections = create<ConnectionsState>((set, get) => ({
   connections: [],
   activeConnection: null,
@@ -83,6 +122,8 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
   recentDirectories: [],
   isLoading: true,
   error: null,
+  routeStatus: "idle",
+  routeError: null,
 
   loadConnections: async () => {
     try {
@@ -105,19 +146,22 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       if (active) {
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
         const auth = buildAuth(active.username, password)
-        const built = buildClient(active.url, active.directory, auth)
-        client = built.client
-        base = built.base
-        // Fetch current project info and server paths
-        try {
-          const [proj, paths] = await Promise.all([
-            client.project.current().catch(() => null),
-            client.path.get().catch(() => null),
-          ])
-          project = proj
-          home = paths?.home || null
-        } catch {
-          // Server might be offline
+        // A ZeroTier profile must wait until its app-local libzt relay is ready.
+        if (!active.zerotier) {
+          const built = buildClient(active.url, active.directory, auth)
+          client = built.client
+          base = built.base
+          // Fetch current project info and server paths
+          try {
+            const [proj, paths] = await Promise.all([
+              client.project.current().catch(() => null),
+              client.path.get().catch(() => null),
+            ])
+            project = proj
+            home = paths?.home || null
+          } catch {
+            // Server might be offline
+          }
         }
       }
 
@@ -131,6 +175,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         recentDirectories,
         isLoading: false,
       })
+      if (active) void get().refreshActiveRoute()
     } catch (error) {
       set({ error: "Failed to load connections", isLoading: false })
     }
@@ -163,26 +208,34 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
 
     if (newConnection.active) {
       activeConnection = newConnection
-      const auth = buildAuth(newConnection.username, password)
-      const built = buildClient(newConnection.url, newConnection.directory, auth)
-      client = built.client
-      base = built.base
+      if (newConnection.zerotier) {
+        client = null
+        base = null
+        project = null
+        serverHome = null
+      } else {
+        const auth = buildAuth(newConnection.username, password)
+        const built = buildClient(newConnection.url, newConnection.directory, auth)
+        client = built.client
+        base = built.base
 
-      // Fetch server metadata so loadSessions can use clientForDirectory(serverHome)
-      // immediately after the connection is added (same as setActiveConnection does).
-      try {
-        const [proj, paths] = await Promise.all([
-          client.project.current().catch(() => null),
-          client.path.get().catch(() => null),
-        ])
-        project = proj
-        serverHome = paths?.home || null
-      } catch {
-        // Server might be unreachable; proceed without metadata
+        // Fetch server metadata so loadSessions can use clientForDirectory(serverHome)
+        // immediately after the connection is added (same as setActiveConnection does).
+        try {
+          const [proj, paths] = await Promise.all([
+            client.project.current().catch(() => null),
+            client.path.get().catch(() => null),
+          ])
+          project = proj
+          serverHome = paths?.home || null
+        } catch {
+          // Server might be unreachable; proceed without metadata
+        }
       }
     }
 
     set({ connections, activeConnection, client, clientBase: base, currentProject: project, serverHome })
+    if (newConnection.active) void get().refreshActiveRoute()
   },
 
   removeConnection: async (id) => {
@@ -202,10 +255,19 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         await SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(connections))
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${newActive.id}`)
         const auth = buildAuth(newActive.username, password)
-        const built = buildClient(newActive.url, newActive.directory, auth)
-        set({ connections, activeConnection: newActive, client: built.client, clientBase: built.base })
+        const built = newActive.zerotier ? null : buildClient(newActive.url, newActive.directory, auth)
+        set({
+          connections,
+          activeConnection: newActive,
+          client: built?.client || null,
+          clientBase: built?.base || null,
+          currentProject: null,
+          serverHome: null,
+        })
+        void get().refreshActiveRoute()
       } else {
         set({ connections, activeConnection: null, client: null, clientBase: null })
+        void embeddedZeroTier.stop()
       }
     } else {
       set({ connections })
@@ -229,19 +291,21 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     if (active) {
       const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
       const auth = buildAuth(active.username, password)
-      const built = buildClient(active.url, active.directory, auth)
-      client = built.client
-      base = built.base
+      if (!active.zerotier) {
+        const built = buildClient(active.url, active.directory, auth)
+        client = built.client
+        base = built.base
 
-      try {
-        const [proj, paths] = await Promise.all([
-          client.project.current().catch(() => null),
-          client.path.get().catch(() => null),
-        ])
-        project = proj
-        home = paths?.home || null
-      } catch {
-        // Server might be offline
+        try {
+          const [proj, paths] = await Promise.all([
+            client.project.current().catch(() => null),
+            client.path.get().catch(() => null),
+          ])
+          project = proj
+          home = paths?.home || null
+        } catch {
+          // Server might be offline
+        }
       }
 
       // Update last connected time
@@ -250,6 +314,8 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     }
 
     set({ connections, activeConnection: active, client, clientBase: base, currentProject: project, serverHome: home })
+    if (active) void get().refreshActiveRoute()
+    else void embeddedZeroTier.stop()
     addBreadcrumb({
       category: "connection",
       message: active ? `active connection set: ${active.type}` : "active connection cleared",
@@ -260,19 +326,33 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
   testConnection: async (connection, source, password) => {
     track(AnalyticsEvent.ConnectionAttempted, { source })
     try {
+      const auth = buildAuth(connection.username, password)
+      const resolved = await resolveConnectionRoute(connection)
       const client = createClient({
-        baseUrl: connection.url,
+        baseUrl: resolved.baseUrl,
         directory: connection.directory,
-        auth: buildAuth(connection.username, password),
+        auth,
       })
 
       await client.global.health(CONNECTION_TEST_TIMEOUT_MS)
       track(AnalyticsEvent.ConnectionSucceeded, { source })
       return { ok: true }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
+      let message = error instanceof Error ? error.message : String(error)
+      if (connection.zerotier) {
+        const zeroTierStatus = await embeddedZeroTier.getStatus().catch(() => null)
+        if (zeroTierStatus?.state === "error" && zeroTierStatus.error && !message.includes(zeroTierStatus.error)) {
+          message = `${message}\n\nZeroTier: ${zeroTierStatus.error}`
+        }
+      }
       track(AnalyticsEvent.ConnectionFailed, { source, error_class: classifyConnectionError(message) })
       return { ok: false, error: message }
+    } finally {
+      // Testing a new profile may temporarily replace libzt's singleton node.
+      // Restore the saved active profile in the background afterwards.
+      if (get().activeConnection && get().activeConnection?.id !== connection.id) {
+        void get().refreshActiveRoute()
+      }
     }
   },
 
@@ -294,6 +374,18 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       const active = connections.find((c) => c.id === id)!
       const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${id}`)
       const auth = buildAuth(active.username, password)
+      if (active.zerotier) {
+        set({
+          connections,
+          activeConnection: active,
+          client: null,
+          clientBase: null,
+          currentProject: null,
+          serverHome: null,
+        })
+        void get().refreshActiveRoute()
+        return
+      }
       const built = buildClient(active.url, active.directory, auth)
       try {
         const [project, paths] = await Promise.all([
@@ -308,6 +400,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           currentProject: project,
           serverHome: paths?.home || null,
         })
+        void get().refreshActiveRoute()
       } catch {
         set({
           connections,
@@ -316,6 +409,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           clientBase: built.base,
           currentProject: null,
         })
+        void get().refreshActiveRoute()
       }
     } else {
       set({ connections })
@@ -365,5 +459,52 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     const updated = [directory, ...current.filter((d) => d !== directory)].slice(0, MAX_RECENT_DIRS)
     set({ recentDirectories: updated })
     await SecureStore.setItemAsync(RECENT_DIRS_KEY, JSON.stringify(updated))
+  },
+
+  refreshActiveRoute: async () => {
+    const generation = ++routeGeneration
+    const active = get().activeConnection
+    if (!active) {
+      await embeddedZeroTier.stop()
+      if (generation === routeGeneration) set({ routeStatus: "idle", routeError: null })
+      return
+    }
+
+    set({ routeStatus: "checking", routeError: null })
+    try {
+      const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
+      const auth = buildAuth(active.username, password)
+      const resolved = await resolveConnectionRoute(active)
+      if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
+
+      if (resolved.route === "lan") await embeddedZeroTier.stop()
+      if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
+
+      if (get().clientBase?.baseUrl === resolved.baseUrl) {
+        set({ routeStatus: resolved.route, routeError: null })
+        return
+      }
+
+      const built = buildClient(resolved.baseUrl, active.directory, auth)
+      const [project, paths] = await Promise.all([
+        built.client.project.current().catch(() => null),
+        built.client.path.get().catch(() => null),
+      ])
+      if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
+      set({
+        client: built.client,
+        clientBase: built.base,
+        currentProject: project,
+        serverHome: paths?.home || null,
+        routeStatus: resolved.route,
+        routeError: null,
+      })
+    } catch (error) {
+      if (generation !== routeGeneration) return
+      set({
+        routeStatus: "error",
+        routeError: error instanceof Error ? error.message : String(error),
+      })
+    }
   },
 }))

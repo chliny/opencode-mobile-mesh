@@ -24,6 +24,7 @@ Builds:
   - versionName: 0.4.3
     versionCode: 5
     commit: c46f273ecda0269ba2dc165053096e63d2bf5160
+    submodules: true
     subdir: android/app
     sudo:
       - apt-get update

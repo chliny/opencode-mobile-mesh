@@ -24,7 +24,14 @@ function ConnectionItem({
   onDelete: () => void
 }) {
   const { t } = useTranslation()
-  const typeIcon = connection.type === "local" ? "wifi" : connection.type === "tunnel" ? "globe" : "cloud"
+  const typeIcon =
+    connection.type === "local"
+      ? "wifi"
+      : connection.type === "tunnel"
+        ? "globe"
+        : connection.type === "zerotier"
+          ? "git-network"
+          : "cloud"
 
   const handleLongPress = () => {
     Alert.alert(connection.name, t("connectionsList.actionsAlert.message"), [

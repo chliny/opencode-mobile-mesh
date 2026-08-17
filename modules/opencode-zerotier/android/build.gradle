@@ -1,0 +1,40 @@
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'cc.agentlabs.opencode.zerotier'
+version = '0.1.0'
+
+android {
+  namespace 'cc.agentlabs.opencode.zerotier'
+  ndkVersion rootProject.ext.ndkVersion
+
+  defaultConfig {
+    minSdkVersion 24
+    versionCode 1
+    versionName '0.1.0'
+
+    externalNativeBuild {
+      cmake {
+        arguments '-DZTS_ENABLE_JAVA=ON', '-DCMAKE_POLICY_DEFAULT_CMP0057=NEW'
+        cppFlags ''
+      }
+    }
+
+    ndk {
+      abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+    }
+  }
+
+  externalNativeBuild {
+    cmake {
+      path 'CMakeLists.txt'
+      // Match React Native's native toolchain so one side-by-side CMake
+      // installation can build both ReactAndroid and libzt.
+      version '3.30.5'
+    }
+  }
+
+  sourceSets {
+    main.java.srcDirs += '../../../third_party/libzt/src/bindings/java'
+  }
+}

@@ -15,7 +15,9 @@ import { router } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useConnections } from "../../src/stores/connections"
-import type { ConnectionType } from "../../src/lib/types"
+import type { ConnectionType, ZeroTierPlanet } from "../../src/lib/types"
+import { embeddedZeroTier } from "@opencode-ai/zerotier"
+import { parseZeroTierTarget } from "../../src/lib/zerotier-routing"
 import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { captureDiagnostic } from "../../src/lib/sentry"
 import { parseUrl } from "../../src/lib/diagnostics-classify"
@@ -45,6 +47,12 @@ export default function AddConnectionScreen() {
   const [directory, setDirectory] = useState("")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [zeroTierNetworkId, setZeroTierNetworkId] = useState("")
+  const [planet, setPlanet] = useState<ZeroTierPlanet | undefined>()
+  const [planetBase64, setPlanetBase64] = useState("")
+  const [showPlanetBase64, setShowPlanetBase64] = useState(false)
+  const [planetImportSource, setPlanetImportSource] = useState<"file" | "base64" | null>(null)
+  const isImportingPlanet = planetImportSource !== null
   const [isConnecting, setIsConnecting] = useState(false)
   const [waitlistEmail, setWaitlistEmail] = useState("")
   // "queued" = the POST failed but the signup is persisted on-device and will
@@ -170,13 +178,26 @@ export default function AddConnectionScreen() {
       Alert.alert(t("common.error"), t("connection.shared.alerts.enterName"))
       return
     }
-    if (!url.trim()) {
+    const connectionUrl = url.trim()
+    if (!connectionUrl) {
       Alert.alert(t("common.error"), t("connection.shared.alerts.enterUrl"))
       return
     }
-    if (!parseUrl(url).valid) {
+    if (type !== "zerotier" && !parseUrl(connectionUrl).valid) {
       Alert.alert(t("connection.shared.alerts.invalidUrlTitle"), t("connection.shared.alerts.invalidUrlMessage"))
       return
+    }
+
+    const zerotier = type === "zerotier"
+      ? { networkId: zeroTierNetworkId.trim(), planet }
+      : undefined
+    if (zerotier) {
+      try {
+        parseZeroTierTarget({ networkId: zerotier.networkId, url: connectionUrl })
+      } catch (error) {
+        Alert.alert(t("connection.zerotier.invalidTitle"), error instanceof Error ? error.message : String(error))
+        return
+      }
     }
 
     track(AnalyticsEvent.ConnectionFormSubmitted, { mode: "advanced" })
@@ -192,9 +213,10 @@ export default function AddConnectionScreen() {
         id: "",
         name: name.trim(),
         type,
-        url: url.trim(),
+        url: connectionUrl,
         directory: directory.trim() || undefined,
         username: username.trim() || undefined,
+        zerotier,
       },
       "onboarding",
       password || undefined,
@@ -206,9 +228,10 @@ export default function AddConnectionScreen() {
           {
             name: name.trim(),
             type,
-            url: url.trim(),
+            url: connectionUrl,
             directory: directory.trim() || undefined,
             username: username.trim() || undefined,
+            zerotier,
           },
           password || undefined,
         )
@@ -227,6 +250,14 @@ export default function AddConnectionScreen() {
     // Failed: same "Connection Failed" alert as Quick Connect — run active
     // diagnostics, capture to Sentry, and offer a shareable report instead of
     // silently persisting an unreachable/unauthorized connection.
+    if (type === "zerotier") {
+      setIsConnecting(false)
+      Alert.alert(
+        t("connection.shared.alerts.connectionFailedTitle"),
+        result.error || t("connection.shared.alerts.unknownError"),
+      )
+      return
+    }
     const report = await probeConnection(url.trim(), buildAuth(username, password))
     captureDiagnostic(report)
     setIsConnecting(false)
@@ -242,6 +273,40 @@ export default function AddConnectionScreen() {
         { text: t("common.shareReport"), onPress: () => shareReport(report) },
       ],
     )
+  }
+
+  const handleImportPlanet = async () => {
+    setPlanetImportSource("file")
+    try {
+      const installed = await embeddedZeroTier.pickPlanetFile()
+      if (installed) {
+        setPlanet(installed)
+        setPlanetBase64("")
+        setShowPlanetBase64(false)
+      }
+    } catch (error) {
+      Alert.alert(t("connection.zerotier.importFailedTitle"), error instanceof Error ? error.message : String(error))
+    } finally {
+      setPlanetImportSource(null)
+    }
+  }
+
+  const handleImportPlanetBase64 = async () => {
+    const encoded = planetBase64.trim()
+    if (!encoded) {
+      Alert.alert(t("connection.zerotier.importFailedTitle"), t("connection.zerotier.planetBase64Empty"))
+      return
+    }
+    setPlanetImportSource("base64")
+    try {
+      const installed = await embeddedZeroTier.installPlanetBase64(encoded)
+      setPlanet({ ...installed, base64: encoded })
+      setPlanetBase64(encoded)
+    } catch (error) {
+      Alert.alert(t("connection.zerotier.importFailedTitle"), error instanceof Error ? error.message : String(error))
+    } finally {
+      setPlanetImportSource(null)
+    }
   }
 
   const handleJoinWaitlist = async () => {
@@ -538,6 +603,7 @@ export default function AddConnectionScreen() {
           { type: "local" as const, label: t("connection.shared.types.local"), icon: "wifi" as const },
           { type: "tunnel" as const, label: t("connection.shared.types.tunnel"), icon: "globe" as const },
           { type: "cloud" as const, label: t("connection.shared.types.cloud"), icon: "cloud" as const },
+          { type: "zerotier" as const, label: t("connection.shared.types.zerotier"), icon: "git-network" as const },
         ].map((opt) => (
           <TouchableOpacity
             key={opt.type}
@@ -585,9 +651,11 @@ export default function AddConnectionScreen() {
         placeholder={
           type === "local"
             ? "http://192.168.1.100:4096"
-            : type === "tunnel"
-              ? "https://your-tunnel.trycloudflare.com"
-              : "https://api.opencode.ai"
+            : type === "zerotier"
+              ? "http://10.10.0.8:4096"
+              : type === "tunnel"
+                ? "https://your-tunnel.trycloudflare.com"
+                : "https://api.opencode.ai"
         }
         placeholderTextColor={isDark ? "#666666" : "#999999"}
         value={url}
@@ -596,15 +664,116 @@ export default function AddConnectionScreen() {
         autoCorrect={false}
         keyboardType="url"
       />
-      <Text style={[styles.hint, isDark && styles.hintDark]}>
-        {t("connection.add.advanced.urlHintPrefix")}
-        <Text style={styles.code}>http://100.64.12.34:4096</Text>
-        {t("connection.add.advanced.urlHintOr")}
-        <Text style={styles.code}>http://my-mac.tailnet.ts.net:4096</Text>
-        {t("connection.add.advanced.urlHintUse")}
-        <Text style={styles.code}>https://</Text>
-        {t("connection.add.advanced.urlHintSuffix")}
-      </Text>
+      {type === "zerotier" ? (
+        <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.httpHint")}</Text>
+      ) : (
+        <>
+          <Text style={[styles.hint, isDark && styles.hintDark]}>
+            {t("connection.add.advanced.urlHintPrefix")}
+            <Text style={styles.code}>http://100.64.12.34:4096</Text>
+            {t("connection.add.advanced.urlHintOr")}
+            <Text style={styles.code}>http://my-mac.tailnet.ts.net:4096</Text>
+            {t("connection.add.advanced.urlHintUse")}
+            <Text style={styles.code}>https://</Text>
+            {t("connection.add.advanced.urlHintSuffix")}
+          </Text>
+        </>
+      )}
+
+      {type === "zerotier" && (
+        <View style={[styles.zeroTierBox, isDark && styles.zeroTierBoxDark]}>
+          <Text style={[styles.sectionTitle, styles.zeroTierTitle, isDark && styles.textDark]}>
+            {t("connection.zerotier.title")}
+          </Text>
+          <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.routeHint")}</Text>
+
+          <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.zerotier.networkId")}</Text>
+          <TextInput
+            style={[styles.input, isDark && styles.inputDark]}
+            placeholder="8056c2e21c000001"
+            placeholderTextColor={isDark ? "#666666" : "#999999"}
+            value={zeroTierNetworkId}
+            onChangeText={setZeroTierNetworkId}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.zerotier.planet")}</Text>
+          <View style={styles.planetRow}>
+            <TouchableOpacity
+              style={[styles.planetButton, isDark && styles.typeOptionDark]}
+              onPress={handleImportPlanet}
+              disabled={isImportingPlanet}
+            >
+              {planetImportSource === "file" ? (
+                <ActivityIndicator size="small" color={isDark ? "#ffffff" : "#0a0a0a"} />
+              ) : (
+                <Ionicons name="document-attach-outline" size={18} color={isDark ? "#ffffff" : "#0a0a0a"} />
+              )}
+              <Text style={[styles.planetButtonText, isDark && styles.textDark]}>
+                {planet ? t("connection.zerotier.replacePlanet") : t("connection.zerotier.choosePlanet")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.planetButton, isDark && styles.typeOptionDark]}
+              onPress={() => setShowPlanetBase64((current) => !current)}
+              disabled={isImportingPlanet}
+            >
+              <Ionicons name="code-slash" size={18} color={isDark ? "#ffffff" : "#0a0a0a"} />
+              <Text style={[styles.planetButtonText, isDark && styles.textDark]}>
+                {t("connection.zerotier.importPlanetBase64")}
+              </Text>
+            </TouchableOpacity>
+            {planet && (
+              <TouchableOpacity
+                onPress={() => {
+                  setPlanet(undefined)
+                  setPlanetBase64("")
+                  setShowPlanetBase64(false)
+                }}
+                accessibilityLabel={t("connection.zerotier.useDefaultPlanet")}
+              >
+                <Ionicons name="close-circle" size={24} color={isDark ? "#aaaaaa" : "#666666"} />
+              </TouchableOpacity>
+            )}
+          </View>
+          {showPlanetBase64 && (
+            <View style={styles.base64Box}>
+              <TextInput
+                style={[styles.input, styles.base64Input, isDark && styles.inputDark]}
+                placeholder={t("connection.zerotier.planetBase64Placeholder")}
+                placeholderTextColor={isDark ? "#666666" : "#999999"}
+                value={planetBase64}
+                onChangeText={setPlanetBase64}
+                autoCapitalize="none"
+                autoCorrect={false}
+                multiline
+                textAlignVertical="top"
+              />
+              <TouchableOpacity
+                style={[styles.base64Confirm, isDark && styles.connectButtonDark, (!planetBase64.trim() || isImportingPlanet) && styles.disabledButton]}
+                onPress={handleImportPlanetBase64}
+                disabled={!planetBase64.trim() || isImportingPlanet}
+              >
+                {planetImportSource === "base64" ? (
+                  <ActivityIndicator size="small" color={isDark ? "#0a0a0a" : "#ffffff"} />
+                ) : (
+                  <Text style={[styles.base64ConfirmText, isDark && styles.connectButtonTextDark]}>
+                    {t("connection.zerotier.decodePlanetBase64")}
+                  </Text>
+                )}
+              </TouchableOpacity>
+              <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.planetBase64Hint")}</Text>
+            </View>
+          )}
+          <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.planetRenameHint")}</Text>
+          <Text style={[styles.hint, isDark && styles.hintDark]}>
+            {planet
+              ? t("connection.zerotier.selectedPlanet", { name: planet.name, hash: planet.sha256.slice(0, 12) })
+              : t("connection.zerotier.defaultPlanet")}
+          </Text>
+        </View>
+      )}
 
       {/* Directory */}
       <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.shared.directoryOptional")}</Text>
@@ -799,10 +968,12 @@ const styles = StyleSheet.create({
   },
   typeContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   typeOption: {
-    flex: 1,
+    flexBasis: "47%",
+    flexGrow: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -860,6 +1031,63 @@ const styles = StyleSheet.create({
     color: "#0a0a0a",
     marginTop: 32,
     marginBottom: 8,
+  },
+  zeroTierBox: {
+    marginTop: 20,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#f5f5f5",
+  },
+  zeroTierBoxDark: {
+    backgroundColor: "#141414",
+  },
+  zeroTierTitle: {
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  planetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  planetButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+  },
+  planetButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0a0a0a",
+  },
+  base64Box: {
+    marginTop: 10,
+  },
+  base64Input: {
+    minHeight: 96,
+    fontFamily: "monospace",
+    fontSize: 12,
+  },
+  base64Confirm: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#0a0a0a",
+    marginTop: 8,
+  },
+  base64ConfirmText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   connectCard: {
     backgroundColor: "#f0f0ff",

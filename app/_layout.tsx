@@ -120,6 +120,25 @@ function RootLayout() {
     return () => sub.remove()
   }, [])
 
+  // Re-establish the selected transport while the app is in use. ZeroTier
+  // profiles always keep the SDK/SSE client on the app-local libzt relay;
+  // foreground and periodic retries also pick up controller authorization.
+  useEffect(() => {
+    const refreshRoute = () => {
+      if (useConnections.getState().routeStatus !== "checking") {
+        void useConnections.getState().refreshActiveRoute()
+      }
+    }
+    const timer = setInterval(refreshRoute, 30_000)
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next === "active") refreshRoute()
+    })
+    return () => {
+      clearInterval(timer)
+      sub.remove()
+    }
+  }, [])
+
   // Connect/disconnect SSE and load catalog when client changes
   useEffect(() => {
     if (client && !sseStarted.current) {

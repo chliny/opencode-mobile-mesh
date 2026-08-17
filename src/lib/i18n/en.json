@@ -131,7 +131,8 @@
       "types": {
         "local": "Local",
         "tunnel": "Tunnel",
-        "cloud": "Cloud"
+        "cloud": "Cloud",
+        "zerotier": "ZeroTier"
       },
       "name": "Name",
       "namePlaceholder": "My Server",
@@ -150,6 +151,27 @@
         "saveFailedTitle": "Couldn't Save Connection",
         "saveFailedMessage": "The connection test succeeded, but saving it failed. Please try again."
       }
+    },
+    "zerotier": {
+      "title": "Embedded ZeroTier",
+      "routeHint": "In ZeroTier mode, all traffic for this OpenCode server connection is forwarded through the embedded libzt relay. It never connects directly over the LAN and does not use Android's VPN slot.",
+      "networkId": "ZeroTier Network ID",
+      "httpHint": "Use a ZeroTier IP or a hostname that resolves to one, with http://. TCP traffic to the server always goes through libzt; HTTPS certificates cannot validate the localhost relay yet.",
+      "planet": "Custom Planet (Optional)",
+      "choosePlanet": "Choose planet file",
+      "replacePlanet": "Replace planet file",
+      "importPlanetBase64": "Paste Base64",
+      "planetBase64Placeholder": "Paste the output of: base64 -w 0 planet",
+      "decodePlanetBase64": "Decode and use planet",
+      "planetBase64Hint": "The Base64 text is stored locally with this connection so it remains visible and editable next time.",
+      "planetBase64Empty": "Paste the planet Base64 text first.",
+      "authorizationRequired": "Authorize ZeroTier node {{nodeId}} in the network controller, then retry the connection or connection test.",
+      "planetRenameHint": "Any filename and file type is supported. The app stores the imported file as planet in private storage.",
+      "useDefaultPlanet": "Use default ZeroTier planet",
+      "defaultPlanet": "Using the default ZeroTier planet.",
+      "selectedPlanet": "{{name}} · SHA-256 {{hash}}…",
+      "invalidTitle": "Invalid ZeroTier Configuration",
+      "importFailedTitle": "Couldn't Import Planet"
     },
     "add": {
       "quick": {

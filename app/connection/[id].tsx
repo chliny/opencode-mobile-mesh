@@ -15,7 +15,9 @@ import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useConnections } from "../../src/stores/connections"
 import { useEvents } from "../../src/stores/events"
-import type { ConnectionType } from "../../src/lib/types"
+import type { ConnectionType, ZeroTierPlanet } from "../../src/lib/types"
+import { embeddedZeroTier } from "@opencode-ai/zerotier"
+import { parseZeroTierTarget } from "../../src/lib/zerotier-routing"
 import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { captureDiagnostic } from "../../src/lib/sentry"
 import { parseUrl } from "../../src/lib/diagnostics-classify"
@@ -32,6 +34,7 @@ const CONNECTION_TYPES: Array<{
   { type: "local", labelKey: "connection.shared.types.local", icon: "wifi" },
   { type: "tunnel", labelKey: "connection.shared.types.tunnel", icon: "globe" },
   { type: "cloud", labelKey: "connection.shared.types.cloud", icon: "cloud" },
+  { type: "zerotier", labelKey: "connection.shared.types.zerotier", icon: "git-network" },
 ]
 
 export default function EditConnectionScreen() {
@@ -50,6 +53,12 @@ export default function EditConnectionScreen() {
   const [directory, setDirectory] = useState(connection?.directory || "")
   const [username, setUsername] = useState(connection?.username || "")
   const [password, setPassword] = useState("")
+  const [zeroTierNetworkId, setZeroTierNetworkId] = useState(connection?.zerotier?.networkId || "")
+  const [planet, setPlanet] = useState<ZeroTierPlanet | undefined>(connection?.zerotier?.planet)
+  const [planetBase64, setPlanetBase64] = useState(connection?.zerotier?.planet?.base64 || "")
+  const [showPlanetBase64, setShowPlanetBase64] = useState(Boolean(connection?.zerotier?.planet?.base64))
+  const [planetImportSource, setPlanetImportSource] = useState<"file" | "base64" | null>(null)
+  const isImportingPlanet = planetImportSource !== null
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -60,6 +69,11 @@ export default function EditConnectionScreen() {
       setUrl(connection.url)
       setDirectory(connection.directory || "")
       setUsername(connection.username || "")
+      setZeroTierNetworkId(connection.zerotier?.networkId || "")
+      setPlanet(connection.zerotier?.planet)
+      const savedBase64 = connection.zerotier?.planet?.base64 || ""
+      setPlanetBase64(savedBase64)
+      setShowPlanetBase64(Boolean(savedBase64))
     }
   }, [connection])
 
@@ -72,13 +86,25 @@ export default function EditConnectionScreen() {
   }
 
   const handleTest = async () => {
-    if (!url.trim()) {
+    const connectionUrl = url.trim()
+    if (!connectionUrl) {
       Alert.alert(t("common.error"), t("connection.shared.alerts.enterUrl"))
       return
     }
-    if (!parseUrl(url).valid) {
+    if (type !== "zerotier" && !parseUrl(connectionUrl).valid) {
       Alert.alert(t("connection.shared.alerts.invalidUrlTitle"), t("connection.shared.alerts.invalidUrlMessage"))
       return
+    }
+    const zerotier = type === "zerotier"
+      ? { networkId: zeroTierNetworkId.trim(), planet }
+      : undefined
+    if (zerotier) {
+      try {
+        parseZeroTierTarget({ networkId: zerotier.networkId, url: connectionUrl })
+      } catch (error) {
+        Alert.alert(t("connection.zerotier.invalidTitle"), error instanceof Error ? error.message : String(error))
+        return
+      }
     }
 
     setIsTesting(true)
@@ -87,9 +113,10 @@ export default function EditConnectionScreen() {
         id: connection.id,
         name: name || "Test",
         type,
-        url: url.trim(),
+        url: connectionUrl,
         directory: directory.trim() || undefined,
         username: username.trim() || undefined,
+        zerotier,
       },
       "edit_test",
       password || undefined,
@@ -98,6 +125,15 @@ export default function EditConnectionScreen() {
     if (result.ok) {
       setIsTesting(false)
       Alert.alert(t("connection.edit.alerts.successTitle"), t("connection.edit.alerts.successMessage"))
+      return
+    }
+
+    if (type === "zerotier") {
+      setIsTesting(false)
+      Alert.alert(
+        t("connection.shared.alerts.connectionFailedTitle"),
+        result.error || t("connection.shared.alerts.unknownError"),
+      )
       return
     }
 
@@ -124,13 +160,25 @@ export default function EditConnectionScreen() {
       Alert.alert(t("common.error"), t("connection.shared.alerts.enterName"))
       return
     }
-    if (!url.trim()) {
+    const connectionUrl = url.trim()
+    if (!connectionUrl) {
       Alert.alert(t("common.error"), t("connection.shared.alerts.enterUrl"))
       return
     }
-    if (!parseUrl(url).valid) {
+    if (type !== "zerotier" && !parseUrl(connectionUrl).valid) {
       Alert.alert(t("connection.shared.alerts.invalidUrlTitle"), t("connection.shared.alerts.invalidUrlMessage"))
       return
+    }
+    const zerotier = type === "zerotier"
+      ? { networkId: zeroTierNetworkId.trim(), planet }
+      : undefined
+    if (zerotier) {
+      try {
+        parseZeroTierTarget({ networkId: zerotier.networkId, url: connectionUrl })
+      } catch (error) {
+        Alert.alert(t("connection.zerotier.invalidTitle"), error instanceof Error ? error.message : String(error))
+        return
+      }
     }
 
     setIsSaving(true)
@@ -140,9 +188,10 @@ export default function EditConnectionScreen() {
         {
           name: name.trim(),
           type,
-          url: url.trim(),
+          url: connectionUrl,
           directory: directory.trim() || undefined,
           username: username.trim() || undefined,
+          zerotier,
         },
         // Empty = keep existing password (the field loads blank); a typed value
         // rotates it in SecureStore.
@@ -163,6 +212,40 @@ export default function EditConnectionScreen() {
         t("connection.shared.alerts.saveFailedTitle"),
         t("connection.shared.alerts.saveFailedMessage"),
       )
+    }
+  }
+
+  const handleImportPlanet = async () => {
+    setPlanetImportSource("file")
+    try {
+      const installed = await embeddedZeroTier.pickPlanetFile()
+      if (installed) {
+        setPlanet(installed)
+        setPlanetBase64("")
+        setShowPlanetBase64(false)
+      }
+    } catch (error) {
+      Alert.alert(t("connection.zerotier.importFailedTitle"), error instanceof Error ? error.message : String(error))
+    } finally {
+      setPlanetImportSource(null)
+    }
+  }
+
+  const handleImportPlanetBase64 = async () => {
+    const encoded = planetBase64.trim()
+    if (!encoded) {
+      Alert.alert(t("connection.zerotier.importFailedTitle"), t("connection.zerotier.planetBase64Empty"))
+      return
+    }
+    setPlanetImportSource("base64")
+    try {
+      const installed = await embeddedZeroTier.installPlanetBase64(encoded)
+      setPlanet({ ...installed, base64: encoded })
+      setPlanetBase64(encoded)
+    } catch (error) {
+      Alert.alert(t("connection.zerotier.importFailedTitle"), error instanceof Error ? error.message : String(error))
+    } finally {
+      setPlanetImportSource(null)
     }
   }
 
@@ -233,7 +316,7 @@ export default function EditConnectionScreen() {
       <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.shared.serverUrl")}</Text>
       <TextInput
         style={[styles.input, isDark && styles.inputDark]}
-        placeholder="http://192.168.1.100:4096"
+        placeholder={type === "zerotier" ? "http://10.10.0.8:4096" : "http://192.168.1.100:4096"}
         placeholderTextColor={isDark ? "#666666" : "#999999"}
         value={url}
         onChangeText={setUrl}
@@ -241,6 +324,104 @@ export default function EditConnectionScreen() {
         autoCorrect={false}
         keyboardType="url"
       />
+      {type === "zerotier" && (
+        <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.httpHint")}</Text>
+      )}
+
+      {type === "zerotier" && (
+        <View style={[styles.zeroTierBox, isDark && styles.zeroTierBoxDark]}>
+          <Text style={[styles.sectionTitle, styles.zeroTierTitle, isDark && styles.textDark]}>
+            {t("connection.zerotier.title")}
+          </Text>
+          <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.routeHint")}</Text>
+
+          <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.zerotier.networkId")}</Text>
+          <TextInput
+            style={[styles.input, isDark && styles.inputDark]}
+            placeholder="8056c2e21c000001"
+            placeholderTextColor={isDark ? "#666666" : "#999999"}
+            value={zeroTierNetworkId}
+            onChangeText={setZeroTierNetworkId}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.zerotier.planet")}</Text>
+          <View style={styles.planetRow}>
+            <TouchableOpacity
+              style={[styles.planetButton, isDark && styles.typeOptionDark]}
+              onPress={handleImportPlanet}
+              disabled={isImportingPlanet}
+            >
+              {planetImportSource === "file" ? (
+                <ActivityIndicator size="small" color={isDark ? "#ffffff" : "#0a0a0a"} />
+              ) : (
+                <Ionicons name="document-attach-outline" size={18} color={isDark ? "#ffffff" : "#0a0a0a"} />
+              )}
+              <Text style={[styles.planetButtonText, isDark && styles.textDark]}>
+                {planet ? t("connection.zerotier.replacePlanet") : t("connection.zerotier.choosePlanet")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.planetButton, isDark && styles.typeOptionDark]}
+              onPress={() => setShowPlanetBase64((current) => !current)}
+              disabled={isImportingPlanet}
+            >
+              <Ionicons name="code-slash" size={18} color={isDark ? "#ffffff" : "#0a0a0a"} />
+              <Text style={[styles.planetButtonText, isDark && styles.textDark]}>
+                {t("connection.zerotier.importPlanetBase64")}
+              </Text>
+            </TouchableOpacity>
+            {planet && (
+              <TouchableOpacity
+                onPress={() => {
+                  setPlanet(undefined)
+                  setPlanetBase64("")
+                  setShowPlanetBase64(false)
+                }}
+                accessibilityLabel={t("connection.zerotier.useDefaultPlanet")}
+              >
+                <Ionicons name="close-circle" size={24} color={isDark ? "#aaaaaa" : "#666666"} />
+              </TouchableOpacity>
+            )}
+          </View>
+          {showPlanetBase64 && (
+            <View style={styles.base64Box}>
+              <TextInput
+                style={[styles.input, styles.base64Input, isDark && styles.inputDark]}
+                placeholder={t("connection.zerotier.planetBase64Placeholder")}
+                placeholderTextColor={isDark ? "#666666" : "#999999"}
+                value={planetBase64}
+                onChangeText={setPlanetBase64}
+                autoCapitalize="none"
+                autoCorrect={false}
+                multiline
+                textAlignVertical="top"
+              />
+              <TouchableOpacity
+                style={[styles.base64Confirm, isDark && styles.saveButtonDark, (!planetBase64.trim() || isImportingPlanet) && styles.disabledButton]}
+                onPress={handleImportPlanetBase64}
+                disabled={!planetBase64.trim() || isImportingPlanet}
+              >
+                {planetImportSource === "base64" ? (
+                  <ActivityIndicator size="small" color={isDark ? "#0a0a0a" : "#ffffff"} />
+                ) : (
+                  <Text style={[styles.base64ConfirmText, isDark && styles.saveButtonTextDark]}>
+                    {t("connection.zerotier.decodePlanetBase64")}
+                  </Text>
+                )}
+              </TouchableOpacity>
+              <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.planetBase64Hint")}</Text>
+            </View>
+          )}
+          <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.planetRenameHint")}</Text>
+          <Text style={[styles.hint, isDark && styles.hintDark]}>
+            {planet
+              ? t("connection.zerotier.selectedPlanet", { name: planet.name, hash: planet.sha256.slice(0, 12) })
+              : t("connection.zerotier.defaultPlanet")}
+          </Text>
+        </View>
+      )}
 
       {/* Directory */}
       <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.shared.directoryOptional")}</Text>
@@ -351,10 +532,12 @@ const styles = StyleSheet.create({
   },
   typeContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   typeOption: {
-    flex: 1,
+    flexBasis: "47%",
+    flexGrow: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -405,6 +588,63 @@ const styles = StyleSheet.create({
   },
   hintDark: {
     color: "#888888",
+  },
+  zeroTierBox: {
+    marginTop: 20,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#f5f5f5",
+  },
+  zeroTierBoxDark: {
+    backgroundColor: "#141414",
+  },
+  zeroTierTitle: {
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  planetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  planetButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+  },
+  planetButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0a0a0a",
+  },
+  base64Box: {
+    marginTop: 10,
+  },
+  base64Input: {
+    minHeight: 96,
+    fontFamily: "monospace",
+    fontSize: 12,
+  },
+  base64Confirm: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#0a0a0a",
+    marginTop: 8,
+  },
+  base64ConfirmText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   sectionTitle: {
     fontSize: 18,
