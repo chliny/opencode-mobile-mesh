@@ -7,6 +7,39 @@ import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { WIDE_CONTENT_SCROLL_CONFIG } from "../src/lib/scroll-config"
 import { getContentViewer } from "../src/lib/content-viewer"
+import { parseDiffText, type DiffLine } from "../src/components/chat/diff-compute"
+
+function DiffContent({ lines, isDark }: { lines: DiffLine[]; isDark: boolean }) {
+  return (
+    <View style={s.diffLines}>
+      {lines.map((line, index) => (
+        <View
+          key={index}
+          style={[
+            s.diffLine,
+            line.type === "add" && (isDark ? s.diffAddDark : s.diffAdd),
+            line.type === "remove" && (isDark ? s.diffRemoveDark : s.diffRemove),
+          ]}
+        >
+          <Text style={[s.diffPrefix, isDark && s.diffPrefixDark]}>
+            {line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}
+          </Text>
+          <Text
+            selectable
+            style={[
+              s.code,
+              isDark && s.codeDark,
+              line.type === "add" && s.diffAddText,
+              line.type === "remove" && s.diffRemoveText,
+            ]}
+          >
+            {line.text}
+          </Text>
+        </View>
+      ))}
+    </View>
+  )
+}
 
 export default function ContentViewerScreen() {
   const router = useRouter()
@@ -23,6 +56,9 @@ export default function ContentViewerScreen() {
       </View>
     )
   }
+
+  const isDiff = viewer.language === "diff"
+  const diffLines = isDiff ? parseDiffText(viewer.content) : []
 
   const copy = async () => {
     await Clipboard.setStringAsync(viewer.content)
@@ -48,7 +84,7 @@ export default function ContentViewerScreen() {
         <Text style={[s.language, isDark && s.languageDark]}>{viewer.language || t("chat.contentViewer.output")}</Text>
         <ScrollView {...WIDE_CONTENT_SCROLL_CONFIG} style={s.horizontal} contentContainerStyle={s.scrollContent}>
           <ScrollView nestedScrollEnabled contentContainerStyle={s.verticalContent}>
-            <Text selectable style={[s.code, isDark && s.codeDark]}>{viewer.content}</Text>
+            {isDiff ? <DiffContent lines={diffLines} isDark={isDark} /> : <Text selectable style={[s.code, isDark && s.codeDark]}>{viewer.content}</Text>}
           </ScrollView>
         </ScrollView>
       </View>
@@ -76,6 +112,16 @@ const s = StyleSheet.create({
   verticalContent: { padding: 14 },
   code: { fontFamily: mono, fontSize: 13, lineHeight: 20, color: "#171717" },
   codeDark: { color: "#e5e5e5" },
+  diffLines: { alignSelf: "flex-start", minWidth: "100%" },
+  diffLine: { flexDirection: "row", paddingHorizontal: 8, paddingVertical: 1 },
+  diffAdd: { backgroundColor: "#dcfce7" },
+  diffAddDark: { backgroundColor: "#052e16" },
+  diffRemove: { backgroundColor: "#fee2e2" },
+  diffRemoveDark: { backgroundColor: "#2a0a0a" },
+  diffPrefix: { width: 16, fontSize: 13, fontFamily: mono, lineHeight: 20, color: "#999999" },
+  diffPrefixDark: { color: "#666666" },
+  diffAddText: { color: "#16a34a" },
+  diffRemoveText: { color: "#dc2626" },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
   emptyDark: { backgroundColor: "#0a0a0a" },
   emptyText: { color: "#111" },

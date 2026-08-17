@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import type { Part } from "../../lib/sdk"
-import { DiffView } from "./DiffView"
+import { DiffLinesView, DiffView } from "./DiffView"
+import { computePatchDiff } from "./patch-compute"
 import { ContentViewerButton } from "./ContentViewerButton"
 
 const TOOL_ICONS: Record<string, string> = {
@@ -144,7 +145,7 @@ function PatchDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
   return (
     <View style={s.detailSection}>
       {typeof patch === "string" && patch.length > 0 && (
-        <CodeOutput content={patch} title="patch" isDark={isDark} />
+        <DiffLinesView lines={computePatchDiff(patch)} title="patch" isDark={isDark} />
       )}
     </View>
   )
@@ -301,7 +302,8 @@ interface Props {
 
 export function ToolCallCard({ tool, isDark }: Props) {
   const { t } = useTranslation()
-  const [expanded, setExpanded] = useState(false)
+  const isCodeChange = tool.tool === "edit" || tool.tool === "write" || tool.tool === "apply_patch"
+  const [expanded, setExpanded] = useState(isCodeChange)
   const icon = (tool.tool && TOOL_ICONS[tool.tool]) || "extension-puzzle-outline"
   const status = tool.state?.status || "pending"
   const color = statusColor(status)
