@@ -5,6 +5,8 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   useColorScheme,
   ActivityIndicator,
@@ -264,8 +266,13 @@ export default function EditConnectionScreen() {
   }
 
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={[styles.container, isDark && styles.containerDark]}
+      enabled={Platform.OS === "ios"}
+      behavior="padding"
+    >
+    <ScrollView
+      style={{ flex: 1 }}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
@@ -497,6 +504,7 @@ export default function EditConnectionScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 

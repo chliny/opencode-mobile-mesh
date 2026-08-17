@@ -5,6 +5,8 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   useColorScheme,
   ActivityIndicator,
@@ -380,8 +382,13 @@ export default function AddConnectionScreen() {
   // Quick connect mode - simplified
   if (mode === "quick") {
     return (
-      <ScrollView
+      <KeyboardAvoidingView
         style={[styles.container, isDark && styles.containerDark]}
+        enabled={Platform.OS === "ios"}
+        behavior="padding"
+      >
+      <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
@@ -581,13 +588,19 @@ export default function AddConnectionScreen() {
           <Ionicons name="chevron-forward" size={16} color={isDark ? "#888888" : "#666666"} />
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     )
   }
 
   // Advanced mode - full options
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={[styles.container, isDark && styles.containerDark]}
+      enabled={Platform.OS === "ios"}
+      behavior="padding"
+    >
+    <ScrollView
+      style={{ flex: 1 }}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
@@ -827,6 +840,7 @@ export default function AddConnectionScreen() {
         )}
       </TouchableOpacity>
     </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 
