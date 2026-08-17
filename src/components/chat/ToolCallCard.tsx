@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import type { Part } from "../../lib/sdk"
 import { DiffView } from "./DiffView"
+import { ContentViewerButton } from "./ContentViewerButton"
 
 const TOOL_ICONS: Record<string, string> = {
   read: "glasses-outline",
@@ -34,6 +35,17 @@ function statusColor(status: string): string {
 
 // --- Tool-specific detail renderers ---
 
+function CodeOutput({ content, title, isDark }: { content: string; title: string; isDark: boolean }) {
+  return (
+    <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
+      <View style={s.codeHeader}>
+        <ContentViewerButton title={title} content={content} isDark={isDark} />
+      </View>
+      <Text style={[s.codePre, isDark && s.codePteDark]} selectable>{content}</Text>
+    </View>
+  )
+}
+
 function BashDetail({ input, output, isDark }: { input: unknown; output: unknown; isDark: boolean }) {
   const cmd = typeof input === "object" && input !== null ? (input as Record<string, unknown>).command : undefined
   const out = typeof output === "string" ? output : undefined
@@ -41,6 +53,9 @@ function BashDetail({ input, output, isDark }: { input: unknown; output: unknown
     <View style={s.detailSection}>
       {typeof cmd === "string" && (
         <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
+          <View style={s.codeHeader}>
+            <ContentViewerButton title="bash" content={cmd} language="bash" isDark={isDark} />
+          </View>
           <Text style={[s.codePre, isDark && s.codePteDark]} selectable>
             <Text style={s.codePrompt}>$ </Text>
             {cmd}
@@ -48,11 +63,7 @@ function BashDetail({ input, output, isDark }: { input: unknown; output: unknown
         </View>
       )}
       {out !== undefined && out.length > 0 && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={80}>
-            {out}
-          </Text>
-        </View>
+        <View style={{ marginTop: 6 }}><CodeOutput content={out} title="bash output" isDark={isDark} /></View>
       )}
     </View>
   )
@@ -86,11 +97,7 @@ function WriteDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
         </Text>
       )}
       {typeof content === "string" && content.length > 0 && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={40}>
-            {content}
-          </Text>
-        </View>
+        <View style={{ marginTop: 6 }}><CodeOutput content={content} title={typeof file === "string" ? file : "file"} isDark={isDark} /></View>
       )}
     </View>
   )
@@ -126,11 +133,7 @@ function EditDetail({ input, output, isDark }: { input: unknown; output: unknown
         </Text>
       )}
       {text && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={40}>
-            {text}
-          </Text>
-        </View>
+        <View style={{ marginTop: 6 }}><CodeOutput content={text} title={typeof file === "string" ? file : "output"} isDark={isDark} /></View>
       )}
     </View>
   )
@@ -141,11 +144,7 @@ function PatchDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
   return (
     <View style={s.detailSection}>
       {typeof patch === "string" && patch.length > 0 && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={60}>
-            {patch}
-          </Text>
-        </View>
+        <CodeOutput content={patch} title="patch" isDark={isDark} />
       )}
     </View>
   )
@@ -166,11 +165,7 @@ function GlobGrepDetail({ input, output, isDark }: { input: unknown; output: unk
         </Text>
       )}
       {results && results.length > 0 && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={30}>
-            {results}
-          </Text>
-        </View>
+        <View style={{ marginTop: 6 }}><CodeOutput content={results} title="search output" isDark={isDark} /></View>
       )}
     </View>
   )
@@ -197,11 +192,7 @@ function TaskDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
     <View style={s.detailSection}>
       {typeof description === "string" && <Text style={[s.detailMeta, isDark && s.detailMetaDark]}>{description}</Text>}
       {typeof prompt === "string" && prompt.length > 0 && (
-        <View style={[s.codeBlock, isDark && s.codeBlockDark, { marginTop: 6 }]}>
-          <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={20}>
-            {prompt}
-          </Text>
-        </View>
+        <View style={{ marginTop: 6 }}><CodeOutput content={prompt} title="task prompt" isDark={isDark} /></View>
       )}
     </View>
   )
@@ -244,11 +235,7 @@ function GenericDetail({ input, output, isDark }: { input: unknown; output: unkn
   if (!text || text.length === 0) return null
   return (
     <View style={s.detailSection}>
-      <View style={[s.codeBlock, isDark && s.codeBlockDark]}>
-        <Text style={[s.codePre, isDark && s.codePteDark]} selectable numberOfLines={30}>
-          {text}
-        </Text>
-      </View>
+      <CodeOutput content={text} title="tool output" isDark={isDark} />
     </View>
   )
 }
@@ -436,6 +423,7 @@ const s = StyleSheet.create({
     padding: 10,
   },
   codeBlockDark: { backgroundColor: "#1a1a1a" },
+  codeHeader: { alignItems: "flex-end", marginBottom: 5 },
   codePre: {
     fontSize: 12,
     fontFamily: mono,
