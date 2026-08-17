@@ -5,6 +5,12 @@ import { ContentViewerButton } from "./ContentViewerButton"
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace"
 
+export interface DiffLinesProps {
+  lines: ReturnType<typeof computeDiff>
+  isDark: boolean
+  title?: string
+}
+
 interface Props {
   before: string
   after: string
@@ -14,6 +20,11 @@ interface Props {
 export function DiffView({ before, after, isDark }: Props) {
   const lines = computeDiff(before, after)
 
+  return <DiffLinesView lines={lines} isDark={isDark} title="diff" />
+}
+
+export function DiffLinesView({ lines, isDark, title }: DiffLinesProps) {
+
   if (lines.length === 0) return null
 
   const fullDiff = lines.map((line) => `${line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}${line.text}`).join("\n")
@@ -21,7 +32,7 @@ export function DiffView({ before, after, isDark }: Props) {
   return (
     <View style={[s.container, isDark && s.containerDark]}>
       <View style={s.header}>
-        <ContentViewerButton title="diff" content={fullDiff} language="diff" isDark={isDark} />
+        <ContentViewerButton title={title || "diff"} content={fullDiff} language="diff" isDark={isDark} />
       </View>
       <ScrollView {...WIDE_CONTENT_SCROLL_CONFIG} testID="diff-view-scroll">
         <View>
