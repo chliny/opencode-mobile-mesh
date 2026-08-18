@@ -71,6 +71,7 @@ const erroredSessions = new Set<string>()
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 15000] as const
 const STABLE_CONNECTION_MS = 10_000
 const PROLONGED_DISCONNECT_MS = 30_000
+const ZERO_TIER_FORCE_RESTART_ATTEMPT = 3
 
 // Re-fetch pending permissions and questions from the server for a session.
 // Called when entering a session to recover from missed SSE events or failed
@@ -216,10 +217,19 @@ export const useEvents = create<EventsState>((set, get) => ({
           message: "reconnect scheduled",
           data: { attempt: reconnectAttempts, delayMs: jitteredDelay, reason: String(reason).slice(0, 200) },
         })
-        reconnectTimer = setTimeout(() => {
-          reconnectTimer = null
-          get().connect()
-        }, jitteredDelay)
+        const active = useConnections.getState().activeConnection
+        const routeRefresh = active?.zerotier
+          ? useConnections.getState().refreshActiveRoute(reconnectAttempts >= ZERO_TIER_FORCE_RESTART_ATTEMPT).catch((error) => {
+              console.warn("[SSE] Failed to refresh ZeroTier route after disconnect:", error)
+            })
+          : Promise.resolve()
+        void routeRefresh.finally(() => {
+          if (currentController.signal.aborted) return
+          reconnectTimer = setTimeout(() => {
+            reconnectTimer = null
+            get().connect()
+          }, jitteredDelay)
+        })
       }
 
       try {

@@ -70,7 +70,7 @@ interface ConnectionsState {
   addRecentDirectory: (directory: string) => Promise<void>
   // Re-establish the active transport. ZeroTier profiles always use the
   // embedded libzt relay; stale concurrent attempts are ignored.
-  refreshActiveRoute: () => Promise<void>
+  refreshActiveRoute: (forceRestart?: boolean) => Promise<void>
 }
 
 function generateId(): string {
@@ -466,7 +466,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     await SecureStore.setItemAsync(RECENT_DIRS_KEY, JSON.stringify(updated))
   },
 
-  refreshActiveRoute: () => {
+  refreshActiveRoute: (forceRestart = false) => {
     const run = routeRefreshQueue.then(async () => {
       const generation = ++routeGeneration
       const active = get().activeConnection
@@ -480,19 +480,19 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         set({ routeStatus: "checking", routeError: null })
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
         const auth = buildAuth(active.username, password)
-        let forceRestart = false
-        if (active.zerotier && get().clientBase?.baseUrl) {
+        let restart = forceRestart
+        if (!restart && active.zerotier && get().clientBase?.baseUrl) {
           const currentClient = get().client
           if (currentClient) {
             try {
               await currentClient.global.health(5_000)
             } catch {
-              forceRestart = true
+              restart = true
               addBreadcrumb({ category: "zerotier", level: "warning", message: "relay health check failed" })
             }
           }
         }
-        const resolved = await resolveConnectionRoute(active, forceRestart)
+        const resolved = await resolveConnectionRoute(active, restart)
         if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
 
         if (resolved.route === "lan") await embeddedZeroTier.stop()
