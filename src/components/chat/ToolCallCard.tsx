@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import type { Part } from "../../lib/sdk"
 import { DiffLinesView, DiffView } from "./DiffView"
-import { computePatchDiff } from "./patch-compute"
+import { computePatchDiff, patchTextFromInput } from "./patch-compute"
 import { ContentViewerButton } from "./ContentViewerButton"
 
 const TOOL_ICONS: Record<string, string> = {
@@ -141,7 +141,7 @@ function EditDetail({ input, output, isDark }: { input: unknown; output: unknown
 }
 
 function PatchDetail({ input, isDark }: { input: unknown; isDark: boolean }) {
-  const patch = typeof input === "object" && input !== null ? (input as Record<string, unknown>).patch : undefined
+  const patch = patchTextFromInput(input)
   return (
     <View style={s.detailSection}>
       {typeof patch === "string" && patch.length > 0 && (

@@ -1,5 +1,15 @@
 import type { DiffLine } from "./diff-compute"
 
+export function patchTextFromInput(input: unknown): string | undefined {
+  if (typeof input === "string") return input
+  if (typeof input !== "object" || input === null) return undefined
+
+  const value = input as Record<string, unknown>
+  if (typeof value.patchText === "string") return value.patchText
+  if (typeof value.patch === "string") return value.patch
+  return undefined
+}
+
 // Convert both unified diffs and OpenCode's *** patch format into the same
 // line model used by DiffView. Patch headers are kept as context so filenames
 // remain visible, while metadata lines and patch delimiters are omitted.
