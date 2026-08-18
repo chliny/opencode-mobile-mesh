@@ -22,7 +22,7 @@ test("reviewDiffsForMessage links an assistant reply to its user turn", () => {
     time: { created: 2 },
   }
 
-  assert.deepEqual(reviewDiffsForMessage(assistant, [user, assistant]), user.summary?.diffs)
+  assert.deepEqual(reviewDiffsForMessage(assistant, [user, assistant], true), user.summary?.diffs)
 })
 
 test("reviewDiffsForMessage ignores unrelated messages", () => {
@@ -34,6 +34,18 @@ test("reviewDiffsForMessage ignores unrelated messages", () => {
     time: { created: 3 },
   }
 
-  assert.equal(reviewDiffsForMessage(user, [user, assistant]), undefined)
-  assert.equal(reviewDiffsForMessage(assistant, [user, assistant]), undefined)
+  assert.equal(reviewDiffsForMessage(user, [user, assistant], true), undefined)
+  assert.equal(reviewDiffsForMessage(assistant, [user, assistant], true), undefined)
+})
+
+test("reviewDiffsForMessage hides changes from earlier assistant replies", () => {
+  const assistant: Message = {
+    id: "assistant-1",
+    sessionID: "session-1",
+    role: "assistant",
+    parentID: user.id,
+    time: { created: 2 },
+  }
+
+  assert.equal(reviewDiffsForMessage(assistant, [user, assistant], false), undefined)
 })
