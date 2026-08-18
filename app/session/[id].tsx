@@ -187,7 +187,7 @@ export default function SessionScreen() {
         .map((msg) => ({
           message: msg,
           parts: (parts && parts[msg.id]) || [],
-          reviewDiffs: reviewDiffsForMessage(msg, visible),
+          reviewDiffs: reviewDiffsForMessage(msg, visible, msg.id === visible.at(-1)?.id),
         }))
         .reverse()
     },
