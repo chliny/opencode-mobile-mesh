@@ -433,6 +433,11 @@
       "patternOnly": "模式：{{pattern}}",
       "patternWithPath": "模式：{{pattern}}，路径：{{path}}"
     },
+    "reviewChanges": {
+      "title": "本次任务变更",
+      "files_one": "{{count}} 个文件",
+      "files_other": "{{count}} 个文件"
+    },
     "contentViewer": {
       "open": "全屏查看",
       "output": "输出",
