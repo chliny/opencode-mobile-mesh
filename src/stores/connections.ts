@@ -10,6 +10,7 @@ import { stripTrailingSlash } from "../lib/path-utils"
 import { embeddedZeroTier } from "@opencode-ai/zerotier"
 import { parseZeroTierTarget, relayBaseUrl } from "../lib/zerotier-routing"
 import i18n from "../lib/i18n/config"
+import { log } from "../lib/logbuffer"
 
 const CONNECTIONS_KEY = "opencode_connections"
 const PASSWORDS_PREFIX = "opencode_password_"
@@ -478,21 +479,15 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         }
 
         set({ routeStatus: "checking", routeError: null })
+        log.info("route", "refresh start", `force=${forceRestart}`)
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
         const auth = buildAuth(active.username, password)
-        let restart = forceRestart
-        if (!restart && active.zerotier && get().clientBase?.baseUrl) {
-          const currentClient = get().client
-          if (currentClient) {
-            try {
-              await currentClient.global.health(5_000)
-            } catch {
-              restart = true
-              addBreadcrumb({ category: "zerotier", level: "warning", message: "relay health check failed" })
-            }
-          }
-        }
-        const resolved = await resolveConnectionRoute(active, restart)
+        // Do not restart a live ZeroTier relay because a one-shot health probe
+        // timed out. The probe uses a separate short-lived socket and can fail
+        // while the long-lived SSE transport is healthy; restarting here would
+        // disconnect the current screen. SSE reconnects request a forced
+        // restart after repeated failures instead.
+        const resolved = await resolveConnectionRoute(active, forceRestart)
         if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
 
         if (resolved.route === "lan") await embeddedZeroTier.stop()
@@ -500,6 +495,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
 
         if (get().clientBase?.baseUrl === resolved.baseUrl) {
           set({ routeStatus: resolved.route, routeError: null })
+          log.info("route", "refresh reused transport", resolved.route)
           return
         }
 
@@ -510,6 +506,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           routeStatus: resolved.route,
           routeError: null,
         })
+        log.info("route", "transport ready", resolved.route)
 
         // Publish the ready transport before fetching optional metadata so
         // sessions, SSE, and the catalog can start without waiting for these
@@ -529,6 +526,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           routeStatus: "error",
           routeError: error instanceof Error ? error.message : String(error),
         })
+        log.warn("route", "refresh failed", String(error))
       }
     })
     routeRefreshQueue = run.catch(() => {})

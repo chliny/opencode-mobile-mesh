@@ -9,6 +9,7 @@ import { AnalyticsEvent, track } from "../lib/analytics"
 import { recordSuccessfulSession } from "../lib/store-review"
 import { isAuthError } from "../lib/api-error"
 import { isSessionActuallyIdle } from "../lib/session-status-reconcile"
+import { log } from "../lib/logbuffer"
 import type { Client, Part, Session, Message } from "../lib/sdk"
 
 // Session status from the server
@@ -71,7 +72,6 @@ const erroredSessions = new Set<string>()
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 15000] as const
 const STABLE_CONNECTION_MS = 10_000
 const PROLONGED_DISCONNECT_MS = 30_000
-const ZERO_TIER_FORCE_RESTART_ATTEMPT = 3
 
 // Re-fetch pending permissions and questions from the server for a session.
 // Called when entering a session to recover from missed SSE events or failed
@@ -170,7 +170,7 @@ export const useEvents = create<EventsState>((set, get) => ({
     controller = new AbortController()
     const currentController = controller
     set({ connected: true, authError: false })
-    console.log("[SSE] Connecting to event stream...")
+    log.info("sse", "connecting to event stream")
     addBreadcrumb({ category: "sse", message: "connecting" })
 
     // Run in background
@@ -210,26 +210,23 @@ export const useEvents = create<EventsState>((set, get) => ({
 
         const baseDelay = RECONNECT_DELAYS_MS[Math.min(reconnectAttempts - 1, RECONNECT_DELAYS_MS.length - 1)]
         const jitteredDelay = Math.min(15_000, Math.round(baseDelay * (0.75 + Math.random() * 0.5)))
-        console.warn(`[SSE] Connection lost, reconnecting in ${jitteredDelay}ms:`, reason)
+        log.warn("sse", "connection lost", `delay=${jitteredDelay}ms`, String(reason))
         addBreadcrumb({
           category: "sse",
           level: "warning",
           message: "reconnect scheduled",
           data: { attempt: reconnectAttempts, delayMs: jitteredDelay, reason: String(reason).slice(0, 200) },
         })
-        const active = useConnections.getState().activeConnection
-        const routeRefresh = active?.zerotier
-          ? useConnections.getState().refreshActiveRoute(reconnectAttempts >= ZERO_TIER_FORCE_RESTART_ATTEMPT).catch((error) => {
-              console.warn("[SSE] Failed to refresh ZeroTier route after disconnect:", error)
-            })
-          : Promise.resolve()
-        void routeRefresh.finally(() => {
-          if (currentController.signal.aborted) return
-          reconnectTimer = setTimeout(() => {
-            reconnectTimer = null
-            get().connect()
-          }, jitteredDelay)
-        })
+        // Keep SSE retries on the existing transport. Re-running the ZeroTier
+        // start path here can close a healthy relay while the previous fetch is
+        // still unwinding, which turns a transient stream drop into a
+        // persistent disconnect. The periodic route check repairs a relay that
+        // reports an actual native error without interrupting a healthy one.
+        if (currentController.signal.aborted) return
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null
+          get().connect()
+        }, jitteredDelay)
       }
 
       try {
@@ -468,7 +465,7 @@ export const useEvents = create<EventsState>((set, get) => ({
           // (issue #76: 309 events / 65 users). Stop and surface a distinct
           // state instead; the sessions screen offers a link to fix
           // credentials, which reconnects via connect() once saved.
-          console.warn("[SSE] Authentication failed — stopping reconnect loop:", err)
+          log.error("sse", "authentication failed", String(err))
           addBreadcrumb({
             category: "sse",
             level: "error",
@@ -483,14 +480,14 @@ export const useEvents = create<EventsState>((set, get) => ({
       } finally {
         clearTimeout(stableTimer)
         if (currentController.signal.aborted) {
-          console.log("[SSE] Disconnected (aborted)")
+          log.info("sse", "disconnected (aborted)")
         }
       }
     })()
   },
 
   disconnect: () => {
-    console.log("[SSE] Disconnecting")
+    log.info("sse", "disconnecting")
     addBreadcrumb({ category: "sse", message: "disconnected" })
     if (reconnectTimer) {
       clearTimeout(reconnectTimer)

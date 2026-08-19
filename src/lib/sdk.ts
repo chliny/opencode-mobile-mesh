@@ -7,6 +7,7 @@ import { buildRequestHeaders } from "./headers"
 import { SSEParser } from "./sse"
 import { apiErrorFor } from "./api-error"
 import { loadSessionList } from "./session-list"
+import { log } from "./logbuffer"
 import type { FileRoot } from "./file-roots"
 
 export { ApiAuthError, isAuthError } from "./api-error"
@@ -299,20 +300,20 @@ export function createClient(config: ClientConfig) {
           while (true) {
             const { done, value } = await reader.read()
             if (done) {
-              console.log("[SSE] stream ended")
+              log.warn("sse", "stream ended")
               break
             }
 
             if (!receivedFirstByte) {
               receivedFirstByte = true
-              console.log(`[SSE] first byte received (${value?.byteLength ?? 0} bytes)`)
+              log.info("sse", "first byte received", `bytes=${value?.byteLength ?? 0}`)
             }
 
             for (const data of parser.push(decoder.decode(value, { stream: true }))) {
               try {
                 yield JSON.parse(data)
               } catch (err) {
-                console.warn("[SSE] Failed to parse event", {
+                log.warn("sse", "failed to parse event", {
                   length: data.length,
                   error: err instanceof Error ? err.message : String(err),
                 })

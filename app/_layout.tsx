@@ -29,7 +29,7 @@ function RootLayout() {
   const { t } = useTranslation()
 
   const { initialize: initAuth, isLoading: authLoading } = useAuth()
-  const { loadConnections, isLoading: connectionsLoading, client } = useConnections()
+  const { loadConnections, isLoading: connectionsLoading, clientBase } = useConnections()
   const sseStarted = useRef(false)
   const notifPermissionRequested = useRef(false)
 
@@ -139,9 +139,13 @@ function RootLayout() {
     }
   }, [])
 
-  // Connect/disconnect SSE and load catalog when client changes
+  // Connect/disconnect SSE when the actual transport changes. Do not depend on
+  // the client object itself: route refreshes may recreate an equivalent SDK
+  // client for the same relay URL, and the effect cleanup would otherwise
+  // disconnect a live SSE stream during navigation or background refresh.
   useEffect(() => {
-    if (client && !sseStarted.current) {
+    const transportUrl = clientBase?.baseUrl || null
+    if (transportUrl && !sseStarted.current) {
       sseStarted.current = true
       useEvents.getState().connect()
       useCatalog.getState().load()
@@ -157,17 +161,23 @@ function RootLayout() {
         notifPermissionRequested.current = true
         void notifications.setup()
       }
-    } else if (!client && sseStarted.current) {
+    } else if (!transportUrl && sseStarted.current) {
       sseStarted.current = false
       useEvents.getState().disconnect()
     }
+  }, [clientBase?.baseUrl])
+
+  // This is a process-level stream. Do not put its cleanup in the effect
+  // above: React runs dependency cleanup before every re-run, and a client
+  // object/state refresh must not tear down an otherwise unchanged SSE stream.
+  useEffect(() => {
     return () => {
       if (sseStarted.current) {
         sseStarted.current = false
         useEvents.getState().disconnect()
       }
     }
-  }, [client])
+  }, [])
 
   const isLoading = authLoading || connectionsLoading || consentState === "loading"
 

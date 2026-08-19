@@ -7,6 +7,7 @@ import { AnalyticsEvent, track } from "../lib/analytics"
 import { extractPromptFromParts, type PromptFromParts } from "../lib/prompt-from-parts"
 import { mergeIncomingMessage } from "../lib/message-merge"
 import { isColdSessionLoad, isLiveEventForSession } from "../lib/session-load-reconcile"
+import { log } from "../lib/logbuffer"
 
 // Helper to convert API response to our internal format
 function parseMessages(response: MessageWithParts[]): { messages: Message[]; parts: Record<string, Part[]> } {
@@ -151,6 +152,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
     }
 
     const seq = ++selectSeq
+    log.info("session", "select start", `id=${sessionID}`, `directory=${Boolean(directory)}`)
     addBreadcrumb({ category: "session", message: "select", data: { sessionID, hasDirectory: Boolean(directory) } })
     // Re-selecting the session already shown on screen (e.g. #121's
     // useFocusEffect resync firing again on re-entry) is a background
@@ -197,6 +199,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
       if (seq !== selectSeq) return
       console.error("Failed to load session:", err)
       set({ error: "Failed to load session", isLoading: false })
+      log.warn("session", "select failed", `id=${sessionID}`, String(err))
     }
   },
 
