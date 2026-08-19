@@ -504,18 +504,24 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         }
 
         const built = buildClient(resolved.baseUrl, active.directory, auth)
+        set({
+          client: built.client,
+          clientBase: built.base,
+          routeStatus: resolved.route,
+          routeError: null,
+        })
+
+        // Publish the ready transport before fetching optional metadata so
+        // sessions, SSE, and the catalog can start without waiting for these
+        // extra requests to complete.
         const [project, paths] = await Promise.all([
           built.client.project.current().catch(() => null),
           built.client.path.get().catch(() => null),
         ])
         if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
         set({
-          client: built.client,
-          clientBase: built.base,
           currentProject: project,
           serverHome: paths?.home || null,
-          routeStatus: resolved.route,
-          routeError: null,
         })
       } catch (error) {
         if (generation !== routeGeneration) return

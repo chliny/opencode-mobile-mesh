@@ -1,5 +1,4 @@
 import { create } from "zustand"
-import AsyncStorage from "@react-native-async-storage/async-storage"
 import { ApiError, type Session, type Message, type Part, type Event, type MessageWithParts, type Client } from "../lib/sdk"
 import { useConnections } from "./connections"
 import { useSettings } from "./settings"
@@ -83,19 +82,6 @@ export const abortedSessions = new Set<string>()
 let selectSeq = 0
 let loadSeq = 0
 
-const SESSION_CACHE_PREFIX = "opencode_session_list_"
-
-function sessionCacheKey(): string | null {
-  const connection = useConnections.getState().activeConnection
-  if (!connection) return null
-  return `${SESSION_CACHE_PREFIX}${connection.id}`
-}
-
-function persistSessionCache(sessions: Session[]): void {
-  const key = sessionCacheKey()
-  if (key) void AsyncStorage.setItem(key, JSON.stringify(sessions)).catch(() => {})
-}
-
 // Get the right client for a session's directory
 function clientFor(directory?: string): Client | null {
   const connState = useConnections.getState()
@@ -131,26 +117,13 @@ export const useSessions = create<SessionsState>((set, get) => ({
   loadSessions: async () => {
     const seq = ++loadSeq
     const connState = useConnections.getState()
+
     // Use a directory-less client so the server returns sessions from ALL projects,
     // not just the one matching the active connection's directory header.
     const client = connState.clientForDirectory(undefined) || connState.client
     if (!client) {
-      set({ error: "No active connection" })
+      set({ error: get().sessions.length > 0 ? null : "No active connection", isLoading: false })
       return
-    }
-
-    const cacheKey = sessionCacheKey()
-    if (cacheKey) {
-      try {
-        const cached = await AsyncStorage.getItem(cacheKey)
-        if (seq !== loadSeq) return
-        if (cached) {
-          const sessions = JSON.parse(cached) as Session[]
-          if (Array.isArray(sessions)) set({ sessions, isLoading: false, error: null })
-        }
-      } catch {
-        // Cache is only a fast-path; the server remains the source of truth.
-      }
     }
 
     try {
@@ -160,10 +133,10 @@ export const useSessions = create<SessionsState>((set, get) => ({
       const sessions = await client.session.list({ roots: true, limit: 50 })
       if (seq !== loadSeq) return
       set({ sessions, isLoading: false })
-      persistSessionCache(sessions)
     } catch (error) {
       if (seq !== loadSeq) return
-      // Keep cached sessions visible during a temporary ZeroTier/network outage.
+      // Keep previously loaded sessions visible during a temporary network outage;
+      // only surface the error when there is nothing to show.
       set({ error: get().sessions.length > 0 ? null : "Failed to load sessions", isLoading: false })
     }
   },
@@ -300,7 +273,6 @@ export const useSessions = create<SessionsState>((set, get) => ({
         messages: state.currentSession?.id === sessionID ? [] : state.messages,
         parts: state.currentSession?.id === sessionID ? {} : state.parts,
       }))
-      persistSessionCache(get().sessions)
     } catch (error) {
       set({ error: "Failed to delete session" })
     }
