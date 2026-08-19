@@ -253,11 +253,11 @@ export default function SessionsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (client) {
-        loadSessions()
-        refreshProject()
+      if (activeConnection) {
+        void loadSessions()
+        if (client) void refreshProject()
       }
-    }, [client, loadSessions, refreshProject]),
+    }, [activeConnection, client, loadSessions, refreshProject]),
   )
 
   const onRefresh = useCallback(async () => {
