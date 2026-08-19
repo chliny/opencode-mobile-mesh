@@ -9,6 +9,7 @@ export interface DiffLinesProps {
   lines: ReturnType<typeof computeDiff>
   isDark: boolean
   title?: string
+  maxHeight?: number
 }
 
 interface Props {
@@ -23,7 +24,7 @@ export function DiffView({ before, after, isDark }: Props) {
   return <DiffLinesView lines={lines} isDark={isDark} title="diff" />
 }
 
-export function DiffLinesView({ lines, isDark, title }: DiffLinesProps) {
+export function DiffLinesView({ lines, isDark, title, maxHeight }: DiffLinesProps) {
 
   if (lines.length === 0) return null
 
@@ -34,7 +35,12 @@ export function DiffLinesView({ lines, isDark, title }: DiffLinesProps) {
       <View style={s.header}>
         <ContentViewerButton title={title || "diff"} content={fullDiff} language="diff" isDark={isDark} />
       </View>
-      <ScrollView {...WIDE_CONTENT_SCROLL_CONFIG} testID="diff-view-scroll">
+      <ScrollView
+        {...WIDE_CONTENT_SCROLL_CONFIG}
+        style={maxHeight ? { maxHeight } : undefined}
+        nestedScrollEnabled={maxHeight !== undefined}
+        testID="diff-view-scroll"
+      >
         <View>
           {lines.map((line, idx) => (
             <View

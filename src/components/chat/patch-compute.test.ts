@@ -30,3 +30,11 @@ test("computePatchDiff parses unified diff headers", () => {
     { type: "add", text: "new" },
   ])
 })
+
+test("computePatchDiff caps very long patches", () => {
+  const patch = `*** Update File: large.ts\n@@\n${Array.from({ length: 700 }, (_, index) => `+line ${index}`).join("\n")}`
+  const result = computePatchDiff(patch)
+
+  assert.equal(result.length, 601)
+  assert.match(result.at(-1)?.text ?? "", /diff too large to display in full/)
+})

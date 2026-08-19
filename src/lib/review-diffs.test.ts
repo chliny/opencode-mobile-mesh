@@ -22,7 +22,7 @@ test("reviewDiffsForMessage links an assistant reply to its user turn", () => {
     time: { created: 2 },
   }
 
-  assert.deepEqual(reviewDiffsForMessage(assistant, [user, assistant], true), user.summary?.diffs)
+  assert.deepEqual(reviewDiffsForMessage(assistant, [user, assistant]), user.summary?.diffs)
 })
 
 test("reviewDiffsForMessage ignores unrelated messages", () => {
@@ -34,11 +34,11 @@ test("reviewDiffsForMessage ignores unrelated messages", () => {
     time: { created: 3 },
   }
 
-  assert.equal(reviewDiffsForMessage(user, [user, assistant], true), undefined)
-  assert.equal(reviewDiffsForMessage(assistant, [user, assistant], true), undefined)
+  assert.equal(reviewDiffsForMessage(user, [user, assistant]), undefined)
+  assert.equal(reviewDiffsForMessage(assistant, [user, assistant]), undefined)
 })
 
-test("reviewDiffsForMessage hides changes from earlier assistant replies", () => {
+test("reviewDiffsForMessage hides changes from an earlier turn", () => {
   const assistant: Message = {
     id: "assistant-1",
     sessionID: "session-1",
@@ -47,5 +47,58 @@ test("reviewDiffsForMessage hides changes from earlier assistant replies", () =>
     time: { created: 2 },
   }
 
-  assert.equal(reviewDiffsForMessage(assistant, [user, assistant], false), undefined)
+  const laterUser: Message = {
+    ...user,
+    id: "user-2",
+    time: { created: 3 },
+  }
+
+  assert.equal(reviewDiffsForMessage(assistant, [user, assistant, laterUser]), undefined)
+})
+
+test("reviewDiffsForMessage uses the last user turn in response order", () => {
+  const earlierAssistant: Message = {
+    id: "assistant-early",
+    sessionID: "session-1",
+    role: "assistant",
+    parentID: user.id,
+    time: { created: 2 },
+  }
+  const laterUser: Message = {
+    ...user,
+    id: "user-2",
+    time: { created: 3 },
+  }
+
+  assert.equal(reviewDiffsForMessage(earlierAssistant, [user, earlierAssistant, laterUser]), undefined)
+})
+
+test("reviewDiffsForMessage keeps the current turn when no newer user exists", () => {
+  const assistant: Message = {
+    id: "assistant-1",
+    sessionID: "session-1",
+    role: "assistant",
+    parentID: user.id,
+    time: { created: 2 },
+  }
+
+  assert.deepEqual(reviewDiffsForMessage(assistant, [user, assistant]), user.summary?.diffs)
+})
+
+test("reviewDiffsForMessage renders once after multiple assistant messages in a turn", () => {
+  const firstAssistant: Message = {
+    id: "assistant-1",
+    sessionID: "session-1",
+    role: "assistant",
+    parentID: user.id,
+    time: { created: 2 },
+  }
+  const lastAssistant: Message = {
+    ...firstAssistant,
+    id: "assistant-2",
+    time: { created: 3 },
+  }
+
+  assert.equal(reviewDiffsForMessage(firstAssistant, [user, firstAssistant, lastAssistant]), undefined)
+  assert.deepEqual(reviewDiffsForMessage(lastAssistant, [user, firstAssistant, lastAssistant]), user.summary?.diffs)
 })
