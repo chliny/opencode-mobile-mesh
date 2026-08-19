@@ -62,7 +62,7 @@ export function ReviewChanges({ diffs, isDark }: Props) {
             </TouchableOpacity>
             {expanded && diff.patch && (
               <View style={s.diff}>
-                <DiffLinesView lines={computePatchDiff(diff.patch)} title={diff.file} isDark={isDark} />
+                <DiffLinesView lines={computePatchDiff(diff.patch)} title={diff.file} isDark={isDark} maxHeight={300} />
               </View>
             )}
           </View>
