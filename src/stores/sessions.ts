@@ -8,6 +8,7 @@ import { extractPromptFromParts, type PromptFromParts } from "../lib/prompt-from
 import { mergeIncomingMessage } from "../lib/message-merge"
 import { isColdSessionLoad, isLiveEventForSession } from "../lib/session-load-reconcile"
 import { log } from "../lib/logbuffer"
+import { shouldApplyTranscriptRefresh } from "../lib/transcript-refresh"
 
 // Helper to convert API response to our internal format
 function parseMessages(response: MessageWithParts[]): { messages: Message[]; parts: Record<string, Part[]> } {
@@ -31,6 +32,7 @@ interface SessionsState {
   currentSession: Session | null
   messages: Message[]
   parts: Record<string, Part[]>
+  transcriptRevision: Record<string, number>
   isLoading: boolean
   // Per-session optimistic sending flag — bridging gap between user tap and SSE busy
   sending: Record<string, boolean>
@@ -56,7 +58,7 @@ interface SessionsState {
     variant?: string,
   ) => Promise<void>
   abortSession: () => Promise<void>
-  refreshMessages: () => Promise<void>
+  refreshMessages: (options?: { expectedSessionID?: string; silent?: boolean }) => Promise<void>
 
   // Revert (edit sent message) / unrevert (undo the pending revert)
   revertToMessage: (messageID: string) => Promise<RevertResult>
@@ -82,6 +84,26 @@ export const abortedSessions = new Set<string>()
 // the next value and only commits its result if still the latest.
 let selectSeq = 0
 let loadSeq = 0
+const messageRefreshes = new Map<string, Promise<MessageWithParts[]>>()
+
+function nextTranscriptRevision(state: SessionsState, sessionID: string): Record<string, number> {
+  return {
+    ...state.transcriptRevision,
+    [sessionID]: (state.transcriptRevision[sessionID] || 0) + 1,
+  }
+}
+
+function fetchMessages(client: Client, sessionID: string): Promise<MessageWithParts[]> {
+  const existing = messageRefreshes.get(sessionID)
+  if (existing) return existing
+
+  const request = client.session.messages(sessionID)
+  messageRefreshes.set(sessionID, request)
+  void request.finally(() => {
+    if (messageRefreshes.get(sessionID) === request) messageRefreshes.delete(sessionID)
+  }).catch(() => undefined)
+  return request
+}
 
 // Get the right client for a session's directory
 function clientFor(directory?: string): Client | null {
@@ -97,6 +119,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
   currentSession: null,
   messages: [],
   parts: {},
+  transcriptRevision: {},
   isLoading: false,
   sending: {},
   drafts: {},
@@ -187,14 +210,15 @@ export const useSessions = create<SessionsState>((set, get) => ({
       // Parse the API response format: array of { info, parts }
       const { messages, parts } = parseMessages(messagesResponse)
 
-      set({
+      set((state) => ({
         currentSession: session,
         messages,
         parts,
+        transcriptRevision: nextTranscriptRevision(state, session.id),
         isLoading: false,
         // If we got exactly PAGE_SIZE messages, there are probably more
         hasMore: messagesResponse.length >= pageSize(),
-      })
+      }))
     } catch (err) {
       if (seq !== selectSeq) return
       console.error("Failed to load session:", err)
@@ -221,12 +245,13 @@ export const useSessions = create<SessionsState>((set, get) => ({
       const temp = existing.filter((m) => m.id.startsWith("temp-"))
       const merged = [...all, ...temp]
 
-      set({
+      set((state) => ({
         messages: merged,
         parts: { ...allParts, ...Object.fromEntries(temp.map((m) => [m.id, get().parts[m.id] || []])) },
+        transcriptRevision: nextTranscriptRevision(state, session.id),
         loadingMore: false,
         hasMore: false, // We loaded everything
-      })
+      }))
     } catch (error) {
       console.error("Failed to load older messages:", error)
       set({ loadingMore: false })
@@ -245,13 +270,14 @@ export const useSessions = create<SessionsState>((set, get) => ({
       const created = await client.session.create({ title })
       // Don't optimistically add to sessions list — let loadSessions() handle it
       // to avoid duplicate key errors from race conditions
-      set({
+      set((state) => ({
         currentSession: created,
         messages: [],
         parts: {},
+        transcriptRevision: nextTranscriptRevision(state, created.id),
         hasMore: false,
         loadingMore: false,
-      })
+      }))
       return created
     } catch (error) {
       set({ error: "Failed to create session" })
@@ -275,6 +301,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
         currentSession: state.currentSession?.id === sessionID ? null : state.currentSession,
         messages: state.currentSession?.id === sessionID ? [] : state.messages,
         parts: state.currentSession?.id === sessionID ? {} : state.parts,
+        transcriptRevision: nextTranscriptRevision(state, sessionID),
       }))
     } catch (error) {
       set({ error: "Failed to delete session" })
@@ -329,6 +356,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
       set((state) => ({
         messages: [...state.messages, userMessage],
         parts: { ...state.parts, [userMessage.id]: optimisticParts },
+        transcriptRevision: nextTranscriptRevision(state, session.id),
       }))
 
       // Build prompt parts - images are already converted to JPEG with base64 by toJpeg()
@@ -377,17 +405,37 @@ export const useSessions = create<SessionsState>((set, get) => ({
     }
   },
 
-  refreshMessages: async () => {
-    const client = clientFor(get().currentSession?.directory)
+  refreshMessages: async (options) => {
     const session = get().currentSession
+    if (options?.expectedSessionID && session?.id !== options.expectedSessionID) return
+    const client = clientFor(session?.directory)
     if (!client || !session) return
+    const revision = get().transcriptRevision[session.id] || 0
 
     try {
-      const response = await client.session.messages(session.id)
+      const response = await fetchMessages(client, session.id)
+      const state = get()
+      if (
+        !shouldApplyTranscriptRefresh({
+          expectedSessionID: options?.expectedSessionID,
+          requestedSessionID: session.id,
+          currentSessionID: state.currentSession?.id,
+          requestRevision: revision,
+          currentRevision: state.transcriptRevision[session.id] || 0,
+        })
+      ) {
+        return
+      }
       const { messages, parts } = parseMessages(response)
-      set({ messages, parts })
+      set((current) => ({
+        messages,
+        parts,
+        transcriptRevision: nextTranscriptRevision(current, session.id),
+      }))
     } catch (error) {
-      set({ error: "Failed to refresh messages" })
+      if (!options?.silent && get().currentSession?.id === session.id) {
+        set({ error: "Failed to refresh messages" })
+      }
     }
   },
 
@@ -406,6 +454,10 @@ export const useSessions = create<SessionsState>((set, get) => ({
       const updated = await client.session.revert(session.id, messageID)
       set((state) => ({
         currentSession: state.currentSession?.id === session.id ? updated : state.currentSession,
+        transcriptRevision:
+          state.currentSession?.id === session.id
+            ? nextTranscriptRevision(state, session.id)
+            : state.transcriptRevision,
       }))
       return { ok: true, ...extractPromptFromParts(get().parts[messageID]) }
     } catch (err) {
@@ -432,6 +484,10 @@ export const useSessions = create<SessionsState>((set, get) => ({
       const updated = await client.session.unrevert(session.id)
       set((state) => ({
         currentSession: state.currentSession?.id === session.id ? updated : state.currentSession,
+        transcriptRevision:
+          state.currentSession?.id === session.id
+            ? nextTranscriptRevision(state, session.id)
+            : state.transcriptRevision,
       }))
     } catch (err) {
       console.error("Failed to unrevert session:", err)
@@ -452,6 +508,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
 
         set((state) => ({
           messages: mergeIncomingMessage(state.messages, message),
+          transcriptRevision: nextTranscriptRevision(state, currentSession.id),
           // A live update for the session on screen is proof it has content
           // to show — clear any stuck spinner even if the initial (or a
           // redundant re-focus) GET hasn't resolved yet, or never does
@@ -477,6 +534,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
                 ? messageParts.map((p) => (p.id === part.id ? part : p))
                 : [...messageParts, part],
             },
+            transcriptRevision: nextTranscriptRevision(state, currentSession.id),
             // See message.updated above — a live part update is just as
             // much proof of life as a message update.
             isLoading: false,
@@ -491,6 +549,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
         set((state) => ({
           messages: state.messages.filter((m) => m.id !== messageID),
           parts: Object.fromEntries(Object.entries(state.parts).filter(([k]) => k !== messageID)),
+          transcriptRevision: nextTranscriptRevision(state, currentSession.id),
         }))
         break
       }
@@ -502,6 +561,10 @@ export const useSessions = create<SessionsState>((set, get) => ({
         set((state) => ({
           sessions: state.sessions.map((s) => (s.id === session.id ? session : s)),
           currentSession: state.currentSession?.id === session.id ? session : state.currentSession,
+          transcriptRevision:
+            state.currentSession?.id === session.id
+              ? nextTranscriptRevision(state, session.id)
+              : state.transcriptRevision,
           isLoading: isLiveEventForSession(session.id, state.currentSession?.id) ? false : state.isLoading,
         }))
         break

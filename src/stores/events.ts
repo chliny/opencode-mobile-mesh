@@ -124,8 +124,16 @@ async function resyncBusySessions() {
           : connState.client
         if (!client) return
 
-        const response = await client.session.messages(sessionID)
-        const messages = (response || []).map((m) => m.info)
+        const isOpenSession = sessionsState.currentSession?.id === sessionID
+        let messages: Message[]
+        if (isOpenSession) {
+          await sessionsState.refreshMessages({ expectedSessionID: sessionID, silent: true })
+          if (useSessions.getState().currentSession?.id !== sessionID) return
+          messages = useSessions.getState().messages
+        } else {
+          const response = await client.session.messages(sessionID)
+          messages = (response || []).map((m) => m.info)
+        }
         if (!isSessionActuallyIdle(messages)) return // server says still busy - leave it alone
 
         // A fresh session.status event may have landed on the SSE stream
@@ -138,14 +146,18 @@ async function resyncBusySessions() {
           statusText: { ...state.statusText, [sessionID]: "" },
         }))
         useSessions.setState((state) => ({ sending: { ...state.sending, [sessionID]: false } }))
-        if (useSessions.getState().currentSession?.id === sessionID) {
-          useSessions.getState().refreshMessages()
-        }
       } catch (err) {
         console.warn("[Events] Failed to resync session status for", sessionID, err)
       }
     }),
   )
+}
+
+async function reconcileOpenSession() {
+  const sessions = useSessions.getState()
+  const sessionID = sessions.currentSession?.id
+  if (!sessionID) return
+  await sessions.refreshMessages({ expectedSessionID: sessionID, silent: true })
 }
 
 export const useEvents = create<EventsState>((set, get) => ({
@@ -242,6 +254,7 @@ export const useEvents = create<EventsState>((set, get) => ({
           if (isReconnect && !resyncedAfterReconnect) {
             resyncedAfterReconnect = true
             void resyncBusySessions()
+            void reconcileOpenSession()
           }
         }
 
