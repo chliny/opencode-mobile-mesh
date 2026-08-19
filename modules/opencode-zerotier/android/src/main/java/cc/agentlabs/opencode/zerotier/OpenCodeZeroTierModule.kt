@@ -19,8 +19,10 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.security.MessageDigest
 import java.util.Collections
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val MAX_PLANET_BYTES = 4096
@@ -486,7 +488,9 @@ private class RelayConnection(
   private val remote: ZeroTierSocket,
   private val onClose: (RelayConnection) -> Unit,
 ) : Closeable {
-  private val closed = AtomicBoolean(false)
+  private val closing = AtomicBoolean(false)
+  private val finalized = AtomicBoolean(false)
+  private val pipesFinished = CountDownLatch(2)
 
   fun start(executor: ExecutorService) {
     executor.execute { pipe(local.getInputStream(), remote.outputStream) }
@@ -500,13 +504,32 @@ private class RelayConnection(
     } catch (_: IOException) {
       // The opposite direction or lifecycle shutdown closes both sockets.
     } finally {
-      close()
+      pipesFinished.countDown()
+      requestClose()
+      if (pipesFinished.count == 0L) finalizeClose()
     }
   }
 
   override fun close() {
-    if (!closed.compareAndSet(false, true)) return
+    if (!requestClose()) return
+    pipesFinished.await(5, TimeUnit.SECONDS)
+    if (pipesFinished.count == 0L) finalizeClose()
+  }
+
+  private fun requestClose(): Boolean {
+    if (!closing.compareAndSet(false, true)) return false
+    // Wake both blocking reads first. Closing the ZeroTier descriptor while a
+    // different thread is inside lwip_recvfrom can free its connection state
+    // concurrently and crash in libzt. The descriptor is closed by the last
+    // pipe after both reads have returned.
     runCatching { local.close() }
+    runCatching { remote.shutdownInput() }
+    runCatching { remote.shutdownOutput() }
+    return true
+  }
+
+  private fun finalizeClose() {
+    if (!finalized.compareAndSet(false, true)) return
     runCatching { remote.close() }
     onClose(this)
   }
