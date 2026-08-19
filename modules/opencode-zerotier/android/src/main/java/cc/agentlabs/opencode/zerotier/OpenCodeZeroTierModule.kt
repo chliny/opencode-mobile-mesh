@@ -478,7 +478,8 @@ private class AppLocalRelay(
   override fun close() {
     if (!running.getAndSet(false)) return
     runCatching { server.close() }
-    synchronized(clients) { clients.toList().forEach { it.close() } }
+    val activeClients = synchronized(clients) { clients.toList() }
+    activeClients.forEach { it.close() }
     clients.clear()
   }
 }
@@ -511,9 +512,9 @@ private class RelayConnection(
   }
 
   override fun close() {
-    if (!requestClose()) return
-    pipesFinished.await(5, TimeUnit.SECONDS)
-    if (pipesFinished.count == 0L) finalizeClose()
+    requestClose()
+    pipesFinished.await()
+    finalizeClose()
   }
 
   private fun requestClose(): Boolean {
