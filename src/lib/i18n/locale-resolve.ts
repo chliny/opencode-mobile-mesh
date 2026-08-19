@@ -10,6 +10,10 @@ export const FALLBACK_LOCALE: SupportedLocale = "en"
 // User-facing preference: "system" defers to the device's locale list.
 export type LocalePreference = "system" | SupportedLocale
 
+export function isLocalePreference(value: unknown): value is LocalePreference {
+  return value === "system" || SUPPORTED_LOCALES.includes(value as SupportedLocale)
+}
+
 /**
  * Map one device locale tag (e.g. "zh-Hans-CN", "zh-CN", "en-US", "fr-FR") to
  * one of our supported catalogs, matching by language subtag since we don't

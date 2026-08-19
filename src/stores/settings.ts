@@ -1,11 +1,14 @@
 import { create } from "zustand"
 import * as SecureStore from "expo-secure-store"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { type Category, defaultPreferences } from "../lib/notifications"
-import { clampPageSize, mergeStoredSettings } from "../lib/settings-merge"
+import { clampPageSize, normalizeStoredSettings } from "../lib/settings-merge"
 import { setAppLocale } from "../lib/i18n/config"
-import type { LocalePreference } from "../lib/i18n/locale-resolve"
+import { isLocalePreference, type LocalePreference } from "../lib/i18n/locale-resolve"
+import { loadMigratedSettings } from "../lib/settings-storage"
+import { log } from "../lib/logbuffer"
 
-const SETTINGS_KEY = "opencode_settings"
+export const SETTINGS_KEY = "opencode_settings"
 
 interface Settings {
   pageSize: number
@@ -32,7 +35,24 @@ function snapshot(get: () => SettingsState): Settings {
 }
 
 async function persist(settings: Settings) {
-  await SecureStore.setItemAsync(SETTINGS_KEY, JSON.stringify(settings))
+  await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+}
+
+const settingsStorage = {
+  readCurrent: () => AsyncStorage.getItem(SETTINGS_KEY),
+  readLegacy: () => SecureStore.getItemAsync(SETTINGS_KEY),
+  writeCurrent: (value: string) => AsyncStorage.setItem(SETTINGS_KEY, value),
+  deleteLegacy: () => SecureStore.deleteItemAsync(SETTINGS_KEY),
+  normalize: (raw: string) => normalizeStoredSettings(raw, DEFAULTS, isLocalePreference),
+}
+
+let loadPromise: Promise<void> | null = null
+let writeQueue = Promise.resolve()
+
+function enqueuePersist(settings: Settings): Promise<void> {
+  const next = writeQueue.then(() => persist(settings))
+  writeQueue = next.catch(() => undefined)
+  return next
 }
 
 export const useSettings = create<SettingsState>((set, get) => ({
@@ -40,33 +60,44 @@ export const useSettings = create<SettingsState>((set, get) => ({
   loaded: false,
 
   load: async () => {
-    const raw = await SecureStore.getItemAsync(SETTINGS_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<Settings>
-      // Merge stored settings with defaults so new fields/categories get their default
-      const merged = mergeStoredSettings(DEFAULTS, parsed)
-      set({ ...merged, loaded: true })
-      setAppLocale(merged.locale)
-      return
-    }
-    set({ loaded: true })
+    if (loadPromise) return loadPromise
+    loadPromise = (async () => {
+      try {
+        const settings = await loadMigratedSettings(settingsStorage)
+        if (settings) {
+          set({ ...settings, loaded: true })
+          setAppLocale(settings.locale)
+          return
+        }
+      } catch (error) {
+        log.warn("settings", "failed to load preferences", String(error))
+      }
+      set({ loaded: true })
+    })()
+    return loadPromise
   },
 
   setPageSize: async (size) => {
+    await get().load()
     const clamped = clampPageSize(size)
-    set({ pageSize: clamped })
-    await persist({ ...snapshot(get), pageSize: clamped })
+    const next = { ...snapshot(get), pageSize: clamped }
+    set(next)
+    await enqueuePersist(next)
   },
 
   setNotification: async (category, enabled) => {
+    await get().load()
     const notifications = { ...get().notifications, [category]: enabled }
-    set({ notifications })
-    await persist({ ...snapshot(get), notifications })
+    const next = { ...snapshot(get), notifications }
+    set(next)
+    await enqueuePersist(next)
   },
 
   setLocale: async (locale) => {
-    set({ locale })
+    await get().load()
+    const next = { ...snapshot(get), locale }
+    set(next)
     setAppLocale(locale) // applies immediately
-    await persist({ ...snapshot(get), locale })
+    await enqueuePersist(next)
   },
 }))

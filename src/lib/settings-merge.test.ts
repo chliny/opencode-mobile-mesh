@@ -1,10 +1,12 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { clampPageSize, mergeStoredSettings } from "./settings-merge.ts"
+import { clampPageSize, mergeStoredSettings, normalizeStoredSettings } from "./settings-merge.ts"
+import { isLocalePreference } from "./i18n/locale-resolve.ts"
 
 const DEFAULTS = {
   pageSize: 25,
   notifications: { idle: true, error: true, permission: false },
+  locale: "system" as const,
 }
 
 test("clampPageSize keeps in-range values unchanged", () => {
@@ -19,6 +21,31 @@ test("clampPageSize floors below 10 and caps above 200", () => {
   assert.equal(clampPageSize(9), 10)
   assert.equal(clampPageSize(201), 200)
   assert.equal(clampPageSize(99999), 200)
+  assert.equal(clampPageSize(Number.NaN), 25)
+})
+
+test("normalizeStoredSettings rejects malformed and non-object JSON", () => {
+  assert.equal(normalizeStoredSettings("not json", DEFAULTS, isLocalePreference), null)
+  assert.equal(normalizeStoredSettings("[]", DEFAULTS, isLocalePreference), null)
+  assert.equal(normalizeStoredSettings("null", DEFAULTS, isLocalePreference), null)
+})
+
+test("normalizeStoredSettings validates page size, locale, categories and booleans", () => {
+  const normalized = normalizeStoredSettings(
+    JSON.stringify({
+      pageSize: 999,
+      locale: "future-locale",
+      notifications: { idle: false, error: "yes", unknown: true },
+    }),
+    DEFAULTS,
+    isLocalePreference,
+  )
+
+  assert.deepEqual(normalized, {
+    pageSize: 200,
+    locale: "system",
+    notifications: { idle: false, error: true, permission: false },
+  })
 })
 
 test("empty stored settings yield the defaults", () => {

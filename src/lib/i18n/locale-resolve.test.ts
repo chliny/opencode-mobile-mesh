@@ -1,6 +1,14 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { matchSupportedLocale, resolveLocale, FALLBACK_LOCALE } from "./locale-resolve.ts"
+import { matchSupportedLocale, resolveLocale, FALLBACK_LOCALE, isLocalePreference } from "./locale-resolve.ts"
+
+test("isLocalePreference accepts only runtime-supported preferences", () => {
+  assert.equal(isLocalePreference("system"), true)
+  assert.equal(isLocalePreference("en"), true)
+  assert.equal(isLocalePreference("zh-Hans"), true)
+  assert.equal(isLocalePreference("fr"), false)
+  assert.equal(isLocalePreference(null), false)
+})
 
 test("matchSupportedLocale maps zh variants to zh-Hans", () => {
   assert.equal(matchSupportedLocale("zh"), "zh-Hans")

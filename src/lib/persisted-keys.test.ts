@@ -35,9 +35,14 @@ const ALLOWED_PERSISTED_KEYS = new Map<string, string>([
   ["FIRST_OPEN_KEY", "analytics: first-open flag"],
   ["CONSENT_KEY", "telemetry consent decision"],
   ["CHATWOOT_SOURCE_KEY", "support contact id issued by Chatwoot"],
+  ["LAST_CHECK_KEY", "update checker: last successful check timestamp"],
+  ["LATEST_KEY", "update checker: latest known release metadata"],
+  ["DISMISSED_KEY", "update checker: dismissed release version"],
+  ["WAITLIST_QUEUE_KEY", "user-entered waitlist signups pending retry"],
 ])
 
 const SRC = path.join(import.meta.dirname, "..")
+const WRITE_PATTERN = /(?:SecureStore\.setItemAsync|AsyncStorage\.setItem|(?:deps\.)?storage\.setItem)\(\s*([^,]+?)\s*,/g
 
 function sourceFiles(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -54,8 +59,11 @@ test("every on-device write uses a reviewed key, never model-generated content",
 
   for (const file of sourceFiles(SRC)) {
     const code = fs.readFileSync(file, "utf8")
-    for (const match of code.matchAll(/SecureStore\.setItemAsync\(\s*([^,]+?)\s*,/g)) {
+    for (const match of code.matchAll(WRITE_PATTERN)) {
       const key = match[1].trim()
+      // Runtime adapters forward a key selected by reviewed policy code. The
+      // concrete constants are captured at storage.setItem(...) call sites.
+      if (key === "key") continue
       if (!ALLOWED_PERSISTED_KEYS.has(key)) {
         unknown.push(`${path.relative(SRC, file)}: ${key}`)
       }
@@ -76,7 +84,7 @@ test("the allowlist itself stays live (no keys left behind after a refactor)", (
     .map((file) => fs.readFileSync(file, "utf8"))
     .join("\n")
   const used = new Set(
-    [...code.matchAll(/SecureStore\.setItemAsync\(\s*([^,]+?)\s*,/g)].map((match) => match[1].trim()),
+    [...code.matchAll(WRITE_PATTERN)].map((match) => match[1].trim()).filter((key) => key !== "key"),
   )
   const stale = [...ALLOWED_PERSISTED_KEYS.keys()].filter((key) => !used.has(key))
 

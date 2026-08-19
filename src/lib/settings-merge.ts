@@ -1,10 +1,11 @@
 // Pure settings helpers extracted from stores/settings.ts so the clamp + the
 // forward-compatible merge (the upgrade path: stored data from an older app
 // version that predates a newer notification category) are unit-testable without
-// pulling in zustand / expo-secure-store.
+// pulling in zustand / native storage modules.
 
 export function clampPageSize(size: number): number {
-  return Math.max(10, Math.min(200, size))
+  if (!Number.isFinite(size)) return 25
+  return Math.max(10, Math.min(200, Math.round(size)))
 }
 
 /**
@@ -21,5 +22,33 @@ export function mergeStoredSettings<T extends { notifications: Record<string, bo
     ...defaults,
     ...parsed,
     notifications: { ...defaults.notifications, ...parsed.notifications },
+  }
+}
+
+export function normalizeStoredSettings<T extends {
+  pageSize: number
+  notifications: Record<string, boolean>
+  locale: string
+}>(raw: string, defaults: T, isLocale: (value: unknown) => value is T["locale"]): T | null {
+  try {
+    const value = JSON.parse(raw) as unknown
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null
+    const parsed = value as Record<string, unknown>
+    const storedNotifications =
+      parsed.notifications && typeof parsed.notifications === "object" && !Array.isArray(parsed.notifications)
+        ? (parsed.notifications as Record<string, unknown>)
+        : {}
+    const notifications = Object.fromEntries(
+      Object.entries(defaults.notifications).map(([category, fallback]) => [
+        category,
+        typeof storedNotifications[category] === "boolean" ? storedNotifications[category] : fallback,
+      ]),
+    ) as T["notifications"]
+    const pageSize = typeof parsed.pageSize === "number" ? clampPageSize(parsed.pageSize) : defaults.pageSize
+    const locale = isLocale(parsed.locale) ? parsed.locale : defaults.locale
+
+    return { ...defaults, pageSize, notifications, locale }
+  } catch {
+    return null
   }
 }
