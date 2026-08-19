@@ -31,6 +31,7 @@ private const val DEFAULT_START_TIMEOUT_MS = 30_000L
 private const val NODE_ONLINE_TIMEOUT_MS = 30_000L
 private const val NETWORK_ASSIGNMENT_SETTLE_MS = 5_000L
 private const val NODE_STOP_TIMEOUT_MS = 5_000L
+private const val RELAY_READ_TIMEOUT_SECONDS = 1
 private const val PICK_PLANET_FILE_REQUEST_CODE = 41739
 
 private object OpenCodeZeroTierNative {
@@ -479,7 +480,14 @@ private class AppLocalRelay(
     if (!running.getAndSet(false)) return
     runCatching { server.close() }
     val activeClients = synchronized(clients) { clients.toList() }
-    activeClients.forEach { it.close() }
+    val closeTasks = activeClients.map { client ->
+      executor.submit { client.close() }
+    }
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
+    closeTasks.forEach { task ->
+      val remaining = deadline - System.nanoTime()
+      if (remaining > 0) runCatching { task.get(remaining, TimeUnit.NANOSECONDS) }
+    }
     clients.clear()
   }
 }
@@ -495,26 +503,60 @@ private class RelayConnection(
 
   fun start(executor: ExecutorService) {
     executor.execute { pipe(local.getInputStream(), remote.outputStream) }
-    executor.execute { pipe(remote.inputStream, local.getOutputStream()) }
+    executor.execute { pipeRemoteToLocal(local.getOutputStream()) }
   }
 
   private fun pipe(input: java.io.InputStream, output: java.io.OutputStream) {
+    var completed = false
     try {
       input.copyTo(output, 16 * 1024)
       output.flush()
+      completed = true
+    } catch (_: IOException) {
+      // An explicit relay shutdown closes the local socket. Other failures
+      // terminate the whole connection because the request can no longer be
+      // forwarded reliably.
+    } finally {
+      // Do not half-close the ZeroTier write side when the local HTTP client
+      // finishes sending a request. For GET/SSE requests this EOF is normal,
+      // but some HTTP servers treat a FIN on the tunneled socket as the whole
+      // connection ending and immediately close the event stream.
+      pipesFinished.countDown()
+      if (!completed) requestClose()
+      if (pipesFinished.count == 0L) finalizeClose()
+    }
+  }
+
+  private fun pipeRemoteToLocal(output: java.io.OutputStream) {
+    val buffer = ByteArray(16 * 1024)
+    var completed = false
+    try {
+      while (true) {
+        val count = ZeroTierNative.zts_bsd_read(remote.getNativeFileDescriptor(), buffer)
+        // libzt's Java wrapper reports SO_RCVTIMEO as -ECONNRESET (-104).
+        if (count == -ZeroTierNative.ZTS_ECONNRESET) {
+          if (closing.get()) break
+          continue
+        }
+        if (count == 0) break
+        if (count < 0) throw IOException("ZeroTier read failed: $count")
+        output.write(buffer, 0, count)
+      }
+      output.flush()
+      completed = true
     } catch (_: IOException) {
       // The opposite direction or lifecycle shutdown closes both sockets.
     } finally {
+      if (completed) runCatching { local.shutdownOutput() }
       pipesFinished.countDown()
-      requestClose()
+      if (!completed) requestClose()
       if (pipesFinished.count == 0L) finalizeClose()
     }
   }
 
   override fun close() {
     requestClose()
-    pipesFinished.await()
-    finalizeClose()
+    if (pipesFinished.await(2, TimeUnit.SECONDS)) finalizeClose()
   }
 
   private fun requestClose(): Boolean {
@@ -522,10 +564,18 @@ private class RelayConnection(
     // Wake both blocking reads first. Closing the ZeroTier descriptor while a
     // different thread is inside lwip_recvfrom can free its connection state
     // concurrently and crash in libzt. The descriptor is closed by the last
-    // pipe after both reads have returned.
+    // pipe after both reads have returned. The receive timeout is installed
+    // only now, during explicit shutdown; normal long-lived connections must
+    // not have an idle read timeout because SSE streams can be quiet for much
+    // longer than one second.
+    runCatching {
+      ZeroTierNative.zts_set_recv_timeout(
+        remote.getNativeFileDescriptor(),
+        RELAY_READ_TIMEOUT_SECONDS,
+        0,
+      )
+    }
     runCatching { local.close() }
-    runCatching { remote.shutdownInput() }
-    runCatching { remote.shutdownOutput() }
     return true
   }
 
