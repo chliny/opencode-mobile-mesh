@@ -186,6 +186,7 @@ export default function SessionsScreen() {
     recentDirectories,
   } = useConnections()
   const authError = useEvents((s) => s.authError)
+  const transport = useEvents((s) => s.transport)
   const reconnect = useEvents((s) => s.connect)
   const loadCatalog = useCatalog((s) => s.load)
   const dirSheetRef = useRef<BottomSheet>(null)
@@ -515,6 +516,7 @@ export default function SessionsScreen() {
   }
 
   const shortPath = getShortPath(currentProject)
+  const connectionColor = transport === "live" ? "#22c55e" : transport === "connecting" ? "#f59e0b" : "#9ca3af"
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
@@ -527,7 +529,11 @@ export default function SessionsScreen() {
         testID="connection-status-bar"
       >
         <View style={styles.connectionInfo}>
-          <View style={[styles.connectionDot, { backgroundColor: "#22c55e" }]} testID="connection-status-dot" />
+          <View
+            style={[styles.connectionDot, { backgroundColor: connectionColor }]}
+            accessibilityLabel={`Connection ${transport}`}
+            testID="connection-status-dot"
+          />
           <Text style={[styles.connectionName, isDark && styles.textDark]} numberOfLines={1}>
             {activeConnection.name}
           </Text>

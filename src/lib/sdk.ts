@@ -9,6 +9,7 @@ import { apiErrorFor } from "./api-error"
 import { loadSessionList } from "./session-list"
 import { log } from "./logbuffer"
 import type { FileRoot } from "./file-roots"
+import { readWithTimeout } from "./sse-liveness"
 
 export { ApiAuthError, isAuthError } from "./api-error"
 
@@ -279,15 +280,24 @@ export function createClient(config: ClientConfig) {
       health: (timeoutMs?: number) => request<HealthResponse>(config, "/global/health", {}, timeoutMs),
       // SSE event stream - returns async iterator
       // Pass an AbortSignal to cancel the connection
-      async *events(signal?: AbortSignal): AsyncGenerator<Event> {
+      async *events(signal?: AbortSignal, onActivity?: () => void): AsyncGenerator<Event> {
         const url = `${config.baseUrl}/global/event`
         const headers = createHeaders(config)
         // Remove Content-Type for SSE (it's text/event-stream)
         delete (headers as Record<string, string>)["Content-Type"]
 
+        const streamController = new AbortController()
+        const abortStream = () => streamController.abort()
+        signal?.addEventListener("abort", abortStream)
+        if (signal?.aborted) abortStream()
+
         // Must use expo/fetch for ReadableStream support on native
-        const response = await expoFetch(url, { headers, signal })
+        const response = await expoFetch(url, { headers, signal: streamController.signal }).catch((error) => {
+          signal?.removeEventListener("abort", abortStream)
+          throw error
+        })
         if (!response.ok || !response.body) {
+          signal?.removeEventListener("abort", abortStream)
           throw apiErrorFor(response.status, `Failed to connect to event stream: ${response.status}`)
         }
 
@@ -298,11 +308,17 @@ export function createClient(config: ClientConfig) {
         let receivedFirstByte = false
         try {
           while (true) {
-            const { done, value } = await reader.read()
+            const { done, value } = await readWithTimeout({
+              read: () => reader.read(),
+              cancel: (reason) => reader.cancel(reason),
+              abort: abortStream,
+            })
             if (done) {
               log.warn("sse", "stream ended")
               break
             }
+
+            if (value && value.byteLength > 0) onActivity?.()
 
             if (!receivedFirstByte) {
               receivedFirstByte = true
@@ -321,7 +337,12 @@ export function createClient(config: ClientConfig) {
             }
           }
         } finally {
-          reader.releaseLock()
+          signal?.removeEventListener("abort", abortStream)
+          try {
+            reader.releaseLock()
+          } catch {
+            // Some native stream implementations release the lock on abort.
+          }
         }
       },
     },

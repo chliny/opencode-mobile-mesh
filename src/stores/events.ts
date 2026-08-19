@@ -10,6 +10,7 @@ import { recordSuccessfulSession } from "../lib/store-review"
 import { isAuthError } from "../lib/api-error"
 import { isSessionActuallyIdle } from "../lib/session-status-reconcile"
 import { log } from "../lib/logbuffer"
+import { RECONNECT_DELAYS_MS, type TransportState } from "../lib/sse-liveness"
 import type { Client, Part, Session, Message } from "../lib/sdk"
 
 // Session status from the server
@@ -17,6 +18,8 @@ type SessionStatus = { type: "idle" } | { type: "busy" } | { type: "retry"; atte
 
 interface EventsState {
   connected: boolean
+  transport: TransportState
+  attemptInFlight: boolean
   // Set when the last connection attempt failed with 401/403 — the server
   // rejected our credentials, not a transient network issue. The reconnect
   // loop stops retrying in this case (see connect()) since hammering a
@@ -62,6 +65,7 @@ interface EventsState {
 
 let controller: AbortController | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let attemptGeneration = 0
 
 // Sessions that emitted session.error since they last went busy. SessionStatus
 // has no error variant — an errored session still ends with a busy -> idle
@@ -69,8 +73,6 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 // toward the once-ever store review prompt.
 const erroredSessions = new Set<string>()
 
-const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 15000] as const
-const STABLE_CONNECTION_MS = 10_000
 const PROLONGED_DISCONNECT_MS = 30_000
 
 // Re-fetch pending permissions and questions from the server for a session.
@@ -148,6 +150,8 @@ async function resyncBusySessions() {
 
 export const useEvents = create<EventsState>((set, get) => ({
   connected: false,
+  transport: "idle",
+  attemptInFlight: false,
   authError: false,
   reconnectAttempts: 0,
   lastDisconnectAt: null,
@@ -157,6 +161,8 @@ export const useEvents = create<EventsState>((set, get) => ({
   questions: {},
 
   connect: () => {
+    attemptGeneration += 1
+    const generation = attemptGeneration
     controller?.abort()
     controller = null
     if (reconnectTimer) {
@@ -165,11 +171,16 @@ export const useEvents = create<EventsState>((set, get) => ({
     }
 
     const client = useConnections.getState().client
-    if (!client) return
+    if (!client) {
+      set({ connected: false, transport: "idle", attemptInFlight: false })
+      return
+    }
 
     controller = new AbortController()
     const currentController = controller
-    set({ connected: true, authError: false })
+    const isCurrentAttempt = () =>
+      generation === attemptGeneration && controller === currentController && !currentController.signal.aborted
+    set({ connected: false, transport: "connecting", attemptInFlight: true, authError: false })
     log.info("sse", "connecting to event stream")
     addBreadcrumb({ category: "sse", message: "connecting" })
 
@@ -182,20 +193,14 @@ export const useEvents = create<EventsState>((set, get) => ({
       // failed retries can't re-arm the check on every attempt.
       const isReconnect = get().reconnectAttempts > 0
       let resyncedAfterReconnect = false
-      const stableTimer = setTimeout(() => {
-        if (!currentController.signal.aborted) {
-          set({ reconnectAttempts: 0, lastDisconnectAt: null })
-        }
-      }, STABLE_CONNECTION_MS)
-
       const scheduleReconnect = (reason: unknown) => {
-        if (reconnectScheduled || currentController.signal.aborted) return
+        if (reconnectScheduled || !isCurrentAttempt()) return
         reconnectScheduled = true
         const state = get()
         const reconnectAttempts = state.reconnectAttempts + 1
         const lastDisconnectAt = state.lastDisconnectAt ?? Date.now()
         const disconnectedFor = Date.now() - lastDisconnectAt
-        set({ connected: false, reconnectAttempts, lastDisconnectAt })
+        set({ connected: false, transport: "idle", attemptInFlight: false, reconnectAttempts, lastDisconnectAt })
 
         if (disconnectedFor >= PROLONGED_DISCONNECT_MS) {
           notify({
@@ -222,24 +227,26 @@ export const useEvents = create<EventsState>((set, get) => ({
         // still unwinding, which turns a transient stream drop into a
         // persistent disconnect. The periodic route check repairs a relay that
         // reports an actual native error without interrupting a healthy one.
-        if (currentController.signal.aborted) return
+        if (!isCurrentAttempt()) return
         reconnectTimer = setTimeout(() => {
+          if (generation !== attemptGeneration || controller !== currentController) return
           reconnectTimer = null
           get().connect()
         }, jitteredDelay)
       }
 
       try {
-        for await (const event of client.global.events(currentController.signal)) {
-          if (currentController.signal.aborted) break
-
-          // The stream is genuinely live again (we're actually receiving
-          // data, not just optimistically marked "connected") — resync once
-          // per reconnect, not on every event.
+        const onActivity = () => {
+          if (!isCurrentAttempt()) return
+          set({ connected: true, transport: "live", reconnectAttempts: 0, lastDisconnectAt: null })
           if (isReconnect && !resyncedAfterReconnect) {
             resyncedAfterReconnect = true
             void resyncBusySessions()
           }
+        }
+
+        for await (const event of client.global.events(currentController.signal, onActivity)) {
+          if (!isCurrentAttempt()) break
 
           const payload = (event as any).payload || event
           const type = payload.type as string
@@ -459,7 +466,7 @@ export const useEvents = create<EventsState>((set, get) => ({
 
         scheduleReconnect(new Error("Event stream closed"))
       } catch (err) {
-        if (isAuthError(err) && !currentController.signal.aborted) {
+        if (isAuthError(err) && isCurrentAttempt()) {
           // Bad credentials, not a transient failure — retrying forever just
           // spams Sentry and drains the battery with zero path to recovery
           // (issue #76: 309 events / 65 users). Stop and surface a distinct
@@ -473,12 +480,12 @@ export const useEvents = create<EventsState>((set, get) => ({
             data: { status: err.status },
           })
           track(AnalyticsEvent.ConnectionFailed, { source: "sse", error_class: "unauthorized" })
-          set({ connected: false, authError: true })
+          set({ connected: false, transport: "idle", attemptInFlight: false, authError: true })
         } else {
           scheduleReconnect(err)
         }
       } finally {
-        clearTimeout(stableTimer)
+        if (isCurrentAttempt()) set({ attemptInFlight: false })
         if (currentController.signal.aborted) {
           log.info("sse", "disconnected (aborted)")
         }
@@ -487,6 +494,7 @@ export const useEvents = create<EventsState>((set, get) => ({
   },
 
   disconnect: () => {
+    attemptGeneration += 1
     log.info("sse", "disconnecting")
     addBreadcrumb({ category: "sse", message: "disconnected" })
     if (reconnectTimer) {
@@ -499,6 +507,8 @@ export const useEvents = create<EventsState>((set, get) => ({
     abortedSessions.clear()
     set({
       connected: false,
+      transport: "idle",
+      attemptInFlight: false,
       authError: false,
       reconnectAttempts: 0,
       lastDisconnectAt: null,

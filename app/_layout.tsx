@@ -20,6 +20,7 @@ import { addBreadcrumb, wrap } from "../src/lib/sentry"
 import { loadTelemetryConsent, setTelemetryConsent } from "../src/lib/telemetry"
 import { initAnalytics, trackAppOpened } from "../src/lib/analytics"
 import { flushPendingSignups } from "../src/lib/waitlist-queue-storage"
+import { shouldReconnectOnResume } from "../src/lib/sse-liveness"
 
 const queryClient = new QueryClient()
 
@@ -166,6 +167,17 @@ function RootLayout() {
       useEvents.getState().disconnect()
     }
   }, [clientBase?.baseUrl])
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next !== "active") return
+      const events = useEvents.getState()
+      if (!shouldReconnectOnResume(events)) return
+      if (!useConnections.getState().client) return
+      events.connect()
+    })
+    return () => sub.remove()
+  }, [])
 
   // This is a process-level stream. Do not put its cleanup in the effect
   // above: React runs dependency cleanup before every re-run, and a client
