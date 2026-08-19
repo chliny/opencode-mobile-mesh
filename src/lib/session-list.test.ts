@@ -105,6 +105,26 @@ test("loadSessionList: applies limit AFTER root-filter + sort", async () => {
   assert.deepEqual(out.map((s) => s.id), ["r3", "r2"])
 })
 
+test("loadSessionList: keeps every root when the caller does not request a limit", async () => {
+  const roots = Array.from({ length: 51 }, (_, index) =>
+    session({ id: `root-${index}`, time: { created: 0, updated: index } }),
+  )
+  const out = await loadSessionList(transport({ experimental: roots }), { roots: true })
+
+  assert.equal(out.length, 51)
+  assert.equal(out[0].id, "root-50")
+  assert.equal(out[50].id, "root-0")
+})
+
+test("loadSessionList: search can find a root beyond the old fifty-session cutoff", async () => {
+  const roots = Array.from({ length: 51 }, (_, index) =>
+    session({ id: `root-${index}`, title: index === 0 ? "Archived target" : `Session ${index}` }),
+  )
+  const out = await loadSessionList(transport({ experimental: roots }), { roots: true, search: "archived" })
+
+  assert.deepEqual(out.map((item) => item.id), ["root-0"])
+})
+
 test("loadSessionList: search matches title case-insensitively", async () => {
   const t = transport({
     experimental: [session({ id: "1", title: "Fix Auth Bug" }), session({ id: "2", title: "Add feature" })],

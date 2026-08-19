@@ -154,7 +154,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
       if (get().sessions.length === 0) set({ isLoading: true, error: null })
       // A directory-less list includes sessions across projects. Each row carries
       // its own directory into the session route so subsequent operations stay scoped.
-      const sessions = await client.session.list({ roots: true, limit: 50 })
+      const sessions = await client.session.list({ roots: true })
       if (seq !== loadSeq) return
       set({ sessions, isLoading: false })
     } catch (error) {
