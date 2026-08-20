@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from "react-native"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
@@ -6,9 +6,13 @@ import { useTranslation } from "react-i18next"
 import type { FileDiff, FileEntry } from "../src/lib/sdk"
 import { groupDiffs } from "../src/lib/file-review"
 import { cacheDiffs, clearCachedDiffs, getCachedDiffs } from "../src/lib/session-file-cache"
+import { cacheFileEntries, clearCachedFileEntries, getCachedFileEntries } from "../src/lib/file-tree-cache"
 import { useConnections } from "../src/stores/connections"
 
 type Mode = "git" | "turn" | "branch" | "all"
+type DiffItem =
+  | { type: "section"; key: string; status: "added" | "modified" | "deleted"; count: number }
+  | { type: "file"; key: string; diff: FileDiff }
 
 function parent(path: string): string {
   const parts = path.split("/").filter(Boolean)
@@ -30,41 +34,53 @@ export default function SessionFilesScreen() {
   const [query, setQuery] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const requestID = useRef(0)
 
   const load = useCallback(async () => {
-      if (!api || !id) return
+    if (!api || !id) return
+    const currentRequest = ++requestID.current
     setLoading(true)
     setError(null)
     try {
       if (mode === "all") {
-        setEntries(await api.file.list({ path }))
+        const cached = getCachedFileEntries(directory, path)
+        if (cached) setEntries(cached)
+        const value = await api.file.list({ path })
+        if (currentRequest !== requestID.current) return
+        cacheFileEntries(directory, path, value)
+        setEntries(value)
         return
       }
       const cached = getCachedDiffs(directory, id, mode)
       if (cached) {
+        if (currentRequest !== requestID.current) return
         setDiffs(cached)
         return
       }
       if (mode === "git" || mode === "branch") {
         const value = await api.vcs.diff({ mode, context: 10 })
+        if (currentRequest !== requestID.current) return
         cacheDiffs(directory, id, mode, value)
         setDiffs(value)
         return
       }
       const messages = await api.session.messages(id, { limit: 50 })
+      if (currentRequest !== requestID.current) return
       const user = [...messages].reverse().find((item) => item.info.role === "user" && item.info.summary?.diffs)
       const value = user?.info.summary?.diffs || []
       cacheDiffs(directory, id, mode, value)
       setDiffs(value)
     } catch (err) {
+      if (currentRequest !== requestID.current) return
       setError(err instanceof Error ? err.message : t("files.loadFailed"))
     } finally {
-      setLoading(false)
+      if (currentRequest === requestID.current) setLoading(false)
     }
   }, [api, directory, id, mode, path, t])
 
   const refresh = useCallback(() => {
-    if (mode !== "all" && id) clearCachedDiffs(directory, id, mode)
+    if (mode === "all") clearCachedFileEntries(directory)
+    else if (id) clearCachedDiffs(directory, id, mode)
     void load()
   }, [directory, id, load, mode])
 
@@ -74,7 +90,10 @@ export default function SessionFilesScreen() {
     router.push({ pathname: "/session-file", params: { id, directory, path: file, mode: view, source: mode } })
   }, [router, id, directory, mode])
 
-  const groups = useMemo(() => groupDiffs(diffs), [diffs])
+  const items = useMemo<DiffItem[]>(() => groupDiffs(diffs).flatMap((group) => [
+    { type: "section" as const, key: `section-${group.status}`, status: group.status, count: group.files.length },
+    ...group.files.map((diff) => ({ type: "file" as const, key: `file-${diff.file}`, diff })),
+  ]), [diffs])
 
   return (
     <View style={[s.container, isDark && s.containerDark]}>
@@ -106,6 +125,10 @@ export default function SessionFilesScreen() {
           data={entries.filter((item) => item.name.toLowerCase().includes(query.toLowerCase()))}
           keyExtractor={(item) => item.absolute}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
+          removeClippedSubviews
+          initialNumToRender={24}
+          maxToRenderPerBatch={24}
+          windowSize={7}
           renderItem={({ item }) => (
             <TouchableOpacity style={[s.row, isDark && s.rowDark]} onPress={() => item.type === "directory" ? setPath(item.path) : open(item.path, "file")}>
               <Ionicons name={item.type === "directory" ? "folder-outline" : "document-text-outline"} size={20} color={item.ignored ? "#777777" : item.type === "directory" ? "#f59e0b" : "#8b5cf6"} />
@@ -118,21 +141,22 @@ export default function SessionFilesScreen() {
         />
       ) : (
         <FlatList
-          data={groups}
-          keyExtractor={(item) => item.status}
-           refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
+          data={items}
+          keyExtractor={(item) => item.key}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
+          removeClippedSubviews
+          initialNumToRender={24}
+          maxToRenderPerBatch={24}
+          windowSize={7}
           contentContainerStyle={s.list}
-          renderItem={({ item: group }) => (
-            <View>
-              <Text style={[s.section, isDark && s.sectionDark]}>{t(`files.status.${group.status}`)} · {group.files.length}</Text>
-              {group.files.map((diff) => (
-                <TouchableOpacity key={diff.file} style={[s.row, isDark && s.rowDark]} onPress={() => open(diff.file!, "diff")}>
-                  <View style={[s.status, diff.status === "added" ? s.added : diff.status === "deleted" ? s.deleted : s.modified]}><Text style={s.statusText}>{diff.status === "added" ? "A" : diff.status === "deleted" ? "D" : "M"}</Text></View>
-                  <Text style={[s.rowText, isDark && s.textDark]} numberOfLines={1}>{diff.file}</Text>
-                  <Text style={s.additions}>+{diff.additions}</Text><Text style={s.deletions}>-{diff.deletions}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+          renderItem={({ item }) => item.type === "section" ? (
+            <Text style={[s.section, isDark && s.sectionDark]}>{t(`files.status.${item.status}`)} · {item.count}</Text>
+          ) : (
+            <TouchableOpacity style={[s.row, isDark && s.rowDark]} onPress={() => open(item.diff.file!, "diff")}>
+              <View style={[s.status, item.diff.status === "added" ? s.added : item.diff.status === "deleted" ? s.deleted : s.modified]}><Text style={s.statusText}>{item.diff.status === "added" ? "A" : item.diff.status === "deleted" ? "D" : "M"}</Text></View>
+              <Text style={[s.rowText, isDark && s.textDark]} numberOfLines={1}>{item.diff.file}</Text>
+              <Text style={s.additions}>+{item.diff.additions}</Text><Text style={s.deletions}>-{item.diff.deletions}</Text>
+            </TouchableOpacity>
           )}
           ListEmptyComponent={<Text style={s.empty}>{t("files.noChanges")}</Text>}
         />
