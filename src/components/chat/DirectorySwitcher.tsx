@@ -259,7 +259,7 @@ const s = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 8,
   },
-  dimDark: { color: "#666666" },
+  dimDark: { color: "#9a9a9a" },
   row: {
     flexDirection: "row",
     alignItems: "center",

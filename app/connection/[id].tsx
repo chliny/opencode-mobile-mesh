@@ -388,7 +388,7 @@ export default function EditConnectionScreen() {
                 }}
                 accessibilityLabel={t("connection.zerotier.useDefaultPlanet")}
               >
-                <Ionicons name="close-circle" size={24} color={isDark ? "#aaaaaa" : "#666666"} />
+                <Ionicons name="close-circle" size={24} color={isDark ? "#9a9a9a" : "#666666"} />
               </TouchableOpacity>
             )}
           </View>

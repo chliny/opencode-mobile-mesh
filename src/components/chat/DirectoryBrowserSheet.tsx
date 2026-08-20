@@ -267,7 +267,7 @@ export function DirectoryBrowserSheet({
             <Ionicons
               name="folder-outline"
               size={20}
-              color={item.ignored ? (isDark ? "#555555" : "#bbbbbb") : isDark ? "#888888" : "#666666"}
+              color={item.ignored ? (isDark ? "#7a7a7a" : "#bbbbbb") : isDark ? "#888888" : "#666666"}
             />
             <Text style={[s.rowLabel, isDark && s.white, item.ignored && s.rowLabelDim]} numberOfLines={1}>
               {item.name}

@@ -174,7 +174,7 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  metaDark: { color: "#666666" },
+  metaDark: { color: "#9a9a9a" },
   row: {
     flexDirection: "row",
     alignItems: "center",

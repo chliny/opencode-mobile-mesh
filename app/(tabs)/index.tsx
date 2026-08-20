@@ -105,7 +105,7 @@ function SessionItem({
           )}
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={20} color={isDark ? "#666666" : "#999999"} />
+      <Ionicons name="chevron-forward" size={20} color={isDark ? "#9a9a9a" : "#999999"} />
     </TouchableOpacity>
   )
 }
@@ -140,7 +140,7 @@ function GroupHeader({
       <Ionicons
         name={row.collapsed ? "chevron-forward" : "chevron-down"}
         size={16}
-        color={isDark ? "#666666" : "#999999"}
+        color={isDark ? "#9a9a9a" : "#999999"}
       />
     </TouchableOpacity>
   )
@@ -546,7 +546,7 @@ export default function SessionsScreen() {
             </>
           )}
         </View>
-        <Ionicons name="swap-horizontal-outline" size={16} color={isDark ? "#666666" : "#999999"} />
+        <Ionicons name="swap-horizontal-outline" size={16} color={isDark ? "#9a9a9a" : "#999999"} />
       </TouchableOpacity>
 
       {error && (
@@ -729,7 +729,7 @@ export default function SessionsScreen() {
                     {t("sessionsList.newSessionModal.browseFoldersHint")}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={isDark ? "#666666" : "#999999"} />
+                <Ionicons name="chevron-forward" size={16} color={isDark ? "#9a9a9a" : "#999999"} />
               </TouchableOpacity>
 
               {/* Manual path input fallback */}

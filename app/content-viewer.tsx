@@ -119,7 +119,7 @@ const s = StyleSheet.create({
   diffRemove: { backgroundColor: "#fee2e2" },
   diffRemoveDark: { backgroundColor: "#2a0a0a" },
   diffPrefix: { width: 16, fontSize: 13, fontFamily: mono, lineHeight: 20, color: "#999999" },
-  diffPrefixDark: { color: "#666666" },
+  diffPrefixDark: { color: "#9a9a9a" },
   diffAddText: { color: "#16a34a" },
   diffRemoveText: { color: "#dc2626" },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },

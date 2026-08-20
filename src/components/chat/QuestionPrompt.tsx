@@ -170,7 +170,7 @@ const s = StyleSheet.create({
   title: { fontSize: 15, fontWeight: "600", color: "#6d28d9" },
   textWhite: { color: "#ffffff" },
   question: { fontSize: 14, lineHeight: 20, color: "#0a0a0a", marginBottom: 12 },
-  metaDark: { color: "#666666" },
+  metaDark: { color: "#9a9a9a" },
 
   options: { gap: 8 },
   option: {

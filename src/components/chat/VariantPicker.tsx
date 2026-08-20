@@ -94,7 +94,7 @@ const s = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingBottom: 12 },
   title: { fontSize: 18, fontWeight: "700", color: "#0a0a0a" },
   textWhite: { color: "#ffffff" },
-  metaDark: { color: "#666666" },
+  metaDark: { color: "#9a9a9a" },
   content: { paddingBottom: 40 },
   row: {
     flexDirection: "row",

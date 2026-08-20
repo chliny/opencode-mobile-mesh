@@ -890,7 +890,7 @@ export default function SessionScreen() {
             >
               <View style={[s.agentDot, { backgroundColor: agentColor }]} />
               <Text style={[s.agentLabel, isDark && s.textWhite]}>{agent || "build"}</Text>
-              <Ionicons name="swap-horizontal-outline" size={12} color={isDark ? "#888888" : "#666666"} />
+              <Ionicons name="swap-horizontal-outline" size={12} color={isDark ? "#9a9a9a" : "#666666"} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -898,7 +898,7 @@ export default function SessionScreen() {
               onPress={() => modelSheetRef.current?.expand()}
               testID="model-chip"
             >
-              <Ionicons name="hardware-chip-outline" size={14} color={isDark ? "#888888" : "#666666"} />
+              <Ionicons name="hardware-chip-outline" size={14} color={isDark ? "#9a9a9a" : "#666666"} />
               <Text style={[s.modelLabel, isDark && s.metaDark]} numberOfLines={1}>
                 {modelLabel}
               </Text>
@@ -1083,7 +1083,7 @@ const s = StyleSheet.create({
   empty: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 64 },
   emptyText: { fontSize: 16, color: "#999999", marginTop: 12 },
   emptyHint: { fontSize: 13, color: "#bbbbbb", marginTop: 4 },
-  metaDark: { color: "#666666" },
+  metaDark: { color: "#9a9a9a" },
   textWhite: { color: "#ffffff" },
 
   // Toolbar
