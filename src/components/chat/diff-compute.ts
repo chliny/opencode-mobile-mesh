@@ -1,9 +1,8 @@
 // Pure (no React Native imports) diff computation shared by
-// src/components/chat/DiffView.tsx. Kept in its own plain module — same
-// pattern as src/lib/scroll-config.ts — so it can be unit-tested with
-// node:test (no react-test-renderer needed) while DiffView imports the same
-// runtime logic it renders, so the test and the real component can't drift
-// apart.
+// src/components/chat/DiffView.tsx. Kept in its own plain module
+// so it can be unit-tested with node:test (no react-test-renderer
+// needed) while DiffView imports the same runtime logic it renders,
+// so the test and the real component can't drift apart.
 
 export interface DiffLine {
   type: "add" | "remove" | "context"

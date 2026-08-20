@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, Platform, ScrollView } from "react-native"
-import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config"
+import { View, Text, StyleSheet, Platform } from "react-native"
+import { WideScroll } from "../WideScroll"
 import { computeDiff } from "./diff-compute"
 import { ContentViewerButton } from "./ContentViewerButton"
 
@@ -35,8 +35,7 @@ export function DiffLinesView({ lines, isDark, title, maxHeight }: DiffLinesProp
       <View style={s.header}>
         <ContentViewerButton title={title || "diff"} content={fullDiff} language="diff" isDark={isDark} />
       </View>
-      <ScrollView
-        {...WIDE_CONTENT_SCROLL_CONFIG}
+      <WideScroll
         style={maxHeight ? { maxHeight } : undefined}
         nestedScrollEnabled={maxHeight !== undefined}
         testID="diff-view-scroll"
@@ -68,7 +67,7 @@ export function DiffLinesView({ lines, isDark, title, maxHeight }: DiffLinesProp
             </View>
           ))}
         </View>
-      </ScrollView>
+      </WideScroll>
     </View>
   )
 }

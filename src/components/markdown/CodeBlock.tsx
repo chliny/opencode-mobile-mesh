@@ -1,7 +1,7 @@
 import { useState } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Platform, ScrollView } from "react-native"
+import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Platform } from "react-native"
 import * as Clipboard from "expo-clipboard"
-import { WIDE_CONTENT_SCROLL_CONFIG } from "../../lib/scroll-config"
+import { WideScroll } from "../WideScroll"
 import { ContentViewerButton } from "../chat/ContentViewerButton"
 
 interface Props {
@@ -30,11 +30,11 @@ export function CodeBlock({ code, language }: Props) {
         </TouchableOpacity>
         <ContentViewerButton title={language || "code"} content={code} language={language} isDark={isDark} />
       </View>
-      <ScrollView {...WIDE_CONTENT_SCROLL_CONFIG} testID="code-block-scroll" contentContainerStyle={styles.codeScroll}>
+      <WideScroll testID="code-block-scroll" contentContainerStyle={styles.codeScroll}>
         <Text style={[styles.code, isDark && styles.codeDark]} selectable>
           {code}
         </Text>
-      </ScrollView>
+      </WideScroll>
     </View>
   )
 }

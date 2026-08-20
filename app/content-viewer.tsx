@@ -5,7 +5,7 @@ import { Stack, useRouter } from "expo-router"
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { WIDE_CONTENT_SCROLL_CONFIG } from "../src/lib/scroll-config"
+import { WideScroll } from "../src/components/WideScroll"
 import { getContentViewer } from "../src/lib/content-viewer"
 import { parseDiffText, type DiffLine } from "../src/components/chat/diff-compute"
 
@@ -82,11 +82,11 @@ export default function ContentViewerScreen() {
       </View>
       <View style={[s.content, isDark && s.contentDark]}>
         <Text style={[s.language, isDark && s.languageDark]}>{viewer.language || t("chat.contentViewer.output")}</Text>
-        <ScrollView {...WIDE_CONTENT_SCROLL_CONFIG} style={s.horizontal} contentContainerStyle={s.scrollContent}>
+        <WideScroll style={s.horizontal} contentContainerStyle={s.scrollContent}>
           <ScrollView nestedScrollEnabled contentContainerStyle={s.verticalContent}>
             {isDiff ? <DiffContent lines={diffLines} isDark={isDark} /> : <Text selectable style={[s.code, isDark && s.codeDark]}>{viewer.content}</Text>}
           </ScrollView>
-        </ScrollView>
+        </WideScroll>
       </View>
     </View>
   )
