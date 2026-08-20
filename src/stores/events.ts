@@ -2,7 +2,13 @@ import { create } from "zustand"
 import { useConnections } from "./connections"
 import { useSessions, abortedSessions } from "./sessions"
 import { send as notify } from "../lib/notifications"
-import { sanitizeBody } from "../lib/notify-format"
+import {
+  sanitizeBody,
+  permissionNotificationBody,
+  questionNotificationBody,
+  completionNotificationBody,
+  errorNotificationBody,
+} from "../lib/notify-format"
 import { statusFromPart } from "../lib/status-labels"
 import { addBreadcrumb } from "../lib/sentry"
 import { AnalyticsEvent, track } from "../lib/analytics"
@@ -311,11 +317,10 @@ export const useEvents = create<EventsState>((set, get) => ({
                 // here via busy→idle). Without this guard the user gets a
                 // misleading — or duplicate, contradictory — completion push.
                 if (!aborted && !erroredSessions.has(sessionID)) {
-                  const match = useSessions.getState().sessions.find((s) => s.id === sessionID)
                   notify({
                     category: "completed",
                     title: "Task completed",
-                    body: sanitizeBody(match?.title, "Session finished processing"),
+                    body: completionNotificationBody(),
                     sessionId: sessionID,
                   })
                 }
@@ -391,7 +396,7 @@ export const useEvents = create<EventsState>((set, get) => ({
               notify({
                 category: "errors",
                 title: "Session error",
-                body: sanitizeBody(error?.message, "Something went wrong"),
+                body: errorNotificationBody(),
                 sessionId: sessionID,
               })
               break
@@ -411,14 +416,7 @@ export const useEvents = create<EventsState>((set, get) => ({
               notify({
                 category: "permissions",
                 title: "Agent needs approval",
-                body: sanitizeBody(
-                  req.permission
-                    ? req.patterns?.length
-                      ? `${req.permission}: ${req.patterns.join(", ")}`
-                      : req.permission
-                    : req.patterns?.join(", "),
-                  "A tool needs your approval",
-                ),
+                body: permissionNotificationBody(),
                 sessionId: req.sessionID,
                 dedupeKey: `perm-${req.id}`,
                 dedupeCooldownMs: 60_000,
@@ -452,8 +450,8 @@ export const useEvents = create<EventsState>((set, get) => ({
               }))
               notify({
                 category: "questions",
-                title: req.questions?.[0]?.header || "Input needed",
-                body: sanitizeBody(req.questions?.[0]?.question, "The assistant has a question"),
+                title: "Input needed",
+                body: questionNotificationBody(),
                 sessionId: req.sessionID,
                 dedupeKey: `question-${req.id}`,
                 dedupeCooldownMs: 60_000,

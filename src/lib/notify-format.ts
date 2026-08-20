@@ -12,3 +12,19 @@ export const MAX_NOTIF_BODY = 200
 export function sanitizeBody(s: string | undefined, fallback: string): string {
   return (s ? s.replace(/[\x00-\x1f\x7f]/g, " ").trim().slice(0, MAX_NOTIF_BODY) : "") || fallback
 }
+
+export function permissionNotificationBody(): string {
+  return "A tool needs your approval"
+}
+
+export function questionNotificationBody(): string {
+  return "The assistant has a question"
+}
+
+export function completionNotificationBody(): string {
+  return "A session finished processing"
+}
+
+export function errorNotificationBody(): string {
+  return "A session needs your attention"
+}
