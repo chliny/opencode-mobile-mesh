@@ -40,6 +40,7 @@ import { useAuth } from "../../src/stores/auth"
 import { useCatalog } from "../../src/stores/catalog"
 import { useSpeech } from "../../src/lib/speech"
 import { reviewDiffsForMessage } from "../../src/lib/review-diffs"
+import { sessionRouteState } from "../../src/lib/session-route-binding"
 
 // --- Builtin slash commands ---
 const BUILTIN_COMMANDS: SlashCommand[] = [
@@ -93,9 +94,9 @@ export default function SessionScreen() {
     currentSession,
     messages,
     parts,
-    isLoading,
     loadingMore,
     hasMore,
+    error,
     selectSession,
     setDraft,
     clearDraft,
@@ -105,6 +106,11 @@ export default function SessionScreen() {
     revertToMessage,
     unrevertSession,
   } = useSessions()
+
+  const bindingAttempt = useRef(0)
+  const [failedSessionID, setFailedSessionID] = useState<string | null>(null)
+  const routeState = sessionRouteState(id, currentSession?.id, failedSessionID)
+  const transcriptBound = routeState === "bound"
 
   const setInput = useCallback(
     (value: string | ((current: string) => string)) => {
@@ -117,15 +123,19 @@ export default function SessionScreen() {
   )
 
   // Derive sending state for this specific session
-  const isSending = useSessions((s) => !!(currentSession && s.sending[currentSession.id]))
+  const isSending = useSessions((s) => !!(transcriptBound && id && s.sending[id]))
 
   const { authenticateForMessage } = useAuth()
   const { client, clientForDirectory } = useConnections()
 
   // Use directory-aware client for sessions that belong to a project other than the active one
   const sessionClient = useMemo(
-    () => (currentSession?.directory ? (clientForDirectory(currentSession.directory) ?? client) : client),
-    [currentSession?.directory, clientForDirectory, client],
+    () => {
+      if (!transcriptBound) return null
+      if (!currentSession?.directory) return client
+      return clientForDirectory(currentSession.directory) ?? client
+    },
+    [transcriptBound, currentSession?.directory, clientForDirectory, client],
   )
 
   // Catalog
@@ -141,11 +151,11 @@ export default function SessionScreen() {
   const cycleAgent = catalog.cycleAgent
 
   // Permission & question state
-  const sessionID = currentSession?.id
+  const sessionID = transcriptBound ? currentSession?.id : undefined
   const permissions = useEvents((s) => (sessionID ? s.permissions[sessionID] : undefined)) || []
   const questions = useEvents((s) => (sessionID ? s.questions[sessionID] : undefined)) || []
 
-  const shortDir = getShortDir(currentSession?.directory)
+  const shortDir = transcriptBound ? getShortDir(currentSession?.directory) : null
   const [showScrollButton, setShowScrollButton] = useState(false)
 
   // SSE reconnect banner
@@ -190,11 +200,12 @@ export default function SessionScreen() {
   // "temp-" IDs (assigned client-side before the server responds, see
   // sendMessage) aren't part of that sort order — always keep them so a
   // message sent concurrently with a revert isn't hidden.
-  const revertMessageID = currentSession?.revert?.messageID
+  const revertMessageID = transcriptBound ? currentSession?.revert?.messageID : undefined
 
   // Inverted FlatList: data is reversed (newest first) so newest renders at bottom
   const messageData = useMemo(
     () => {
+      if (!transcriptBound) return []
       const visible = (messages || [])
         .filter((msg) => !revertMessageID || msg.id.startsWith("temp-") || msg.id < revertMessageID)
       return visible
@@ -205,7 +216,7 @@ export default function SessionScreen() {
         }))
         .reverse()
     },
-    [messages, parts, revertMessageID],
+    [transcriptBound, messages, parts, revertMessageID],
   )
 
   // Tracks the latest composer text without pulling `input` into
@@ -277,24 +288,41 @@ export default function SessionScreen() {
   // session's data (and its permission/question prompts) — so a user could
   // approve the wrong session's tool call. useFocusEffect re-binds this screen
   // to its own session whenever it becomes visible again.
+  const bindSession = useCallback(async () => {
+    if (!id) return
+    const attempt = ++bindingAttempt.current
+    setFailedSessionID(null)
+    await selectSession(id, directory)
+    if (attempt !== bindingAttempt.current) return
+
+    if (useSessions.getState().currentSession?.id !== id) {
+      setFailedSessionID(id)
+      return
+    }
+
+    // Re-fetch pending permissions/questions from the server to recover from
+    // missed SSE events or failed optimistic removals.
+    const connState = useConnections.getState()
+    const c = directory ? (connState.clientForDirectory(directory) ?? connState.client) : connState.client
+    if (c) refreshPending(c, id)
+  }, [id, directory, selectSession])
+
   useFocusEffect(
     useCallback(() => {
       if (!id) return
       const draft = useSessions.getState().drafts[id] || ""
       inputRef.current = draft
       setInputState(draft)
-      selectSession(id, directory).then(() => {
-        // Re-fetch pending permissions/questions from the server to recover from
-        // missed SSE events or failed optimistic removals
-        const connState = useConnections.getState()
-        const c = directory ? (connState.clientForDirectory(directory) ?? connState.client) : connState.client
-        if (c) refreshPending(c, id)
-      })
-    }, [id, directory, selectSession]),
+      void bindSession()
+      return () => {
+        bindingAttempt.current++
+      }
+    }, [id, bindSession]),
   )
 
   // Sync model chip from latest assistant message
   useEffect(() => {
+    if (!transcriptBound) return
     if (!messages || messages.length === 0) return
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i]
@@ -307,7 +335,7 @@ export default function SessionScreen() {
         return
       }
     }
-  }, [currentSession?.id, messages?.length])
+  }, [transcriptBound, currentSession?.id, messages?.length])
 
   // Slash command handler
   const handleSlashSelect = useCallback(
@@ -425,6 +453,7 @@ export default function SessionScreen() {
 
   // --- Send ---
   const handleSend = async () => {
+    if (!transcriptBound) return
     if (!input.trim() && attachments.length === 0) return
     const authenticated = await authenticateForMessage()
     if (!authenticated) {
@@ -589,24 +618,26 @@ export default function SessionScreen() {
     <>
       <Stack.Screen
         options={{
-          title: currentSession?.title || t("session.titleFallback"),
-          headerRight: () => (
-            <View style={s.headerRight}>
-              {shortDir && (
-                <View style={[s.dirBadge, isDark && s.dirBadgeDark]}>
-                  <Ionicons name="folder-outline" size={14} color={isDark ? "#888888" : "#666666"} />
-                  <Text style={[s.dirText, isDark && s.dirTextDark]}>{shortDir}</Text>
+          title: transcriptBound ? currentSession?.title || t("session.titleFallback") : t("session.titleFallback"),
+          headerRight: transcriptBound
+            ? () => (
+                <View style={s.headerRight}>
+                  {shortDir && (
+                    <View style={[s.dirBadge, isDark && s.dirBadgeDark]}>
+                      <Ionicons name="folder-outline" size={14} color={isDark ? "#888888" : "#666666"} />
+                      <Text style={[s.dirText, isDark && s.dirTextDark]}>{shortDir}</Text>
+                    </View>
+                  )}
+                  <TouchableOpacity onPress={() => setShowInfo((v) => !v)} hitSlop={8}>
+                    <Ionicons
+                      name={showInfo ? "stats-chart" : "stats-chart-outline"}
+                      size={20}
+                      color={showInfo ? "#3b82f6" : isDark ? "#888888" : "#666666"}
+                    />
+                  </TouchableOpacity>
                 </View>
-              )}
-              <TouchableOpacity onPress={() => setShowInfo((v) => !v)} hitSlop={8}>
-                <Ionicons
-                  name={showInfo ? "stats-chart" : "stats-chart-outline"}
-                  size={20}
-                  color={showInfo ? "#3b82f6" : isDark ? "#888888" : "#666666"}
-                />
-              </TouchableOpacity>
-            </View>
-          ),
+              )
+            : undefined,
         }}
       />
 
@@ -617,22 +648,24 @@ export default function SessionScreen() {
         keyboardVerticalOffset={90}
       >
         {/* Session info pulldown */}
-        <SessionInfo
-          session={currentSession}
-          messages={messages || []}
-          providers={providers}
-          visible={showInfo}
-          isDark={isDark}
-          hasMore={hasMore}
-          loadingAll={loadingMore}
-          onLoadAll={() => {
-            if (hasMore && !loadingMore) loadOlderMessages()
-          }}
-          onScrollToTop={() => {
-            flatListRef.current?.scrollToEnd({ animated: true })
-          }}
-          onClose={() => setShowInfo(false)}
-        />
+        {transcriptBound && (
+          <SessionInfo
+            session={currentSession}
+            messages={messages || []}
+            providers={providers}
+            visible={showInfo}
+            isDark={isDark}
+            hasMore={hasMore}
+            loadingAll={loadingMore}
+            onLoadAll={() => {
+              if (hasMore && !loadingMore) loadOlderMessages()
+            }}
+            onScrollToTop={() => {
+              flatListRef.current?.scrollToEnd({ animated: true })
+            }}
+            onClose={() => setShowInfo(false)}
+          />
+        )}
 
         {/* SSE reconnect/connected banner */}
         {reconnectAttempts > 0 && (
@@ -648,7 +681,7 @@ export default function SessionScreen() {
 
         {/* Pending revert (from "Edit message") — offer a way back before it's
             cleaned up by the next prompt. */}
-        {revertMessageID && (
+        {transcriptBound && revertMessageID && (
           <View style={[s.banner, s.bannerRevert]}>
             <Text style={s.bannerText}>{t("session.banners.reverted")}</Text>
             <TouchableOpacity
@@ -667,9 +700,22 @@ export default function SessionScreen() {
           </View>
         )}
 
-        {isLoading ? (
+        {routeState === "binding" ? (
           <View style={s.loading}>
             <ActivityIndicator size="large" color={isDark ? "#ffffff" : "#0a0a0a"} />
+          </View>
+        ) : routeState === "failed" ? (
+          <View style={s.loadFailed}>
+            <Ionicons name="alert-circle-outline" size={44} color="#ef4444" />
+            <Text style={[s.loadFailedText, isDark && s.textWhite]}>{error || t("common.error")}</Text>
+            <View style={s.loadFailedActions}>
+              <TouchableOpacity style={[s.loadFailedButton, isDark && s.loadFailedButtonDark]} onPress={bindSession}>
+                <Text style={[s.loadFailedButtonText, isDark && s.textWhite]}>{t("common.retry")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.loadFailedButton, isDark && s.loadFailedButtonDark]} onPress={() => router.back()}>
+                <Text style={[s.loadFailedButtonText, isDark && s.textWhite]}>{t("common.back")}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
           <View style={s.listWrap}>
@@ -721,10 +767,10 @@ export default function SessionScreen() {
         )}
 
         {/* Status */}
-        {currentSession && <StatusIndicator sessionID={currentSession.id} isDark={isDark} />}
+        {transcriptBound && currentSession && <StatusIndicator sessionID={currentSession.id} isDark={isDark} />}
 
         {/* Permissions */}
-        {permissions.map((perm) => (
+        {transcriptBound && permissions.map((perm) => (
           <PermissionPrompt
             key={perm.id}
             permission={perm}
@@ -734,7 +780,7 @@ export default function SessionScreen() {
         ))}
 
         {/* Questions */}
-        {questions.map((q) => (
+        {transcriptBound && questions.map((q) => (
           <QuestionPrompt
             key={q.id}
             request={q}
@@ -745,55 +791,65 @@ export default function SessionScreen() {
         ))}
 
         {/* Slash popover */}
-        {slashActive && (
+        {transcriptBound && slashActive && (
           <SlashPopover query={slashQuery} commands={allCommands} isDark={isDark} onSelect={handleSlashSelect} />
         )}
 
         {/* Agent/model toolbar */}
-        <View style={[s.toolbar, isDark && s.toolbarDark]}>
-          <TouchableOpacity
-            style={[s.agentChip, { borderColor: agentColor }]}
-            onPress={() => cycleAgent()}
-            onLongPress={() => cycleAgent(-1)}
-          >
-            <View style={[s.agentDot, { backgroundColor: agentColor }]} />
-            <Text style={[s.agentLabel, isDark && s.textWhite]}>{agent || "build"}</Text>
-            <Ionicons name="swap-horizontal-outline" size={12} color={isDark ? "#888888" : "#666666"} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[s.modelChip, isDark && s.modelChipDark]}
-            onPress={() => modelSheetRef.current?.expand()}
-            testID="model-chip"
-          >
-            <Ionicons name="hardware-chip-outline" size={14} color={isDark ? "#888888" : "#666666"} />
-            <Text style={[s.modelLabel, isDark && s.metaDark]} numberOfLines={1}>
-              {modelLabel}
-            </Text>
-          </TouchableOpacity>
-
-          {currentModelVariants && Object.keys(currentModelVariants).length > 0 && (
+        {transcriptBound && (
+          <View style={[s.toolbar, isDark && s.toolbarDark]}>
             <TouchableOpacity
-              style={[s.variantChip, isDark && s.variantChipDark, variant && s.variantChipActive]}
-              onPress={() => variantSheetRef.current?.expand()}
-              testID="variant-chip"
+              style={[s.agentChip, { borderColor: agentColor }]}
+              onPress={() => cycleAgent()}
+              onLongPress={() => cycleAgent(-1)}
             >
-              <Ionicons name="flash-outline" size={14} color={variant ? "#8b5cf6" : isDark ? "#888888" : "#666666"} />
-              <Text style={[s.variantLabel, isDark && s.metaDark, variant && s.variantLabelActive]} numberOfLines={1}>
-                {variant ? variant.charAt(0).toUpperCase() + variant.slice(1) : t("session.toolbar.auto")}
+              <View style={[s.agentDot, { backgroundColor: agentColor }]} />
+              <Text style={[s.agentLabel, isDark && s.textWhite]}>{agent || "build"}</Text>
+              <Ionicons name="swap-horizontal-outline" size={12} color={isDark ? "#888888" : "#666666"} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[s.modelChip, isDark && s.modelChipDark]}
+              onPress={() => modelSheetRef.current?.expand()}
+              testID="model-chip"
+            >
+              <Ionicons name="hardware-chip-outline" size={14} color={isDark ? "#888888" : "#666666"} />
+              <Text style={[s.modelLabel, isDark && s.metaDark]} numberOfLines={1}>
+                {modelLabel}
               </Text>
             </TouchableOpacity>
-          )}
-        </View>
+
+            {currentModelVariants && Object.keys(currentModelVariants).length > 0 && (
+              <TouchableOpacity
+                style={[s.variantChip, isDark && s.variantChipDark, variant && s.variantChipActive]}
+                onPress={() => variantSheetRef.current?.expand()}
+                testID="variant-chip"
+              >
+                <Ionicons
+                  name="flash-outline"
+                  size={14}
+                  color={variant ? "#8b5cf6" : isDark ? "#888888" : "#666666"}
+                />
+                <Text
+                  style={[s.variantLabel, isDark && s.metaDark, variant && s.variantLabelActive]}
+                  numberOfLines={1}
+                >
+                  {variant ? variant.charAt(0).toUpperCase() + variant.slice(1) : t("session.toolbar.auto")}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Attachment preview */}
-        <ImageAttachments attachments={attachments} isDark={isDark} onRemove={removeAttachment} />
+        {transcriptBound && <ImageAttachments attachments={attachments} isDark={isDark} onRemove={removeAttachment} />}
 
         {/* Input */}
-        <View
-          style={[s.inputContainer, isDark && s.inputContainerDark, { paddingBottom: Math.max(12, insets.bottom) }]}
-        >
-          <View style={s.inputRow}>
+        {transcriptBound && (
+          <View
+            style={[s.inputContainer, isDark && s.inputContainerDark, { paddingBottom: Math.max(12, insets.bottom) }]}
+          >
+            <View style={s.inputRow}>
             {/* Attach button */}
             <TouchableOpacity style={s.attachBtn} onPress={pickFromLibrary} onLongPress={pickFromCamera}>
               <Ionicons name="add-circle-outline" size={26} color={isDark ? "#888888" : "#666666"} />
@@ -845,8 +901,9 @@ export default function SessionScreen() {
                 <Ionicons name="send" size={20} color="#ffffff" />
               </TouchableOpacity>
             )}
+            </View>
           </View>
-        </View>
+        )}
       </KeyboardAvoidingView>
 
       {/* Model picker bottom sheet */}
@@ -874,6 +931,19 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" },
   containerDark: { backgroundColor: "#0a0a0a" },
   loading: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadFailed: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24, gap: 12 },
+  loadFailedText: { color: "#0a0a0a", fontSize: 16, textAlign: "center" },
+  loadFailedActions: { flexDirection: "row", gap: 12, marginTop: 4 },
+  loadFailedButton: {
+    minWidth: 96,
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#e5e5e5",
+  },
+  loadFailedButtonDark: { backgroundColor: "#2a2a2a" },
+  loadFailedButtonText: { color: "#0a0a0a", fontSize: 15, fontWeight: "600" },
   listWrap: { flex: 1, position: "relative" },
 
   // Messages
