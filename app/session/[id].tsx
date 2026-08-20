@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  type AlertButton,
 } from "react-native"
 import { useLocalSearchParams, Stack, useRouter, useFocusEffect } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
@@ -30,6 +31,7 @@ import {
   VariantPicker,
   ImageAttachments,
   SessionInfo,
+  SelectableTextModal,
   type SlashCommand,
   type Attachment,
 } from "../../src/components/chat"
@@ -42,6 +44,7 @@ import { useSpeech } from "../../src/lib/speech"
 import { reviewDiffsForMessage } from "../../src/lib/review-diffs"
 import { sessionRouteState } from "../../src/lib/session-route-binding"
 import { isAtBottom, shouldAutoScroll, shouldShowScrollButton, transcriptSignature } from "../../src/lib/auto-scroll"
+import { extractCopyText, hasCopyableText } from "../../src/lib/message-copy-text"
 
 // --- Builtin slash commands ---
 const BUILTIN_COMMANDS: SlashCommand[] = [
@@ -168,6 +171,10 @@ export default function SessionScreen() {
   const [showConnectedFlash, setShowConnectedFlash] = useState(false)
   const prevReconnecting = useRef(false)
 
+  // Selectable text modal — keeps assistant text out of the nested FlatList
+  // where RN Android selectable conflicts with virtualized scrolling.
+  const [selectableText, setSelectableText] = useState<string | null>(null)
+
   // Voice input — transcript appends to the text input on completion
   const speech = useSpeech(
     useCallback((text: string) => {
@@ -263,9 +270,32 @@ export default function SessionScreen() {
   // closing over props) so MessageBubble's custom memo comparator can bail
   // safely without risking a stale handler.
   const handleMessageLongPress = useCallback((messageID: string) => {
-    Alert.alert(t("session.alerts.messageActionsTitle"), undefined, [
-      { text: t("common.cancel"), style: "cancel" },
-      {
+    const state = useSessions.getState()
+    const message = (state.messages || []).find((m) => m.id === messageID)
+    const messageParts = (state.parts && state.parts[messageID]) || []
+    const isUser = message?.role === "user"
+    const copyable = hasCopyableText(messageParts)
+    const copyText = extractCopyText(messageParts)
+
+    const actions: AlertButton[] = []
+
+    if (copyable) {
+      actions.push({
+        text: t("session.actions.copyMessage"),
+        onPress: async () => {
+          await Clipboard.setStringAsync(copyText)
+        },
+      })
+      actions.push({
+        text: t("session.actions.selectText"),
+        onPress: () => {
+          setSelectableText(copyText)
+        },
+      })
+    }
+
+    if (isUser) {
+      actions.push({
         text: t("session.actions.editMessage"),
         onPress: () => {
           const doRevert = async () => {
@@ -288,7 +318,15 @@ export default function SessionScreen() {
           }
           doRevert()
         },
-      },
+      })
+    }
+
+    // No actions to show (e.g. tool-only assistant message) — skip the sheet.
+    if (actions.length === 0) return
+
+    Alert.alert(t("session.alerts.messageActionsTitle"), undefined, [
+      ...actions,
+      { text: t("common.cancel"), style: "cancel" },
     ])
   }, [applyRevertResult, t])
 
@@ -969,6 +1007,13 @@ export default function SessionScreen() {
         selected={variant}
         isDark={isDark}
         onSelect={setVariant}
+      />
+
+      {/* Selectable text modal for assistant copy */}
+      <SelectableTextModal
+        visible={selectableText !== null}
+        text={selectableText ?? ""}
+        onClose={() => setSelectableText(null)}
       />
     </>
   )

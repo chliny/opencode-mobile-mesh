@@ -9,7 +9,8 @@
     "shareReport": "Share report",
     "back": "Back",
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "done": "Done"
   },
   "settings": {
     "sections": {
@@ -98,7 +99,10 @@
     },
     "actions": {
       "editMessage": "Edit message",
-      "replace": "Replace"
+      "replace": "Replace",
+      "copyMessage": "Copy message",
+      "selectText": "Select text",
+      "selectHint": "Long-press and drag the handles to select text, then use the system copy option."
     },
     "alerts": {
       "messageActionsTitle": "Message actions",

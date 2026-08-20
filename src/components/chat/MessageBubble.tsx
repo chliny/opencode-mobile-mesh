@@ -36,12 +36,13 @@ export const MessageBubble = memo(
     const fileParts = parts.filter((p) => p.type === "file" && isImageMime(p.mime))
     const text = textParts.map((p) => p.text).join("\n") || ""
     const reasoning = reasoningParts.map((p) => p.text).join("\n") || ""
+    const canLongPress = !!onLongPress && (isUser || text.trim().length > 0)
 
     return (
       <TouchableOpacity
-        activeOpacity={isUser && onLongPress ? 0.7 : 1}
-        onLongPress={isUser && onLongPress ? () => onLongPress(message.id) : undefined}
-        disabled={!isUser || !onLongPress}
+        activeOpacity={canLongPress ? 0.7 : 1}
+        onLongPress={canLongPress ? () => onLongPress(message.id) : undefined}
+        disabled={!canLongPress}
         style={[
           s.bubble,
           isUser ? s.user : s.assistant,

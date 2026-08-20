@@ -9,7 +9,8 @@
     "shareReport": "分享报告",
     "back": "返回",
     "copy": "复制",
-    "copied": "已复制"
+    "copied": "已复制",
+    "done": "完成"
   },
   "settings": {
     "sections": {
@@ -98,7 +99,10 @@
     },
     "actions": {
       "editMessage": "编辑消息",
-      "replace": "替换"
+      "replace": "替换",
+      "copyMessage": "复制消息",
+      "selectText": "选择文本",
+      "selectHint": "长按并拖动选择手柄以选择文本，然后使用系统的复制选项。"
     },
     "alerts": {
       "messageActionsTitle": "消息操作",
