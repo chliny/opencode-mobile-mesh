@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { activeMention, buildReferenceParts, insertMention, parseUnifiedPatch } from "./file-review.ts"
+import { activeMention, buildReferenceParts, diffHunkStarts, insertMention, parseUnifiedPatch } from "./file-review.ts"
 
 test("finds and replaces the mention nearest the cursor", () => {
   const text = "check @src/ut please"
@@ -20,6 +20,19 @@ test("parses unified diff line coordinates", () => {
     ["add", undefined, 5],
     ["add", undefined, 6],
   ])
+})
+
+test("finds each changed hunk in a rendered diff", () => {
+  assert.deepEqual(diffHunkStarts([
+    { type: "header" },
+    { type: "context" },
+    { type: "add" },
+    { type: "add" },
+    { type: "context" },
+    { type: "remove" },
+    { type: "context" },
+    { type: "add" },
+  ]), [2, 5, 7])
 })
 
 test("serializes line comments as synthetic text and ranged file parts", () => {

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from "react-native"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { DiffLineRow, type SharedDiffLine } from "../src/components/files/DiffRenderer"
+import { FullScreenDiffReview } from "../src/components/files/FullScreenDiffReview"
 import { parseUnifiedPatch } from "../src/lib/file-review"
 import { useConnections } from "../src/stores/connections"
 import { useSessions } from "../src/stores/sessions"
@@ -31,6 +32,7 @@ export default function SessionFileScreen() {
   const [anchor, setAnchor] = useState<number | null>(null)
   const [focus, setFocus] = useState<number | null>(null)
   const [comment, setComment] = useState("")
+  const listRef = useRef<FlatList<DisplayLine>>(null)
 
   useEffect(() => {
     if (!api || !path) return
@@ -97,30 +99,31 @@ export default function SessionFileScreen() {
   return (
     <KeyboardAvoidingView style={[s.container, isDark && s.containerDark]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Stack.Screen options={{ title: path?.split("/").pop() || t("files.fileTitle") }} />
-      <View style={[s.pathBar, isDark && s.pathBarDark]}><Text style={[s.path, isDark && s.textDark]} numberOfLines={1}>{path}</Text><View style={s.mode}><Text style={s.modeText}>{mode === "diff" ? "DIFF" : "FILE"}</Text></View></View>
-      {loading ? <View style={s.center}><ActivityIndicator size="large" color="#8b5cf6" /></View> : error ? <View style={s.center}><Ionicons name="alert-circle-outline" size={40} color="#ef4444" /><Text style={s.error}>{error}</Text></View> : (
-        <FlatList
-          data={lines}
-          keyExtractor={(item) => item.key}
-          extraData={`${start}-${end}`}
-          renderItem={({ item }) => {
-            const number = selectionLine(item, mode)
-            const isSelected = number !== undefined && start !== null && end !== null && number >= start && number <= end
-             return <DiffLineRow line={item} isDark={isDark} showLineNumbers selected={isSelected} onPress={() => select(item)} />
-          }}
-          contentContainerStyle={s.codeList}
-          horizontal={false}
-          initialNumToRender={60}
-          windowSize={8}
-        />
-      )}
-      {start !== null && end !== null && (
+      <FullScreenDiffReview title={path || t("files.fileTitle")} lines={mode === "diff" ? lines : []} isDark={isDark} onBack={() => router.back()} onNavigateHunk={(index) => listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.08 })} headerLabel={mode === "diff" ? "DIFF" : "FILE"} footer={start !== null && end !== null ? (
         <View style={[s.commentBox, isDark && s.commentBoxDark]}>
           <View style={s.selectionHead}><Text style={[s.selectionText, isDark && s.textDark]}>{t("files.selectedLines", { start, end })}</Text><TouchableOpacity onPress={() => { setAnchor(null); setFocus(null); setComment("") }}><Text style={s.clear}>{t("common.cancel")}</Text></TouchableOpacity></View>
           <TextInput style={[s.commentInput, isDark && s.commentInputDark]} value={comment} onChangeText={setComment} placeholder={t("files.commentPlaceholder")} placeholderTextColor="#777777" multiline maxLength={2000} />
           <TouchableOpacity style={[s.addComment, !comment.trim() && s.disabled]} disabled={!comment.trim()} onPress={addComment}><Ionicons name="chatbox-ellipses" size={17} color="#ffffff" /><Text style={s.addCommentText}>{t("files.addComment")}</Text></TouchableOpacity>
         </View>
-      )}
+      ) : undefined}>
+        {loading ? <View style={s.center}><ActivityIndicator size="large" color="#8b5cf6" /></View> : error ? <View style={s.center}><Ionicons name="alert-circle-outline" size={40} color="#ef4444" /><Text style={s.error}>{error}</Text></View> : (
+          <FlatList
+            ref={listRef}
+            data={lines}
+            keyExtractor={(item) => item.key}
+            extraData={`${start}-${end}`}
+            renderItem={({ item }) => {
+              const number = selectionLine(item, mode)
+              const isSelected = number !== undefined && start !== null && end !== null && number >= start && number <= end
+              return <DiffLineRow line={item} isDark={isDark} showLineNumbers selected={isSelected} onPress={() => select(item)} />
+            }}
+            contentContainerStyle={s.codeList}
+            horizontal={false}
+            initialNumToRender={60}
+            windowSize={8}
+          />
+        )}
+      </FullScreenDiffReview>
     </KeyboardAvoidingView>
   )
 }
@@ -128,6 +131,7 @@ export default function SessionFileScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" }, containerDark: { backgroundColor: "#0a0a0a" }, center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 }, error: { color: "#ef4444", textAlign: "center" },
   pathBar: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: "#f2f2ef", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#dddddd" }, pathBarDark: { backgroundColor: "#151515", borderBottomColor: "#292929" }, path: { flex: 1, fontFamily: "monospace", fontSize: 12, color: "#333333" }, textDark: { color: "#eeeeee" }, mode: { borderRadius: 5, paddingHorizontal: 6, paddingVertical: 3, backgroundColor: "#8b5cf6" }, modeText: { color: "#ffffff", fontSize: 9, fontWeight: "800" },
+  navigation: { flexDirection: "row", alignItems: "center", gap: 5 }, position: { fontSize: 11, color: "#666666" },
   codeList: { paddingVertical: 6 },
   commentBox: { padding: 12, gap: 9, borderTopWidth: 1, borderTopColor: "#dddddd", backgroundColor: "#ffffff" }, commentBoxDark: { borderTopColor: "#292929", backgroundColor: "#111111" }, selectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, selectionText: { color: "#222222", fontSize: 12, fontWeight: "700" }, clear: { color: "#8b5cf6", fontSize: 12 }, commentInput: { minHeight: 58, maxHeight: 110, borderRadius: 10, padding: 10, backgroundColor: "#f3f3f0", color: "#111111", textAlignVertical: "top" }, commentInputDark: { backgroundColor: "#242424", color: "#ffffff" }, addComment: { height: 42, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderRadius: 10, backgroundColor: "#8b5cf6" }, disabled: { opacity: 0.45 }, addCommentText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
 })

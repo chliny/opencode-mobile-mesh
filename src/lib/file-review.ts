@@ -8,6 +8,20 @@ export interface ReviewLine {
   newLine?: number
 }
 
+export function diffHunkStarts(lines: Array<{ type: "add" | "remove" | "context" | "header" }>): number[] {
+  const starts: number[] = []
+  let changed = false
+  for (const [index, line] of lines.entries()) {
+    if ((line.type === "add" || line.type === "remove") && !changed) {
+      starts.push(index)
+      changed = true
+    } else if (line.type === "context" || line.type === "header") {
+      changed = false
+    }
+  }
+  return starts
+}
+
 export interface MentionRange {
   start: number
   end: number
