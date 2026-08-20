@@ -41,6 +41,7 @@ import { useCatalog } from "../../src/stores/catalog"
 import { useSpeech } from "../../src/lib/speech"
 import { reviewDiffsForMessage } from "../../src/lib/review-diffs"
 import { sessionRouteState } from "../../src/lib/session-route-binding"
+import { isAtBottom, shouldAutoScroll, shouldShowScrollButton, transcriptSignature } from "../../src/lib/auto-scroll"
 
 // --- Builtin slash commands ---
 const BUILTIN_COMMANDS: SlashCommand[] = [
@@ -82,6 +83,9 @@ export default function SessionScreen() {
   const { t } = useTranslation()
 
   const flatListRef = useRef<FlatList>(null)
+  const scrollOffsetRef = useRef(0)
+  const previousSignatureRef = useRef<string | null>(null)
+  const followFrameRef = useRef<number | null>(null)
   const modelSheetRef = useRef<BottomSheet>(null)
   const variantSheetRef = useRef<BottomSheet>(null)
   const [input, setInputState] = useState(() => (id ? useSessions.getState().drafts[id] || "" : ""))
@@ -94,6 +98,7 @@ export default function SessionScreen() {
     currentSession,
     messages,
     parts,
+    transcriptRevision,
     loadingMore,
     hasMore,
     error,
@@ -219,6 +224,16 @@ export default function SessionScreen() {
     [transcriptBound, messages, parts, revertMessageID],
   )
 
+  const newest = messageData[0]
+  const contentSignature = transcriptSignature({
+    revision: id ? transcriptRevision[id] || 0 : 0,
+    messageCount: messageData.length,
+    newestMessageID: newest?.message.id || null,
+    newestPartCount: newest?.parts.length || 0,
+    newestTextLength:
+      newest?.parts.reduce((length, part) => length + (typeof part.text === "string" ? part.text.length : 0), 0) || 0,
+  })
+
   // Tracks the latest composer text without pulling `input` into
   // handleMessageLongPress's deps — kept as a plain ref assignment (not
   // state) so the callback below stays referentially stable across
@@ -280,6 +295,37 @@ export default function SessionScreen() {
   const scrollToBottom = useCallback((animated = true) => {
     flatListRef.current?.scrollToOffset({ offset: 0, animated })
   }, [])
+
+  useEffect(() => {
+    scrollOffsetRef.current = 0
+    previousSignatureRef.current = null
+    setShowScrollButton(false)
+    if (followFrameRef.current !== null) cancelAnimationFrame(followFrameRef.current)
+    followFrameRef.current = null
+  }, [id])
+
+  useEffect(() => {
+    if (!transcriptBound) return
+    const follow = shouldAutoScroll({
+      offsetY: scrollOffsetRef.current,
+      previousSignature: previousSignatureRef.current,
+      currentSignature: contentSignature,
+    })
+    previousSignatureRef.current = contentSignature
+    if (!follow || followFrameRef.current !== null) return
+
+    followFrameRef.current = requestAnimationFrame(() => {
+      followFrameRef.current = null
+      if (isAtBottom(scrollOffsetRef.current)) scrollToBottom(false)
+    })
+  }, [transcriptBound, contentSignature, scrollToBottom])
+
+  useEffect(
+    () => () => {
+      if (followFrameRef.current !== null) cancelAnimationFrame(followFrameRef.current)
+    },
+    [],
+  )
 
   // Re-select on every focus, not just mount. currentSession/messages/
   // permissions are a single global store, and the native stack keeps screens
@@ -501,7 +547,8 @@ export default function SessionScreen() {
   // In inverted mode, offset 0 = bottom. Show scroll button when scrolled away from bottom.
   const handleScroll = useCallback((event: any) => {
     const { contentOffset } = event.nativeEvent
-    setShowScrollButton(contentOffset.y > 200)
+    scrollOffsetRef.current = contentOffset.y
+    setShowScrollButton(shouldShowScrollButton(contentOffset.y))
   }, [])
 
   // Debounce: onEndReached can fire multiple times during a single scroll gesture
