@@ -9,6 +9,7 @@ import {
   useColorScheme,
   Linking,
   Alert,
+  AppState,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
@@ -80,6 +81,32 @@ export default function SettingsScreen() {
   const [osGranted, setOsGranted] = useState<boolean | null>(null)
   const [telemetryUpdating, setTelemetryUpdating] = useState(false)
 
+  useEffect(() => {
+    let active = true
+    let revision = 0
+
+    const refresh = () => {
+      const current = ++revision
+      notificationsGranted()
+        .then((granted) => {
+          if (active && current === revision) setOsGranted(granted)
+        })
+        .catch(() => {
+          if (active && current === revision) setOsGranted(false)
+        })
+    }
+
+    refresh()
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") refresh()
+    })
+
+    return () => {
+      active = false
+      subscription.remove()
+    }
+  }, [])
+
   // Settings is where a user goes to ask "what am I running?". Answer it, and if
   // a newer build exists say so here too — the banner on the sessions list is
   // dismissible, this row is not (AGE-110). Uses the same 24h-throttled check,
@@ -132,13 +159,6 @@ export default function SettingsScreen() {
     },
     [setNotification, t],
   )
-
-  // Lazy-check OS permission for status display
-  if (osGranted === null) {
-    notificationsGranted()
-      .then(setOsGranted)
-      .catch(() => setOsGranted(false))
-  }
 
   const localeLabels: Record<LocalePreference, string> = {
     system: t("settings.language.system"),
