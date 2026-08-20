@@ -1,5 +1,8 @@
 node_modules/
 .expo/
+.android/
+scripts/build-android-release.sh
+scripts/start-android-emulator.sh
 android/.gradle/
 android/app/build/
 android/build/
@@ -28,3 +31,4 @@ android/app/src/main/assets/index.android.bundle
 artifacts/screenshots/
 positive-S*.png
 negative-S*.png
+.tmp
