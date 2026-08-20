@@ -132,6 +132,24 @@
       "speechErrorMessage": "无法使用语音输入。请检查麦克风权限后重试。"
     }
   },
+  "files": {
+    "title": "文件",
+    "fileTitle": "文件",
+    "tabs": { "git": "Git 变更", "turn": "上一轮变更", "branch": "分支变更", "all": "全部文件" },
+    "status": { "modified": "已修改", "added": "新增", "deleted": "已删除" },
+    "filter": "筛选文件...",
+    "searching": "正在搜索文件...",
+    "empty": "此处没有文件",
+    "noChanges": "没有变更",
+    "loadFailed": "文件加载失败",
+    "diffUnavailable": "此文件暂无可用 Diff",
+    "binaryUnsupported": "暂不支持预览二进制文件",
+    "selectedLines": "已选择第 {{start}}-{{end}} 行",
+    "commentPlaceholder": "评论选中的代码...",
+    "addComment": "添加到消息",
+    "commentAddedTitle": "评论已添加",
+    "commentAddedMessage": "选中的代码和评论会随下一条消息一起发送。"
+  },
   "connection": {
     "shared": {
       "connectionType": "连接类型",

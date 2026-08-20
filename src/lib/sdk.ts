@@ -91,6 +91,46 @@ export interface FileDiff {
   status?: "added" | "deleted" | "modified"
 }
 
+export interface FileContent {
+  type: "text" | "binary"
+  content: string
+  diff?: string
+  encoding?: "base64"
+  mimeType?: string
+}
+
+export interface FileSelection {
+  startLine: number
+  startChar: number
+  endLine: number
+  endChar: number
+}
+
+export interface PromptFileReference {
+  path: string
+  text: string
+  start: number
+  end: number
+  selection?: FileSelection
+  comment?: string
+  preview?: string
+  origin?: "review" | "file"
+}
+
+export type PromptPartInput =
+  | { type: "text"; text: string; synthetic?: boolean; metadata?: Record<string, unknown> }
+  | {
+      type: "file"
+      mime: string
+      url: string
+      filename?: string
+      source?: {
+        type: "file"
+        path: string
+        text: { value: string; start: number; end: number }
+      }
+    }
+
 // API returns messages with parts embedded
 export interface MessageWithParts {
   info: Message
@@ -136,6 +176,11 @@ export interface Part {
   mime?: string
   url?: string
   filename?: string
+  source?: {
+    type: "file" | "resource"
+    path?: string
+    text?: { value: string; start: number; end: number }
+  }
 }
 
 export interface Agent {
@@ -193,6 +238,8 @@ export interface HealthResponse {
 }
 
 const REQUEST_TIMEOUT_MS = 30_000
+const VCS_DIFF_TIMEOUT_MS = 120_000
+const SESSION_MESSAGES_TIMEOUT_MS = 60_000
 
 // Thrown by request() on a non-2xx response. Carries the HTTP status so
 // callers can distinguish e.g. 404 (older server, endpoint missing) from
@@ -361,6 +408,10 @@ export function createClient(config: ClientConfig) {
         const query = new URLSearchParams({ path: params.path ?? "." })
         return request<FileEntry[]>(config, `/file?${query.toString()}`)
       },
+      read: (path: string) => {
+        const query = new URLSearchParams({ path })
+        return request<FileContent>(config, `/file/content?${query.toString()}`)
+      },
       // Enumerate the server's filesystem roots (mounted drives, home dir)
       // to seed the directory browser's pinned top-level entries. Resolves
       // to null on servers that don't yet expose GET /file/roots (older
@@ -373,6 +424,23 @@ export function createClient(config: ClientConfig) {
           if (err instanceof ApiError && err.status === 404) return null
           throw err
         }
+      },
+    },
+
+    find: {
+      files: (params: { query: string; type?: "file" | "directory"; limit?: number }) => {
+        const query = new URLSearchParams({ query: params.query })
+        if (params.type) query.set("type", params.type)
+        if (params.limit) query.set("limit", String(params.limit))
+        return request<string[]>(config, `/find/file?${query.toString()}`)
+      },
+    },
+
+    vcs: {
+      diff: (params: { mode: "git" | "branch"; context?: number }, timeoutMs = VCS_DIFF_TIMEOUT_MS) => {
+        const query = new URLSearchParams({ mode: params.mode })
+        if (params.context !== undefined) query.set("context", String(params.context))
+        return request<FileDiff[]>(config, `/vcs/diff?${query.toString()}`, {}, timeoutMs)
       },
     },
 
@@ -426,11 +494,11 @@ export function createClient(config: ClientConfig) {
           body: JSON.stringify(params),
         }),
 
-      messages: (sessionID: string, params?: { limit?: number }) => {
+      messages: (sessionID: string, params?: { limit?: number }, timeoutMs = SESSION_MESSAGES_TIMEOUT_MS) => {
         const query = new URLSearchParams()
         if (params?.limit) query.set("limit", String(params.limit))
         const qs = query.toString()
-        return request<MessageWithParts[]>(config, `/session/${sessionID}/message${qs ? `?${qs}` : ""}`)
+        return request<MessageWithParts[]>(config, `/session/${sessionID}/message${qs ? `?${qs}` : ""}`, {}, timeoutMs)
       },
 
       // Sends a message and returns the response
@@ -438,7 +506,7 @@ export function createClient(config: ClientConfig) {
       prompt: async (
         sessionID: string,
         params: {
-          parts: Array<{ type: "text"; text: string } | { type: "file"; mime: string; url: string; filename?: string }>
+          parts: PromptPartInput[]
           model?: { providerID: string; modelID: string }
           agent?: string
           variant?: string
@@ -489,7 +557,7 @@ export function createClient(config: ClientConfig) {
 
       diff: (sessionID: string, messageID?: string) => {
         const qs = messageID ? `?messageID=${messageID}` : ""
-        return request<unknown[]>(config, `/session/${sessionID}/diff${qs}`)
+        return request<FileDiff[]>(config, `/session/${sessionID}/diff${qs}`)
       },
 
       // Marks messageID (and everything after it) as pending revert. The

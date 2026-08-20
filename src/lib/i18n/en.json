@@ -132,6 +132,24 @@
       "speechErrorMessage": "Could not use voice input. Check your microphone permission and try again."
     }
   },
+  "files": {
+    "title": "Files",
+    "fileTitle": "File",
+    "tabs": { "git": "Git Changes", "turn": "Previous Turn Changes", "branch": "Branch Changes", "all": "All Files" },
+    "status": { "modified": "Modified", "added": "Added", "deleted": "Deleted" },
+    "filter": "Filter files...",
+    "searching": "Searching files...",
+    "empty": "No files here",
+    "noChanges": "No changes",
+    "loadFailed": "Failed to load files",
+    "diffUnavailable": "Diff is not available for this file",
+    "binaryUnsupported": "Binary file preview is not supported yet",
+    "selectedLines": "Selected lines {{start}}-{{end}}",
+    "commentPlaceholder": "Comment on the selected lines...",
+    "addComment": "Add to message",
+    "commentAddedTitle": "Comment added",
+    "commentAddedMessage": "The selected code and comment will be included with your next message."
+  },
   "connection": {
     "shared": {
       "connectionType": "Connection Type",

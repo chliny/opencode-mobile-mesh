@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
   Alert,
   type AlertButton,
+  type NativeSyntheticEvent,
+  type TextInputSelectionChangeEventData,
 } from "react-native"
 import { useLocalSearchParams, Stack, useRouter, useFocusEffect } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
@@ -32,6 +34,8 @@ import {
   ImageAttachments,
   SessionInfo,
   SelectableTextModal,
+  FileMentionPopover,
+  FileContextChips,
   type SlashCommand,
   type Attachment,
 } from "../../src/components/chat"
@@ -45,6 +49,8 @@ import { reviewDiffsForMessage } from "../../src/lib/review-diffs"
 import { sessionRouteState } from "../../src/lib/session-route-binding"
 import { isAtBottom, shouldAutoScroll, shouldShowScrollButton, transcriptSignature } from "../../src/lib/auto-scroll"
 import { extractCopyText, hasCopyableText } from "../../src/lib/message-copy-text"
+import { activeMention, insertMention } from "../../src/lib/file-review"
+import type { PromptFileReference } from "../../src/lib/sdk"
 
 // --- Builtin slash commands ---
 const BUILTIN_COMMANDS: SlashCommand[] = [
@@ -71,6 +77,9 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
   },
 ]
 
+const EMPTY_PROMPT_REFERENCES: PromptFileReference[] = []
+const EMPTY_LIST: never[] = []
+
 function getShortDir(dir?: string): string | null {
   if (!dir) return null
   const parts = dir.split("/").filter(Boolean)
@@ -95,6 +104,10 @@ export default function SessionScreen() {
   const inputRef = useRef(input)
   inputRef.current = input
   const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [selection, setSelection] = useState({ start: input.length, end: input.length })
+  const [mentionFiles, setMentionFiles] = useState<string[]>([])
+  const [mentionLoading, setMentionLoading] = useState(false)
+  const [selectedMentions, setSelectedMentions] = useState<string[]>([])
   const [showInfo, setShowInfo] = useState(false)
 
   const {
@@ -108,6 +121,8 @@ export default function SessionScreen() {
     selectSession,
     setDraft,
     clearDraft,
+    removeFileContext,
+    clearFileContexts,
     sendMessage,
     abortSession,
     loadOlderMessages,
@@ -132,6 +147,7 @@ export default function SessionScreen() {
 
   // Derive sending state for this specific session
   const isSending = useSessions((s) => !!(transcriptBound && id && s.sending[id]))
+  const fileContexts = useSessions((s) => (id ? s.fileContexts[id] || EMPTY_PROMPT_REFERENCES : EMPTY_PROMPT_REFERENCES))
 
   const { authenticateForMessage } = useAuth()
   const { client, clientForDirectory } = useConnections()
@@ -160,8 +176,8 @@ export default function SessionScreen() {
 
   // Permission & question state
   const sessionID = transcriptBound ? currentSession?.id : undefined
-  const permissions = useEvents((s) => (sessionID ? s.permissions[sessionID] : undefined)) || []
-  const questions = useEvents((s) => (sessionID ? s.questions[sessionID] : undefined)) || []
+  const permissions = useEvents((s) => (sessionID ? s.permissions[sessionID] : undefined)) || EMPTY_LIST
+  const questions = useEvents((s) => (sessionID ? s.questions[sessionID] : undefined)) || EMPTY_LIST
 
   const shortDir = transcriptBound ? getShortDir(currentSession?.directory) : null
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -193,6 +209,24 @@ export default function SessionScreen() {
   // Slash command state
   const slashActive = input.startsWith("/") && !input.includes(" ")
   const slashQuery = slashActive ? input.slice(1) : ""
+  const mention = activeMention(input, selection.start)
+
+  useEffect(() => {
+    if (!mention || !sessionClient) {
+      setMentionFiles([])
+      setMentionLoading(false)
+      return
+    }
+    let active = true
+    const timer = setTimeout(() => {
+      setMentionLoading(true)
+      sessionClient.find.files({ query: mention.query, type: "file", limit: 40 })
+        .then((files) => { if (active) setMentionFiles(files) })
+        .catch(() => { if (active) setMentionFiles([]) })
+        .finally(() => { if (active) setMentionLoading(false) })
+    }, 180)
+    return () => { active = false; clearTimeout(timer) }
+  }, [mention?.start, mention?.end, mention?.query, sessionClient])
 
   const allCommands = useMemo<SlashCommand[]>(() => {
     const custom: SlashCommand[] = serverCommands.map((cmd) => ({
@@ -444,6 +478,16 @@ export default function SessionScreen() {
     [router, cycleAgent],
   )
 
+  const handleMentionSelect = useCallback((path: string) => {
+    const range = activeMention(inputRef.current, selection.start)
+    if (!range) return
+    const result = insertMention(inputRef.current, range, path)
+    setInput(result.text)
+    setSelection({ start: result.cursor, end: result.cursor })
+    setSelectedMentions((current) => current.includes(path) ? current : [...current, path])
+    setMentionFiles([])
+  }, [selection.start, setInput])
+
   // --- Image picking ---
 
   // Convert any image (including HEIC/HEIF from iOS) to guaranteed JPEG bytes
@@ -538,7 +582,7 @@ export default function SessionScreen() {
   // --- Send ---
   const handleSend = async () => {
     if (!transcriptBound) return
-    if (!input.trim() && attachments.length === 0) return
+    if (!input.trim() && attachments.length === 0 && fileContexts.length === 0) return
     const authenticated = await authenticateForMessage()
     if (!authenticated) {
       Alert.alert(t("session.alerts.authRequiredTitle"), t("session.alerts.authRequiredMessage"))
@@ -547,12 +591,26 @@ export default function SessionScreen() {
 
     const text = input.trim()
     const files = [...attachments]
+    const comments = [...fileContexts]
+    const references: PromptFileReference[] = []
+    for (const path of selectedMentions) {
+      const value = `@${path}`
+      let offset = 0
+      while (true) {
+        const start = text.indexOf(value, offset)
+        if (start < 0) break
+        references.push({ path, text: value, start, end: start + value.length })
+        offset = start + value.length
+      }
+    }
+    references.push(...comments)
     setInput("")
     if (id) clearDraft(id)
     setAttachments([])
+    setSelectedMentions([])
 
     // Server slash commands (no attachments for commands)
-    if (text.startsWith("/") && files.length === 0) {
+    if (text.startsWith("/") && files.length === 0 && references.length === 0) {
       const [cmdName, ...args] = text.split(" ")
       const name = cmdName.slice(1)
       const match = serverCommands.find((c) => c.name === name)
@@ -572,12 +630,14 @@ export default function SessionScreen() {
     // Messages are queued server-side when the session is busy.
     // No need to abort - just send and it will be processed after current response.
     try {
-      await sendMessage(text, model || undefined, agent || undefined, files, variant || undefined)
+      await sendMessage(text, model || undefined, agent || undefined, files, variant || undefined, references)
+      if (id) clearFileContexts(id)
     } catch (err) {
       console.error("Send failed:", err)
       // Restore the user's text and attachments so their input isn't lost.
       setInput((prev) => (prev ? prev : text))
       setAttachments((prev) => (prev.length ? prev : files))
+      setSelectedMentions((prev) => prev.length ? prev : references.filter((item) => !item.comment).map((item) => item.path))
       Alert.alert(t("session.alerts.sendFailedTitle"), t("session.alerts.sendFailedMessage"))
     }
   }
@@ -699,32 +759,45 @@ export default function SessionScreen() {
     return found?.variants
   }, [model, providers])
 
+  const headerRight = useCallback(
+    () => (
+      <View style={s.headerRight}>
+        {shortDir && (
+          <View style={[s.dirBadge, isDark && s.dirBadgeDark]}>
+            <Ionicons name="folder-outline" size={14} color={isDark ? "#888888" : "#666666"} />
+            <Text style={[s.dirText, isDark && s.dirTextDark]}>{shortDir}</Text>
+          </View>
+        )}
+        <TouchableOpacity
+          onPress={() => router.push({ pathname: "/session-files", params: { id, directory: currentSession?.directory || directory || "" } })}
+          hitSlop={8}
+          testID="session-files-button"
+        >
+          <Ionicons name="documents-outline" size={20} color={isDark ? "#888888" : "#666666"} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowInfo((value) => !value)} hitSlop={8}>
+          <Ionicons
+            name={showInfo ? "stats-chart" : "stats-chart-outline"}
+            size={20}
+            color={showInfo ? "#3b82f6" : isDark ? "#888888" : "#666666"}
+          />
+        </TouchableOpacity>
+      </View>
+    ),
+    [currentSession?.directory, directory, id, isDark, router, shortDir, showInfo],
+  )
+
+  const screenOptions = useMemo(
+    () => ({
+      title: transcriptBound ? currentSession?.title || t("session.titleFallback") : t("session.titleFallback"),
+      headerRight: transcriptBound ? headerRight : undefined,
+    }),
+    [currentSession?.title, headerRight, t, transcriptBound],
+  )
+
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: transcriptBound ? currentSession?.title || t("session.titleFallback") : t("session.titleFallback"),
-          headerRight: transcriptBound
-            ? () => (
-                <View style={s.headerRight}>
-                  {shortDir && (
-                    <View style={[s.dirBadge, isDark && s.dirBadgeDark]}>
-                      <Ionicons name="folder-outline" size={14} color={isDark ? "#888888" : "#666666"} />
-                      <Text style={[s.dirText, isDark && s.dirTextDark]}>{shortDir}</Text>
-                    </View>
-                  )}
-                  <TouchableOpacity onPress={() => setShowInfo((v) => !v)} hitSlop={8}>
-                    <Ionicons
-                      name={showInfo ? "stats-chart" : "stats-chart-outline"}
-                      size={20}
-                      color={showInfo ? "#3b82f6" : isDark ? "#888888" : "#666666"}
-                    />
-                  </TouchableOpacity>
-                </View>
-              )
-            : undefined,
-        }}
-      />
+      <Stack.Screen options={screenOptions} />
 
       <KeyboardAvoidingView
         style={[s.container, isDark && s.containerDark]}
@@ -879,6 +952,9 @@ export default function SessionScreen() {
         {transcriptBound && slashActive && (
           <SlashPopover query={slashQuery} commands={allCommands} isDark={isDark} onSelect={handleSlashSelect} />
         )}
+        {transcriptBound && !slashActive && mention && (
+          <FileMentionPopover files={mentionFiles} loading={mentionLoading} isDark={isDark} onSelect={handleMentionSelect} />
+        )}
 
         {/* Agent/model toolbar */}
         {transcriptBound && (
@@ -928,6 +1004,7 @@ export default function SessionScreen() {
 
         {/* Attachment preview */}
         {transcriptBound && <ImageAttachments attachments={attachments} isDark={isDark} onRemove={removeAttachment} />}
+        {transcriptBound && <FileContextChips contexts={fileContexts} isDark={isDark} onRemove={(index) => id && removeFileContext(id, index)} />}
 
         {/* Input */}
         {transcriptBound && (
@@ -957,6 +1034,8 @@ export default function SessionScreen() {
               placeholderTextColor={speech.listening ? "#ef4444" : isDark ? "#666666" : "#999999"}
               value={speech.listening ? speech.transcript : input}
               onChangeText={speech.listening ? undefined : setInput}
+              selection={selection}
+              onSelectionChange={(event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => setSelection(event.nativeEvent.selection)}
               editable={!speech.listening}
               multiline
               maxLength={10000}
@@ -981,7 +1060,7 @@ export default function SessionScreen() {
               </TouchableOpacity>
             )}
             {/* Send button: when there's input */}
-            {!speech.listening && (input.trim() || attachments.length > 0) && (
+            {!speech.listening && (input.trim() || attachments.length > 0 || fileContexts.length > 0) && (
               <TouchableOpacity style={s.sendBtn} onPress={handleSend} testID="chat-send-button">
                 <Ionicons name="send" size={20} color="#ffffff" />
               </TouchableOpacity>

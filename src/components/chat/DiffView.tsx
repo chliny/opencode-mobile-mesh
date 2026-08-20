@@ -1,9 +1,7 @@
-import { View, Text, StyleSheet, Platform } from "react-native"
-import { WideScroll } from "../WideScroll"
+import { View, StyleSheet } from "react-native"
 import { computeDiff } from "./diff-compute"
 import { ContentViewerButton } from "./ContentViewerButton"
-
-const mono = Platform.OS === "ios" ? "Menlo" : "monospace"
+import { DiffRenderer, type SharedDiffLine } from "../files/DiffRenderer"
 
 export interface DiffLinesProps {
   lines: ReturnType<typeof computeDiff>
@@ -30,44 +28,13 @@ export function DiffLinesView({ lines, isDark, title, maxHeight }: DiffLinesProp
 
   const fullDiff = lines.map((line) => `${line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}${line.text}`).join("\n")
 
+  const sharedLines: SharedDiffLine[] = lines.map((line, index) => ({ ...line, key: `${line.type}-${index}` }))
   return (
     <View style={[s.container, isDark && s.containerDark]}>
       <View style={s.header}>
         <ContentViewerButton title={title || "diff"} content={fullDiff} language="diff" isDark={isDark} />
       </View>
-      <WideScroll
-        style={maxHeight ? { maxHeight } : undefined}
-        nestedScrollEnabled={maxHeight !== undefined}
-        testID="diff-view-scroll"
-      >
-        <View>
-          {lines.map((line, idx) => (
-            <View
-              key={idx}
-              style={[
-                s.line,
-                line.type === "add" && (isDark ? s.addDark : s.add),
-                line.type === "remove" && (isDark ? s.removeDark : s.remove),
-              ]}
-            >
-              <Text style={[s.prefix, isDark && s.prefixDark]}>
-                {line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}
-              </Text>
-              <Text
-                style={[
-                  s.text,
-                  isDark && s.textDark,
-                  line.type === "add" && s.addText,
-                  line.type === "remove" && s.removeText,
-                ]}
-                selectable
-              >
-                {line.text}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </WideScroll>
+      <DiffRenderer lines={sharedLines} isDark={isDark} maxHeight={maxHeight} />
     </View>
   )
 }
@@ -82,32 +49,4 @@ const s = StyleSheet.create({
   containerDark: { backgroundColor: "#1a1a1a" },
   header: { alignItems: "flex-end", paddingHorizontal: 8, paddingTop: 6 },
 
-  line: {
-    flexDirection: "row",
-    paddingHorizontal: 8,
-    paddingVertical: 1,
-  },
-  add: { backgroundColor: "#dcfce7" },
-  addDark: { backgroundColor: "#052e16" },
-  remove: { backgroundColor: "#fee2e2" },
-  removeDark: { backgroundColor: "#2a0a0a" },
-
-  prefix: {
-    width: 16,
-    fontSize: 12,
-    fontFamily: mono,
-    color: "#999999",
-    lineHeight: 20,
-  },
-  prefixDark: { color: "#9a9a9a" },
-
-  text: {
-    fontSize: 12,
-    fontFamily: mono,
-    color: "#0a0a0a",
-    lineHeight: 20,
-  },
-  textDark: { color: "#e5e5e5" },
-  addText: { color: "#16a34a" },
-  removeText: { color: "#dc2626" },
 })

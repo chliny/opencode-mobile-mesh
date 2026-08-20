@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { ApiError, type Session, type Message, type Part, type Event, type MessageWithParts, type Client } from "../lib/sdk"
+import { ApiError, type Session, type Message, type Part, type Event, type MessageWithParts, type Client, type PromptFileReference, type PromptPartInput } from "../lib/sdk"
 import { useConnections } from "./connections"
 import { useSettings } from "./settings"
 import { addBreadcrumb } from "../lib/sentry"
@@ -9,6 +9,7 @@ import { mergeIncomingMessage } from "../lib/message-merge"
 import { isColdSessionLoad, isLiveEventForSession } from "../lib/session-load-reconcile"
 import { log } from "../lib/logbuffer"
 import { shouldApplyTranscriptRefresh } from "../lib/transcript-refresh"
+import { buildReferenceParts } from "../lib/file-review"
 
 // Helper to convert API response to our internal format
 function parseMessages(response: MessageWithParts[]): { messages: Message[]; parts: Record<string, Part[]> } {
@@ -38,6 +39,7 @@ interface SessionsState {
   sending: Record<string, boolean>
   // Unsent composer text, isolated by session ID.
   drafts: Record<string, string>
+  fileContexts: Record<string, PromptFileReference[]>
   loadingMore: boolean
   hasMore: boolean
   error: string | null
@@ -47,6 +49,9 @@ interface SessionsState {
   selectSession: (sessionID: string, directory?: string) => Promise<void>
   setDraft: (sessionID: string, text: string) => void
   clearDraft: (sessionID: string) => void
+  addFileContext: (sessionID: string, context: PromptFileReference) => void
+  removeFileContext: (sessionID: string, index: number) => void
+  clearFileContexts: (sessionID: string) => void
   loadOlderMessages: () => Promise<void>
   createSession: (title?: string) => Promise<Session | null>
   deleteSession: (sessionID: string) => Promise<void>
@@ -56,6 +61,7 @@ interface SessionsState {
     agent?: string,
     files?: Array<{ uri: string; mime: string; filename?: string; base64?: string }>,
     variant?: string,
+    references?: PromptFileReference[],
   ) => Promise<void>
   abortSession: () => Promise<void>
   refreshMessages: (options?: { expectedSessionID?: string; silent?: boolean }) => Promise<void>
@@ -123,6 +129,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
   isLoading: false,
   sending: {},
   drafts: {},
+  fileContexts: {},
   loadingMore: false,
   hasMore: false,
   error: null,
@@ -136,6 +143,19 @@ export const useSessions = create<SessionsState>((set, get) => ({
       const drafts = { ...state.drafts }
       delete drafts[sessionID]
       return { drafts }
+    }),
+
+  addFileContext: (sessionID, context) =>
+    set((state) => ({ fileContexts: { ...state.fileContexts, [sessionID]: [...(state.fileContexts[sessionID] || []), context] } })),
+
+  removeFileContext: (sessionID, index) =>
+    set((state) => ({ fileContexts: { ...state.fileContexts, [sessionID]: (state.fileContexts[sessionID] || []).filter((_, item) => item !== index) } })),
+
+  clearFileContexts: (sessionID) =>
+    set((state) => {
+      const fileContexts = { ...state.fileContexts }
+      delete fileContexts[sessionID]
+      return { fileContexts }
     }),
 
   loadSessions: async () => {
@@ -308,7 +328,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
     }
   },
 
-  sendMessage: async (text, model, agent, files, variant) => {
+  sendMessage: async (text, model, agent, files, variant, references) => {
     const client = clientFor(get().currentSession?.directory)
     const session = get().currentSession
     if (!client || !session) {
@@ -352,6 +372,19 @@ export const useSessions = create<SessionsState>((set, get) => ({
           })
         }
       }
+      if (references) {
+        for (const [index, reference] of references.entries()) {
+          optimisticParts.push({
+            id: `temp-part-reference-${ts}-${index}`,
+            messageID: userMessage.id,
+            type: "file",
+            mime: "text/plain",
+            url: reference.path,
+            filename: reference.path.split("/").pop(),
+            source: { type: "file", path: reference.path, text: { value: reference.text, start: reference.start, end: reference.end } },
+          })
+        }
+      }
 
       set((state) => ({
         messages: [...state.messages, userMessage],
@@ -360,9 +393,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
       }))
 
       // Build prompt parts - images are already converted to JPEG with base64 by toJpeg()
-      const promptParts: Array<
-        { type: "text"; text: string } | { type: "file"; mime: string; url: string; filename?: string }
-      > = []
+      const promptParts: PromptPartInput[] = []
       if (text) {
         promptParts.push({ type: "text", text })
       }
@@ -372,6 +403,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
           promptParts.push({ type: "file", mime: f.mime, url, filename: f.filename })
         }
       }
+      if (references?.length) promptParts.push(...buildReferenceParts(session.directory, references))
 
       // Await submission (POST to /prompt_async resolves fast, well before the
       // streamed response) so a failure here can propagate to the caller — SSE

@@ -24,9 +24,14 @@ function readComponent(relativePath: string): string {
 
 test("DiffView wraps diff lines in WideScroll", () => {
   const src = readComponent("chat/DiffView.tsx")
-  assert.match(src, /<WideScroll/)
+  assert.match(src, /<DiffRenderer/)
   assert.doesNotMatch(src, /numberOfLines/, "DiffView must not truncate diff line text with numberOfLines")
   assert.doesNotMatch(src, /WIDE_CONTENT_SCROLL_CONFIG/, "DiffView must use WideScroll, not the old scroll config")
+})
+
+test("shared diff renderer wraps diff lines in WideScroll", () => {
+  const src = readComponent("files/DiffRenderer.tsx")
+  assert.match(src, /<WideScroll/)
 })
 
 test("CodeBlock wraps code in WideScroll", () => {
