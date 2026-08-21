@@ -25,6 +25,6 @@ export function completionNotificationBody(): string {
   return "A session finished processing"
 }
 
-export function errorNotificationBody(): string {
-  return "A session needs your attention"
+export function errorNotificationBody(message?: string): string {
+  return sanitizeBody(message, "A session needs your attention")
 }

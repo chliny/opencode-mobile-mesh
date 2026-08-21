@@ -50,6 +50,7 @@ import { reviewDiffsForMessage } from "../../src/lib/review-diffs"
 import { sessionRouteState } from "../../src/lib/session-route-binding"
 import { isAtBottom, shouldAutoScroll, shouldShowScrollButton, transcriptSignature } from "../../src/lib/auto-scroll"
 import { extractCopyText, hasCopyableText } from "../../src/lib/message-copy-text"
+import { modelNameFor } from "../../src/lib/model-display"
 import { activeMention, insertMention } from "../../src/lib/file-review"
 import type { PromptFileReference } from "../../src/lib/sdk"
 import { cacheDiffs, getCachedDiffs } from "../../src/lib/session-file-cache"
@@ -813,7 +814,11 @@ export default function SessionScreen() {
   // Current agent display
   const currentAgent = agents.find((a) => a.name === agent)
   const agentColor = currentAgent?.color || "#8b5cf6"
-  const modelLabel = model?.modelID ? model.modelID.split("/").pop() || model.modelID : "default"
+  const modelLabel = model
+    ? modelNameFor(providers, model.providerID, model.modelID) ||
+      model.modelID.split("/").pop() ||
+      model.modelID
+    : "default"
 
   // Variants for current model (for reasoning effort picker)
   const currentModelVariants = useMemo(() => {

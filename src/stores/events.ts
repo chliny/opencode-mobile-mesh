@@ -17,6 +17,7 @@ import { isAuthError } from "../lib/api-error"
 import { isSessionActuallyIdle } from "../lib/session-status-reconcile"
 import { log } from "../lib/logbuffer"
 import { RECONNECT_DELAYS_MS, type TransportState } from "../lib/sse-liveness"
+import { messageErrorText } from "../lib/model-error"
 import type { Client, Part, Session, Message } from "../lib/sdk"
 
 // Session status from the server
@@ -376,9 +377,10 @@ export const useEvents = create<EventsState>((set, get) => ({
             }
 
             case "session.error": {
-              const error = props.error as { message?: string } | undefined
+              const error = props.error
               const sessionID = props.sessionID as string
               if (!sessionID) break
+              const errorText = messageErrorText(error) || "Session error occurred"
               // Mark so the eventual busy -> idle transition is not counted
               // as a success for the store review prompt
               erroredSessions.add(sessionID)
@@ -387,7 +389,7 @@ export const useEvents = create<EventsState>((set, get) => ({
                 sending: { ...state.sending, [sessionID]: false },
                 // Surface error only if user is viewing this session
                 ...(state.currentSession?.id === sessionID
-                  ? { error: error?.message || "Session error occurred" }
+                  ? { error: errorText }
                   : {}),
               }))
               if (useSessions.getState().currentSession?.id === sessionID) {
@@ -396,7 +398,7 @@ export const useEvents = create<EventsState>((set, get) => ({
               notify({
                 category: "errors",
                 title: "Session error",
-                body: errorNotificationBody(),
+                body: errorNotificationBody(errorText),
                 sessionId: sessionID,
               })
               break

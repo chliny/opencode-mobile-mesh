@@ -6,6 +6,9 @@ import { ToolCallCard } from "./ToolCallCard"
 import { ReasoningBlock } from "./ReasoningBlock"
 import { ReviewChanges } from "./ReviewChanges"
 import type { FileDiff, Message, Part } from "../../lib/sdk"
+import { messageErrorText } from "../../lib/model-error"
+import { modelNameFor } from "../../lib/model-display"
+import { useCatalog } from "../../stores/catalog"
 
 const SCREEN_WIDTH = Dimensions.get("window").width
 
@@ -29,6 +32,17 @@ interface Props {
 export const MessageBubble = memo(
   function MessageBubble({ message, parts, isDark, reviewDiffs, onLongPress }: Props) {
     const isUser = message.role === "user"
+    const error = !isUser ? messageErrorText(message.error) : undefined
+
+    // Show the catalog display name ("ox alpha free"), not the raw model ID
+    const providers = useCatalog((s) => s.providers)
+    const modelTag = isUser
+      ? message.model
+        ? modelNameFor(providers, message.model.providerID, message.model.modelID) || message.model.modelID
+        : undefined
+      : message.modelID
+        ? modelNameFor(providers, message.providerID, message.modelID) || message.modelID
+        : undefined
 
     const textParts = parts.filter((p) => p.type === "text")
     const reasoningParts = parts.filter((p) => p.type === "reasoning")
@@ -59,8 +73,7 @@ export const MessageBubble = memo(
             color={isUser ? (isDark ? "#ffffff" : "#0a0a0a") : "#8b5cf6"}
           />
           <Text style={[s.role, isUser && s.roleUser, isDark && s.textWhite]}>{isUser ? "You" : "Assistant"}</Text>
-          {message.model && <Text style={[s.modelTag, isDark && s.modelTagDark]}>{message.model.modelID}</Text>}
-          {!isUser && message.modelID && <Text style={[s.modelTag, isDark && s.modelTagDark]}>{message.modelID}</Text>}
+          {modelTag && <Text style={[s.modelTag, isDark && s.modelTagDark]}>{modelTag}</Text>}
         </View>
 
         {/* Image attachments */}
@@ -98,6 +111,15 @@ export const MessageBubble = memo(
               <Markdown>{text}</Markdown>
             </View>
           ))}
+
+        {error && (
+          <View style={[s.errorBox, isDark && s.errorBoxDark]}>
+            <Ionicons name="alert-circle-outline" size={16} color="#dc2626" />
+            <Text style={[s.errorText, isDark && s.errorTextDark]} selectable>
+              {error}
+            </Text>
+          </View>
+        )}
 
         {/* Tool calls */}
         {toolParts.map((tool) => (
@@ -160,6 +182,19 @@ const s = StyleSheet.create({
 
   messageText: { fontSize: 15, lineHeight: 22, color: "#0a0a0a" },
   markdownWrap: { marginHorizontal: -4 },
+
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginTop: 8,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: "#fee2e2",
+  },
+  errorBoxDark: { backgroundColor: "#451a1a" },
+  errorText: { flex: 1, color: "#991b1b", fontSize: 14, lineHeight: 20 },
+  errorTextDark: { color: "#fecaca" },
 
   tokens: { fontSize: 11, color: "#999999", marginTop: 8 },
   tokensDark: { color: "#9a9a9a" },

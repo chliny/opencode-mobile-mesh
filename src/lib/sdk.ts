@@ -79,7 +79,13 @@ export interface Message {
     reasoning?: number
     cache?: { read: number; write: number }
   }
-  error?: { message: string }
+  // Current servers use { name, data: { message } }; older servers may send
+  // a flat message object.
+  error?: {
+    message?: string
+    name?: string
+    data?: { message?: string; responseBody?: string }
+  }
   finish?: string
 }
 
