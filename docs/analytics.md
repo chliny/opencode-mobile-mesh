@@ -23,8 +23,8 @@ and reach first value (message sent → response received)?** Nothing else is tr
 | Item | Value |
 |---|---|
 | SDK | `posthog-react-native`, self-instantiated (no `PostHogProvider`, no autocapture) |
-| Destination | PostHog **EU region** — `https://eu.i.posthog.com` (override: `EXPO_PUBLIC_POSTHOG_HOST`) |
-| API key | `EXPO_PUBLIC_POSTHOG_KEY` (CI secret; unset ⇒ analytics is a strict no-op) |
+| Destination | `EXPO_PUBLIC_POSTHOG_HOST` (required; unset ⇒ analytics is a strict no-op) |
+| API key | `EXPO_PUBLIC_POSTHOG_KEY` (required; unset ⇒ analytics is a strict no-op) |
 | Identity | PostHog's random app-generated anonymous ID only; no `identify()` calls, no user IDs |
 | Code | `src/lib/analytics.ts` (wrapper), `src/lib/analytics-classify.ts` (error bucketing), `src/lib/demo-analytics.ts` (demo-funnel property derivation), `src/lib/telemetry.ts` (consent gate) |
 

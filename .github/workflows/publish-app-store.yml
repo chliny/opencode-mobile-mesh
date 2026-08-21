@@ -25,8 +25,11 @@
 #
 # Optional crash reporting + analytics belong in the EAS `production` environment
 # because the iOS bundle is built on a remote EAS worker. Configure
-# EXPO_PUBLIC_SENTRY_DSN, SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT, and
-# EXPO_PUBLIC_POSTHOG_KEY (PostHog project API key) in Expo before releasing.
+# EXPO_PUBLIC_SENTRY_DSN, SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT,
+# EXPO_PUBLIC_POSTHOG_KEY, EXPO_PUBLIC_POSTHOG_HOST,
+# EXPO_PUBLIC_CHATWOOT_INBOX_IDENTIFIER, and EXPO_PUBLIC_CHATWOOT_BASE_URL in
+# Expo before releasing. Each integration is disabled when its required values
+# are absent.
 #
 # Build number is managed remotely by EAS (eas.json: cli.appVersionSource=remote,
 # build.production.ios.autoIncrement=buildNumber). The workflow only injects the

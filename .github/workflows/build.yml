@@ -37,7 +37,9 @@ jobs:
     env:
       EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
       EXPO_PUBLIC_POSTHOG_KEY: ${{ secrets.EXPO_PUBLIC_POSTHOG_KEY }}
+      EXPO_PUBLIC_POSTHOG_HOST: ${{ secrets.EXPO_PUBLIC_POSTHOG_HOST }}
       EXPO_PUBLIC_CHATWOOT_INBOX_IDENTIFIER: ${{ secrets.EXPO_PUBLIC_CHATWOOT_INBOX_IDENTIFIER }}
+      EXPO_PUBLIC_CHATWOOT_BASE_URL: ${{ secrets.EXPO_PUBLIC_CHATWOOT_BASE_URL }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
@@ -140,7 +142,7 @@ jobs:
   # tracked source, defeating the byte-for-byte parity this job exists for.
   #
   # This job also intentionally receives NONE of the EXPO_PUBLIC_SENTRY_DSN /
-  # EXPO_PUBLIC_POSTHOG_KEY / EXPO_PUBLIC_CHATWOOT_INBOX_IDENTIFIER / SENTRY_*
+  # EXPO_PUBLIC_POSTHOG_* / EXPO_PUBLIC_CHATWOOT_* / SENTRY_*
   # secrets that the main `build` job sets — F-Droid's isolated build
   # environment has no access to this repo's secrets either, so baking any of
   # them into the JS bundle here would itself be a source of reproducible-build

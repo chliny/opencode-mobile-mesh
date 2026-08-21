@@ -30,9 +30,7 @@ import { log } from "./logbuffer"
 export { classifyConnectionError, type ConnectionErrorClass } from "./analytics-classify"
 
 const API_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY
-// EU by default (GDPR-friendly region for opencode's mostly-EU/self-hosted user base).
-// Override with EXPO_PUBLIC_POSTHOG_HOST for a self-hosted instance.
-const HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com"
+const HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST
 
 const FIRST_OPEN_KEY = "opencode_analytics_first_open_done"
 
@@ -107,8 +105,8 @@ export type ConnectionTestSource = "onboarding" | "edit_test" | "sse"
 
 export function initAnalytics() {
   if (enabled) return
-  if (!API_KEY) {
-    log.info("analytics", "no API key configured — analytics disabled")
+  if (!API_KEY || !HOST) {
+    log.info("analytics", "PostHog key or host not configured — analytics disabled")
     return
   }
   try {
