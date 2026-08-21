@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  InteractionManager,
   type AlertButton,
   type NativeSyntheticEvent,
   type TextInputSelectionChangeEventData,
@@ -164,6 +165,45 @@ export default function SessionScreen() {
     },
     [transcriptBound, currentSession?.directory, clientForDirectory, client],
   )
+
+  useEffect(() => {
+    if (!transcriptBound || !sessionClient || !currentSession?.id) return
+    const sessionID = currentSession.id
+    const dir = currentSession.directory || directory
+    let active = true
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const interaction = InteractionManager.runAfterInteractions(() => {
+      timer = setTimeout(() => {
+        const warm = async () => {
+          if (!active || useSessions.getState().sending[sessionID]) return
+          if (!getCachedDiffs(dir, sessionID, "turn")) {
+            const value = [...messagesRef.current].reverse().find((item) => item.role === "user" && item.summary?.diffs)?.summary?.diffs
+            if (value) cacheDiffs(dir, sessionID, "turn", value)
+          }
+          if (!active || useSessions.getState().sending[sessionID] || getCachedDiffs(dir, sessionID, "git")) return
+          try {
+            const value = await sessionClient.vcs.diff({ mode: "git", context: 10 })
+            if (active) cacheDiffs(dir, sessionID, "git", value)
+          } catch {
+            return
+          }
+          if (!active || useSessions.getState().sending[sessionID] || getCachedDiffs(dir, sessionID, "branch")) return
+          try {
+            const value = await sessionClient.vcs.diff({ mode: "branch", context: 10 })
+            if (active) cacheDiffs(dir, sessionID, "branch", value)
+          } catch {
+            return
+          }
+        }
+        void warm()
+      }, 2500)
+    })
+    return () => {
+      active = false
+      if (timer) clearTimeout(timer)
+      interaction.cancel()
+    }
+  }, [currentSession?.directory, currentSession?.id, directory, sessionClient, transcriptBound])
 
   useEffect(() => {
     if (!transcriptBound || !sessionClient || !currentSession?.id) return
