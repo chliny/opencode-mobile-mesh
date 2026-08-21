@@ -1,8 +1,8 @@
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
-import type { Message, Session } from "../../lib/sdk"
+import type { Client, Message, Session } from "../../lib/sdk"
 import type { Provider } from "../../stores/catalog"
 
 interface Props {
@@ -16,6 +16,7 @@ interface Props {
   onLoadAll: () => void
   onScrollToTop: () => void
   onClose: () => void
+  client: Client | null
 }
 
 function compact(n: number): string {
@@ -51,8 +52,26 @@ export function SessionInfo({
   onLoadAll,
   onScrollToTop,
   onClose,
+  client,
 }: Props) {
   const { t } = useTranslation()
+  const [branch, setBranch] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!visible || !client) {
+      setBranch(null)
+      return
+    }
+    let active = true
+    client.vcs.status().then((status) => {
+      if (active) setBranch(status.branch || null)
+    }).catch(() => {
+      if (active) setBranch(null)
+    })
+    return () => {
+      active = false
+    }
+  }, [client, visible])
   // Match TUI: last assistant message tokens (context window), cumulative cost
   const stats = useMemo(() => {
     let cost = 0
@@ -152,6 +171,7 @@ export function SessionInfo({
 
       {/* Session metadata */}
       <View style={s.meta}>
+        {branch && <MetaItem icon="git-branch-outline" label={t("chat.sessionInfo.meta.branch")} value={branch} isDark={isDark} />}
         {created && (
           <MetaItem icon="time-outline" label={t("chat.sessionInfo.meta.created")} value={formatTime(created, t)} isDark={isDark} />
         )}

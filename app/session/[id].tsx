@@ -827,19 +827,23 @@ export default function SessionScreen() {
     () => (
       <View style={s.headerRight}>
         {shortDir && (
-          <View style={[s.dirBadge, isDark && s.dirBadgeDark]}>
+          <TouchableOpacity
+            style={[s.dirBadge, isDark && s.dirBadgeDark]}
+            onPress={() => router.push({ pathname: "/session-files", params: { id, directory: currentSession?.directory || directory || "" } })}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={t("files.title")}
+          >
             <Ionicons name="folder-outline" size={14} color={isDark ? "#888888" : "#666666"} />
             <Text style={[s.dirText, isDark && s.dirTextDark]}>{shortDir}</Text>
-          </View>
+          </TouchableOpacity>
         )}
         <TouchableOpacity
-          onPress={() => router.push({ pathname: "/session-files", params: { id, directory: currentSession?.directory || directory || "" } })}
+          onPress={() => {
+            setShowInfo((value) => !value)
+          }}
           hitSlop={8}
-          testID="session-files-button"
         >
-          <Ionicons name="documents-outline" size={20} color={isDark ? "#888888" : "#666666"} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setShowInfo((value) => !value)} hitSlop={8}>
           <Ionicons
             name={showInfo ? "stats-chart" : "stats-chart-outline"}
             size={20}
@@ -886,6 +890,7 @@ export default function SessionScreen() {
               flatListRef.current?.scrollToEnd({ animated: true })
             }}
             onClose={() => setShowInfo(false)}
+            client={sessionClient}
           />
         )}
 

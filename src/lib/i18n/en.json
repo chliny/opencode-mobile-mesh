@@ -477,8 +477,9 @@
         "cacheRead": "Cache R",
         "cacheWrite": "Cache W"
       },
-      "meta": {
-        "created": "Created",
+        "meta": {
+          "branch": "Branch",
+          "created": "Created",
         "updated": "Updated",
         "messages": "Messages",
         "changes": "Changes",

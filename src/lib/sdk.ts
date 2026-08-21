@@ -219,6 +219,10 @@ export interface Project {
   }
 }
 
+export interface VcsStatus {
+  branch?: string
+}
+
 export interface FileEntry {
   name: string
   path: string

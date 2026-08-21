@@ -477,8 +477,9 @@
         "cacheRead": "缓存读",
         "cacheWrite": "缓存写"
       },
-      "meta": {
-        "created": "创建于",
+        "meta": {
+          "branch": "分支",
+          "created": "创建于",
         "updated": "更新于",
         "messages": "消息数",
         "changes": "变更",
