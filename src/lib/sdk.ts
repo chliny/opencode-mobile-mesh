@@ -441,6 +441,7 @@ export function createClient(config: ClientConfig) {
     },
 
     vcs: {
+      status: () => request<VcsStatus>(config, "/vcs"),
       diff: (params: { mode: "git" | "branch"; context?: number }, timeoutMs = VCS_DIFF_TIMEOUT_MS) => {
         const query = new URLSearchParams({ mode: params.mode })
         if (params.context !== undefined) query.set("context", String(params.context))
@@ -527,7 +528,7 @@ export function createClient(config: ClientConfig) {
 
         if (!response.ok) {
           const error = await response.text()
-          throw new Error(`Failed to send message: ${response.status} - ${error}`)
+          throw apiErrorFor(response.status, `Failed to send message: ${response.status} - ${error}`)
         }
       },
 
