@@ -51,6 +51,7 @@ import { isAtBottom, shouldAutoScroll, shouldShowScrollButton, transcriptSignatu
 import { extractCopyText, hasCopyableText } from "../../src/lib/message-copy-text"
 import { activeMention, insertMention } from "../../src/lib/file-review"
 import type { PromptFileReference } from "../../src/lib/sdk"
+import { cacheDiffs, getCachedDiffs } from "../../src/lib/session-file-cache"
 
 // --- Builtin slash commands ---
 const BUILTIN_COMMANDS: SlashCommand[] = [
@@ -129,6 +130,8 @@ export default function SessionScreen() {
     revertToMessage,
     unrevertSession,
   } = useSessions()
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
 
   const bindingAttempt = useRef(0)
   const [failedSessionID, setFailedSessionID] = useState<string | null>(null)
@@ -161,6 +164,27 @@ export default function SessionScreen() {
     },
     [transcriptBound, currentSession?.directory, clientForDirectory, client],
   )
+
+  useEffect(() => {
+    if (!transcriptBound || !sessionClient || !currentSession?.id) return
+    const sessionID = currentSession.id
+    const dir = currentSession.directory || directory
+    const warm = async () => {
+      const tasks: Promise<void>[] = []
+      if (!getCachedDiffs(dir, sessionID, "git")) {
+        tasks.push(sessionClient.vcs.diff({ mode: "git", context: 10 }).then((value) => cacheDiffs(dir, sessionID, "git", value)).catch(() => undefined))
+      }
+      if (!getCachedDiffs(dir, sessionID, "branch")) {
+        tasks.push(sessionClient.vcs.diff({ mode: "branch", context: 10 }).then((value) => cacheDiffs(dir, sessionID, "branch", value)).catch(() => undefined))
+      }
+      if (!getCachedDiffs(dir, sessionID, "turn")) {
+        const value = [...messagesRef.current].reverse().find((item) => item.role === "user" && item.summary?.diffs)?.summary?.diffs
+        if (value) cacheDiffs(dir, sessionID, "turn", value)
+      }
+      await Promise.all(tasks)
+    }
+    void warm()
+  }, [currentSession?.directory, currentSession?.id, directory, sessionClient, transcriptBound])
 
   // Catalog
   const catalog = useCatalog()
