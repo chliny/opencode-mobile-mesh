@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from "react-native"
-import { Stack, useLocalSearchParams, useRouter } from "expo-router"
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import type { FileDiff, FileEntry } from "../src/lib/sdk"
@@ -112,7 +112,9 @@ export default function SessionFilesScreen() {
     void load()
   }, [directory, id, load, mode])
 
-  useEffect(() => { void load() }, [load])
+  useFocusEffect(useCallback(() => {
+    refresh()
+  }, [refresh]))
 
   const open = useCallback((file: string, view: "diff" | "file") => {
     router.push({ pathname: "/session-file", params: { id, directory, path: file, mode: view, source: mode } })
