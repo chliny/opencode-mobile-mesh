@@ -4,8 +4,10 @@ import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-spe
 interface SpeechState {
   listening: boolean
   transcript: string
-  error: string | null
+  error: SpeechErrorKind | null
 }
+
+export type SpeechErrorKind = "permission" | "network" | "unavailable" | "unknown"
 
 interface SpeechActions {
   start: () => Promise<void>
@@ -16,8 +18,11 @@ interface SpeechActions {
 export function useSpeech(onResult: (text: string) => void): SpeechState & SpeechActions {
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<SpeechErrorKind | null>(null)
   const pending = useRef("")
+  const alive = useRef(true)
+  const starting = useRef(false)
+  const requestID = useRef(0)
 
   useSpeechRecognitionEvent("start", () => {
     setListening(true)
@@ -43,19 +48,38 @@ export function useSpeech(onResult: (text: string) => void): SpeechState & Speec
   })
 
   useSpeechRecognitionEvent("error", (event) => {
-    // "no-speech" is not really an error — user just didn't say anything
-    if (event.error === "no-speech") {
+    // These are expected when the user stops, cancels, or says nothing.
+    if (event.error === "aborted" || event.error === "no-speech" || event.error === "speech-timeout") {
       setListening(false)
       return
     }
-    setError(event.message || event.error)
+    if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+      setError("permission")
+    } else if (event.error === "network") {
+      setError("network")
+    } else if (event.error === "audio-capture" || event.error === "client" || event.error === "busy") {
+      setError("unavailable")
+    } else {
+      setError("unknown")
+    }
     setListening(false)
   })
 
   const start = useCallback(async () => {
+    if (!alive.current || starting.current) return
+    if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
+      setError("unavailable")
+      return
+    }
+    const request = ++requestID.current
+    starting.current = true
     const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync()
+    starting.current = false
+    // Do not start native recognition after the screen was dismissed while
+    // the permission prompt was open.
+    if (!alive.current || request !== requestID.current) return
     if (!result.granted) {
-      setError("Microphone permission denied")
+      setError("permission")
       return
     }
     ExpoSpeechRecognitionModule.start({
@@ -70,6 +94,8 @@ export function useSpeech(onResult: (text: string) => void): SpeechState & Speec
   }, [])
 
   const cancel = useCallback(() => {
+    requestID.current += 1
+    starting.current = false
     pending.current = ""
     ExpoSpeechRecognitionModule.abort()
     setListening(false)
@@ -79,7 +105,11 @@ export function useSpeech(onResult: (text: string) => void): SpeechState & Speec
   // Stop the native recognition session when the screen unmounts — otherwise
   // the mic stays hot in the background. abort() is a no-op when not listening.
   useEffect(() => {
+    alive.current = true
     return () => {
+      alive.current = false
+      requestID.current += 1
+      starting.current = false
       ExpoSpeechRecognitionModule.abort()
     }
   }, [])

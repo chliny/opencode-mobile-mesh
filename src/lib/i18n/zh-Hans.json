@@ -135,7 +135,10 @@
       "imageFailedTitle": "图片未添加",
       "imageFailedMessage": "一张或多张图片无法处理。请尝试其他照片。",
       "speechErrorTitle": "语音输入失败",
-      "speechErrorMessage": "无法使用语音输入。请检查麦克风权限后重试。"
+      "speechErrorMessage": "无法使用语音输入，请重试。",
+      "speechErrorPermission": "麦克风权限被拒绝，请在系统设置中允许 OpenCode 使用麦克风后重试。",
+      "speechErrorNetwork": "语音识别发生网络错误，请检查网络连接后重试。",
+      "speechErrorUnavailable": "此设备上没有可用的语音识别服务。"
     }
   },
   "files": {

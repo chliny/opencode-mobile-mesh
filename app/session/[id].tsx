@@ -276,12 +276,26 @@ export default function SessionScreen() {
     }, []),
   )
 
+  // A native-stack back gesture can blur this screen before React unmounts it.
+  // Cancel immediately so recognition cannot survive navigation.
+  useFocusEffect(
+    useCallback(() => {
+      return () => speech.cancel()
+    }, [speech.cancel]),
+  )
+
   // Surface speech recognition failures (e.g. mic permission denied). Keyed
   // on the error value itself so it only fires once per distinct error, not
   // on every re-render while it remains set.
   useEffect(() => {
     if (!speech.error) return
-    Alert.alert(t("session.alerts.speechErrorTitle"), t("session.alerts.speechErrorMessage"))
+    const message = {
+      permission: "session.alerts.speechErrorPermission",
+      network: "session.alerts.speechErrorNetwork",
+      unavailable: "session.alerts.speechErrorUnavailable",
+      unknown: "session.alerts.speechErrorMessage",
+    }[speech.error]
+    Alert.alert(t("session.alerts.speechErrorTitle"), t(message))
   }, [speech.error, t])
 
   // Slash command state
