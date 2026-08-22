@@ -6,6 +6,9 @@ scripts/start-android-emulator.sh
 android/.gradle/
 android/app/build/
 android/build/
+android/.kotlin/
+modules/opencode-zerotier/android/.cxx/
+modules/opencode-zerotier/android/build/
 ios/Pods/
 *.apk
 *.aab
@@ -32,3 +35,5 @@ artifacts/screenshots/
 positive-S*.png
 negative-S*.png
 .tmp
+.plan/
+testscripts/
