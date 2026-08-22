@@ -52,6 +52,7 @@ import { isAtBottom, shouldAutoScroll, shouldShowScrollButton, transcriptSignatu
 import { extractCopyText, hasCopyableText } from "../../src/lib/message-copy-text"
 import { modelNameFor } from "../../src/lib/model-display"
 import { activeMention, insertMention } from "../../src/lib/file-review"
+import { childSessionTitle } from "../../src/lib/subagent"
 import type { PromptFileReference } from "../../src/lib/sdk"
 import { cacheDiffs, getCachedDiffs } from "../../src/lib/session-file-cache"
 
@@ -245,6 +246,9 @@ export default function SessionScreen() {
   const questions = useEvents((s) => (sessionID ? s.questions[sessionID] : undefined)) || EMPTY_LIST
 
   const shortDir = transcriptBound ? getShortDir(currentSession?.directory) : null
+  // Subagent (child) sessions are created by the task tool — read-only here:
+  // they can't be prompted, and the header shows the clean task title.
+  const isChildSession = transcriptBound && !!currentSession?.parentID
   const [showScrollButton, setShowScrollButton] = useState(false)
 
   // SSE reconnect banner
@@ -828,6 +832,19 @@ export default function SessionScreen() {
     return found?.variants
   }, [model, providers])
 
+  // "Back to main session" from a subagent transcript. Popping returns to the
+  // parent screen we were pushed from; deep links (no history) push it instead.
+  const backToParent = useCallback(() => {
+    const parentID = currentSession?.parentID
+    if (!parentID) return
+    if (router.canGoBack()) {
+      router.back()
+      return
+    }
+    const directory = currentSession?.directory || ""
+    router.push({ pathname: "/session/[id]", params: { id: parentID, ...(directory ? { directory } : {}) } })
+  }, [currentSession?.parentID, currentSession?.directory, router])
+
   const headerRight = useCallback(
     () => (
       <View style={s.headerRight}>
@@ -862,7 +879,9 @@ export default function SessionScreen() {
 
   const screenOptions = useMemo(
     () => ({
-      title: transcriptBound ? currentSession?.title || t("session.titleFallback") : t("session.titleFallback"),
+      title: transcriptBound
+        ? childSessionTitle(currentSession?.title) || t("session.titleFallback")
+        : t("session.titleFallback"),
       headerRight: transcriptBound ? headerRight : undefined,
     }),
     [currentSession?.title, headerRight, t, transcriptBound],
@@ -1030,8 +1049,22 @@ export default function SessionScreen() {
           <FileMentionPopover files={mentionFiles} loading={mentionLoading} isDark={isDark} onSelect={handleMentionSelect} />
         )}
 
+        {/* Subagent session — composer replaced by a read-only notice */}
+        {transcriptBound && isChildSession && (
+          <View style={[s.childBar, isDark && s.childBarDark, { paddingBottom: Math.max(12, insets.bottom) }]}>
+            <Ionicons name="git-network-outline" size={14} color={isDark ? "#9a9a9a" : "#666666"} />
+            <Text style={[s.childText, isDark && s.metaDark]} numberOfLines={2}>
+              {t("session.child.promptDisabled")}
+            </Text>
+            <TouchableOpacity style={[s.childBackBtn, isDark && s.childBackBtnDark]} onPress={backToParent}>
+              <Ionicons name="arrow-undo-outline" size={13} color={isDark ? "#e5e5e5" : "#0a0a0a"} />
+              <Text style={[s.childBackText, isDark && s.textWhite]}>{t("session.child.backToParent")}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Agent/model toolbar */}
-        {transcriptBound && (
+        {transcriptBound && !isChildSession && (
           <View style={[s.toolbar, isDark && s.toolbarDark]}>
             <TouchableOpacity
               style={[s.agentChip, { borderColor: agentColor }]}
@@ -1081,7 +1114,7 @@ export default function SessionScreen() {
         {transcriptBound && <FileContextChips contexts={fileContexts} isDark={isDark} onRemove={(index) => id && removeFileContext(id, index)} />}
 
         {/* Input */}
-        {transcriptBound && (
+        {transcriptBound && !isChildSession && (
           <View
             style={[s.inputContainer, isDark && s.inputContainerDark, { paddingBottom: Math.max(12, insets.bottom) }]}
           >
@@ -1288,6 +1321,31 @@ const s = StyleSheet.create({
   variantChipActive: { backgroundColor: "#f5f3ff" },
   variantLabel: { fontSize: 12, color: "#666666" },
   variantLabelActive: { color: "#8b5cf6" },
+
+  // Subagent (child session) read-only bar
+  childBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e5e5",
+    backgroundColor: "#ffffff",
+  },
+  childBarDark: { borderTopColor: "#1a1a1a", backgroundColor: "#0a0a0a" },
+  childText: { fontSize: 12, color: "#666666", flex: 1 },
+  childBackBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  childBackBtnDark: { backgroundColor: "#1a1a1a" },
+  childBackText: { fontSize: 12, fontWeight: "600", color: "#0a0a0a" },
 
   // Input
   inputContainer: {

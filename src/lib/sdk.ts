@@ -175,6 +175,9 @@ export interface Part {
     title?: string
     error?: { message: string }
     time?: { start?: number; end?: number }
+    // Tool-specific metadata. The task tool writes the spawned subagent's
+    // session ID here (`sessionId`) once the child session exists.
+    metadata?: Record<string, unknown>
   }
   // Timing
   time?: { start?: number; end?: number }

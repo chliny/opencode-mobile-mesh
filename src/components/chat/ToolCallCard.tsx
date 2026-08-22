@@ -1,8 +1,11 @@
 import { useState, useCallback } from "react"
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Platform } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import type { Part } from "../../lib/sdk"
+import { useSessions } from "../../stores/sessions"
+import { taskAgentLabel, taskChildSessionID, taskDescription } from "../../lib/subagent"
 import { DiffLinesView, DiffView } from "./DiffView"
 import { computePatchDiff, patchTextFromInput } from "./patch-compute"
 import { ContentViewerButton } from "./ContentViewerButton"
@@ -302,6 +305,7 @@ interface Props {
 
 export function ToolCallCard({ tool, isDark }: Props) {
   const { t } = useTranslation()
+  const router = useRouter()
   const isCodeChange = tool.tool === "edit" || tool.tool === "write" || tool.tool === "apply_patch"
   const [expanded, setExpanded] = useState(isCodeChange)
   const icon = (tool.tool && TOOL_ICONS[tool.tool]) || "extension-puzzle-outline"
@@ -310,6 +314,18 @@ export function ToolCallCard({ tool, isDark }: Props) {
   const error = tool.state?.error?.message
   const elapsed = duration(tool.state?.time?.start, tool.state?.time?.end)
   const hasDetail = tool.state?.input !== undefined || tool.state?.output !== undefined || error
+
+  // Subagent (task tool): once the server reports the child session ID in the
+  // part's state metadata, offer a jump into that session's transcript.
+  const subagentSessionID = taskChildSessionID(tool)
+  const openSubagent = useCallback(() => {
+    if (!subagentSessionID) return
+    const directory = useSessions.getState().currentSession?.directory
+    router.push({
+      pathname: "/session/[id]",
+      params: { id: subagentSessionID, ...(directory ? { directory } : {}) },
+    })
+  }, [router, subagentSessionID])
 
   const toggle = useCallback(() => {
     if (hasDetail) setExpanded((v) => !v)
@@ -351,6 +367,20 @@ export function ToolCallCard({ tool, isDark }: Props) {
 
       {/* Error banner */}
       {error && !expanded && <ErrorBanner message={error} isDark={isDark} />}
+
+      {/* Subagent jump — shown once the child session ID is known */}
+      {subagentSessionID && (
+        <TouchableOpacity style={[s.subagentLink, isDark && s.subagentLinkDark]} onPress={openSubagent} activeOpacity={0.7}>
+          <Ionicons name="git-network-outline" size={14} color="#8b5cf6" />
+          <Text style={[s.subagentAgent, isDark && s.subagentTextDark]} numberOfLines={1}>
+            {taskAgentLabel(tool)}
+          </Text>
+          <Text style={[s.subagentDesc, isDark && s.subagentTextDark]} numberOfLines={1}>
+            {taskDescription(tool) || subagentSessionID}
+          </Text>
+          <Ionicons name="chevron-forward" size={14} color={isDark ? "#9a9a9a" : "#999999"} />
+        </TouchableOpacity>
+      )}
 
       {/* Expanded detail */}
       {expanded && (
@@ -434,6 +464,22 @@ const s = StyleSheet.create({
   },
   codePteDark: { color: "#e5e5e5" },
   codePrompt: { color: "#8b5cf6", fontWeight: "700" },
+
+  // Subagent link row (task tool)
+  subagentLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: "#f5f3ff",
+  },
+  subagentLinkDark: { backgroundColor: "#221a33" },
+  subagentAgent: { fontSize: 12, fontWeight: "600", color: "#0a0a0a", flexShrink: 0 },
+  subagentDesc: { fontSize: 12, color: "#666666", flex: 1 },
+  subagentTextDark: { color: "#e5e5e5" },
 
   // Todo
   todoRow: {

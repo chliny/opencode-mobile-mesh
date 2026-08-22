@@ -91,6 +91,10 @@
       "title": "开始一段对话",
       "hint": "输入 / 使用命令"
     },
+    "child": {
+      "promptDisabled": "子 Agent 会话无法发送消息。",
+      "backToParent": "返回主会话"
+    },
     "loadingOlder": "正在加载更早的消息...",
     "input": {
       "placeholderListening": "正在聆听...",
