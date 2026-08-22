@@ -149,8 +149,16 @@ export default function SessionScreen() {
     [id, setDraft],
   )
 
-  // Derive sending state for this specific session
+  // The local flag bridges the prompt request until SSE reports busy. The
+  // server status is also required here because leaving and re-entering the
+  // screen resets the local flag while the session may still be running.
   const isSending = useSessions((s) => !!(transcriptBound && id && s.sending[id]))
+  const isSessionBusy = useEvents((s) => {
+    if (!transcriptBound || !id) return false
+    const status = s.sessionStatus[id]?.type
+    return status === "busy" || status === "retry"
+  })
+  const canStop = isSending || isSessionBusy
   const fileContexts = useSessions((s) => (id ? s.fileContexts[id] || EMPTY_PROMPT_REFERENCES : EMPTY_PROMPT_REFERENCES))
 
   const { authenticateForMessage } = useAuth()
@@ -1131,7 +1139,7 @@ export default function SessionScreen() {
               testID="chat-message-input"
             />
             {/* Stop button: only when busy and no input */}
-            {isSending && !input.trim() && attachments.length === 0 && !speech.listening && (
+            {canStop && !input.trim() && attachments.length === 0 && !speech.listening && (
               <TouchableOpacity style={s.stopBtn} onPress={abortSession}>
                 <Ionicons name="stop" size={20} color="#ffffff" />
               </TouchableOpacity>
