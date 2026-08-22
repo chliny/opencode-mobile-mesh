@@ -29,7 +29,7 @@ export default function SessionFilesScreen() {
   const isDark = useColorScheme() === "dark"
   const { client, clientForDirectory } = useConnections()
   const api = useMemo(() => clientForDirectory(directory) ?? client, [clientForDirectory, directory, client])
-  const [mode, setMode] = useState<Mode>("git")
+  const [mode, setMode] = useState<Mode>("turn")
   const [diffs, setDiffs] = useState<FileDiff[]>([])
   const [entries, setEntries] = useState<FileEntry[]>([])
   const [path, setPath] = useState(".")
@@ -127,7 +127,7 @@ export default function SessionFilesScreen() {
     <View style={[s.container, isDark && s.containerDark]}>
       <Stack.Screen options={{ title: t("files.title") }} />
       <View style={[s.tabs, isDark && s.tabsDark]}>
-        {(["git", "turn", "branch", "all"] as const).map((item) => (
+        {(["turn", "git", "branch", "all"] as const).map((item) => (
           <TouchableOpacity key={item} style={[s.tab, mode === item && s.tabActive]} onPress={() => setMode(item)}>
             <Text style={[s.tabText, isDark && s.textDark, mode === item && s.tabTextActive]}>{t(`files.tabs.${item}`)}</Text>
           </TouchableOpacity>
