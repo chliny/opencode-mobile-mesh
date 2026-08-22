@@ -298,7 +298,7 @@ export default function SessionScreen() {
       busy: "session.alerts.speechErrorBusy",
       client: "session.alerts.speechErrorClient",
       unknown: "session.alerts.speechErrorMessage",
-    }[speech.error]
+    }[speech.error.kind]
     Alert.alert(t("session.alerts.speechErrorTitle"), t(message))
   }, [speech.error, t])
 

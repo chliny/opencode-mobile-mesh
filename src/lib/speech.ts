@@ -4,10 +4,15 @@ import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-spe
 interface SpeechState {
   listening: boolean
   transcript: string
-  error: SpeechErrorKind | null
+  error: SpeechError | null
 }
 
 export type SpeechErrorKind = "permission" | "network" | "service" | "audio" | "busy" | "client" | "unknown"
+
+interface SpeechError {
+  kind: SpeechErrorKind
+  id: number
+}
 
 interface SpeechActions {
   start: () => Promise<void>
@@ -18,11 +23,16 @@ interface SpeechActions {
 export function useSpeech(onResult: (text: string) => void): SpeechState & SpeechActions {
   const [listening, setListening] = useState(false)
   const [transcript, setTranscript] = useState("")
-  const [error, setError] = useState<SpeechErrorKind | null>(null)
+  const [error, setError] = useState<SpeechError | null>(null)
   const pending = useRef("")
   const alive = useRef(true)
   const starting = useRef(false)
   const requestID = useRef(0)
+  const errorID = useRef(0)
+
+  const reportError = useCallback((kind: SpeechErrorKind) => {
+    setError({ kind, id: ++errorID.current })
+  }, [])
 
   useSpeechRecognitionEvent("start", () => {
     setListening(true)
@@ -54,25 +64,26 @@ export function useSpeech(onResult: (text: string) => void): SpeechState & Speec
       return
     }
     if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-      setError("permission")
+      reportError("permission")
     } else if (event.error === "network") {
-      setError("network")
+      reportError("network")
     } else if (event.error === "audio-capture") {
-      setError("audio")
+      reportError("audio")
     } else if (event.error === "busy") {
-      setError("busy")
+      reportError("busy")
     } else if (event.error === "client") {
-      setError("client")
+      reportError("client")
     } else {
-      setError("unknown")
+      reportError("unknown")
     }
     setListening(false)
   })
 
   const start = useCallback(async () => {
     if (!alive.current || starting.current) return
+    setError(null)
     if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
-      setError("service")
+      reportError("service")
       return
     }
     const request = ++requestID.current
@@ -83,7 +94,7 @@ export function useSpeech(onResult: (text: string) => void): SpeechState & Speec
     // the permission prompt was open.
     if (!alive.current || request !== requestID.current) return
     if (!result.granted) {
-      setError("permission")
+      reportError("permission")
       return
     }
     ExpoSpeechRecognitionModule.start({
@@ -91,7 +102,7 @@ export function useSpeech(onResult: (text: string) => void): SpeechState & Speec
       interimResults: true,
       continuous: true,
     })
-  }, [])
+  }, [reportError])
 
   const stop = useCallback(() => {
     ExpoSpeechRecognitionModule.stop()
