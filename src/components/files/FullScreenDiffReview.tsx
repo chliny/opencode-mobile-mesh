@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useTranslation } from "react-i18next"
-import { diffHunkStarts } from "../../lib/file-review"
+import { diffHunkIndexAtLine, diffHunkStarts } from "../../lib/file-review"
 import type { SharedDiffLine } from "./DiffRenderer"
 
 interface Props {
@@ -16,20 +16,23 @@ interface Props {
   onCopy?: () => void
   copied?: boolean
   onNavigateHunk?: (lineIndex: number) => void
+  visibleLineIndex?: number | null
   headerLabel?: string
 }
 
-export function FullScreenDiffReview({ title, lines, isDark, children, footer, topInset = 0, onBack, onCopy, copied, onNavigateHunk, headerLabel }: Props) {
+export function FullScreenDiffReview({ title, lines, isDark, children, footer, topInset = 0, onBack, onCopy, copied, onNavigateHunk, visibleLineIndex, headerLabel }: Props) {
   const { t } = useTranslation()
   const [hunkIndex, setHunkIndex] = useState(0)
   const hunks = diffHunkStarts(lines)
+  const visibleHunkIndex = visibleLineIndex == null ? undefined : diffHunkIndexAtLine(hunks, visibleLineIndex)
+  const currentHunkIndex = visibleHunkIndex ?? hunkIndex
 
   const lineSignature = `${lines.length}:${lines[0]?.key ?? ""}:${lines[lines.length - 1]?.key ?? ""}`
   useEffect(() => setHunkIndex(0), [title, lineSignature])
 
   const navigate = (offset: number) => {
-    const next = Math.max(0, Math.min(hunks.length - 1, hunkIndex + offset))
-    if (next === hunkIndex || hunks[next] === undefined) return
+    const next = Math.max(0, Math.min(hunks.length - 1, currentHunkIndex + offset))
+    if (next === currentHunkIndex || hunks[next] === undefined) return
     setHunkIndex(next)
     onNavigateHunk?.(hunks[next])
   }
@@ -43,12 +46,12 @@ export function FullScreenDiffReview({ title, lines, isDark, children, footer, t
         </TouchableOpacity>
         <Text style={[s.title, isDark && s.textDark]} numberOfLines={1}>{title}</Text>
         {hunks.length > 0 && <View style={s.navigation}>
-          <TouchableOpacity disabled={hunkIndex <= 0} onPress={() => navigate(-1)} hitSlop={8}>
-            <Ionicons name="chevron-up" size={20} color={hunkIndex <= 0 ? "#999999" : isDark ? "#c4b5fd" : "#6d28d9"} />
+          <TouchableOpacity disabled={currentHunkIndex <= 0} onPress={() => navigate(-1)} hitSlop={8}>
+            <Ionicons name="chevron-up" size={20} color={currentHunkIndex <= 0 ? "#999999" : isDark ? "#c4b5fd" : "#6d28d9"} />
           </TouchableOpacity>
-          <Text style={[s.position, isDark && s.positionDark]}>{hunkIndex + 1}/{hunks.length}</Text>
-          <TouchableOpacity disabled={hunkIndex >= hunks.length - 1} onPress={() => navigate(1)} hitSlop={8}>
-            <Ionicons name="chevron-down" size={20} color={hunkIndex >= hunks.length - 1 ? "#999999" : isDark ? "#c4b5fd" : "#6d28d9"} />
+          <Text style={[s.position, isDark && s.positionDark]}>{currentHunkIndex + 1}/{hunks.length}</Text>
+          <TouchableOpacity disabled={currentHunkIndex >= hunks.length - 1} onPress={() => navigate(1)} hitSlop={8}>
+            <Ionicons name="chevron-down" size={20} color={currentHunkIndex >= hunks.length - 1 ? "#999999" : isDark ? "#c4b5fd" : "#6d28d9"} />
           </TouchableOpacity>
         </View>}
         {onCopy && <TouchableOpacity onPress={onCopy} style={s.toolbarButton} hitSlop={8}>

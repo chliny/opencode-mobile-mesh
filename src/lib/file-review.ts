@@ -22,6 +22,15 @@ export function diffHunkStarts(lines: Array<{ type: "add" | "remove" | "context"
   return starts
 }
 
+export function diffHunkIndexAtLine(hunks: number[], lineIndex: number): number {
+  let index = 0
+  for (const [hunk, start] of hunks.entries()) {
+    if (start > lineIndex) break
+    index = hunk
+  }
+  return index
+}
+
 export interface MentionRange {
   start: number
   end: number

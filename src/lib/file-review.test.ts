@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { activeMention, buildReferenceParts, diffHunkStarts, insertMention, parseUnifiedPatch } from "./file-review.ts"
+import { activeMention, buildReferenceParts, diffHunkIndexAtLine, diffHunkStarts, insertMention, parseUnifiedPatch } from "./file-review.ts"
 
 test("finds and replaces the mention nearest the cursor", () => {
   const text = "check @src/ut please"
@@ -33,6 +33,14 @@ test("finds each changed hunk in a rendered diff", () => {
     { type: "context" },
     { type: "add" },
   ]), [2, 5, 7])
+})
+
+test("maps a visible line to the latest hunk at or before it", () => {
+  const hunks = [2, 5, 7]
+  assert.equal(diffHunkIndexAtLine(hunks, 0), 0)
+  assert.equal(diffHunkIndexAtLine(hunks, 2), 0)
+  assert.equal(diffHunkIndexAtLine(hunks, 6), 1)
+  assert.equal(diffHunkIndexAtLine(hunks, 99), 2)
 })
 
 test("serializes line comments as synthetic text and ranged file parts", () => {

@@ -516,19 +516,26 @@ export default function SessionScreen() {
   // Sync model chip from latest assistant message
   useEffect(() => {
     if (!transcriptBound) return
+    if (id && sessionModels[id]) {
+      setModel(sessionModels[id])
+      return
+    }
     if (!messages || messages.length === 0) return
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i]
       if (msg.role === "assistant" && msg.providerID && msg.modelID) {
-        setModel({ providerID: msg.providerID, modelID: msg.modelID })
+        const selection = { providerID: msg.providerID, modelID: msg.modelID }
+        setModel(selection)
+        if (id) setSessionModel(id, selection)
         return
       }
       if (msg.role === "user" && msg.model) {
         setModel(msg.model)
+        if (id) setSessionModel(id, msg.model)
         return
       }
     }
-  }, [transcriptBound, currentSession?.id, messages?.length])
+  }, [transcriptBound, id, currentSession?.id, messages?.length, sessionModels, setModel, setSessionModel])
 
   // Slash command handler
   const handleSlashSelect = useCallback(

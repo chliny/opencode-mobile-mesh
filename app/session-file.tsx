@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from "react-native"
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View, type ViewToken } from "react-native"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
@@ -33,11 +33,21 @@ export default function SessionFileScreen() {
   const [anchor, setAnchor] = useState<number | null>(null)
   const [focus, setFocus] = useState<number | null>(null)
   const [comment, setComment] = useState("")
+  const [visibleLine, setVisibleLine] = useState<number | null>(null)
   const listRef = useRef<FlatList<DisplayLine>>(null)
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const index = viewableItems.reduce<number | null>((current, item) => {
+      if (item.index == null) return current
+      return current == null ? item.index : Math.min(current, item.index)
+    }, null)
+    if (index != null) setVisibleLine(index)
+  }).current
 
   useEffect(() => {
     if (!api || !path) return
     let active = true
+    setVisibleLine(null)
     setLoading(true)
     setError(null)
     const request = async () => {
@@ -109,7 +119,7 @@ export default function SessionFileScreen() {
   return (
     <KeyboardAvoidingView style={[s.container, isDark && s.containerDark]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Stack.Screen options={{ title: path?.split("/").pop() || t("files.fileTitle") }} />
-      <FullScreenDiffReview title={path || t("files.fileTitle")} lines={mode === "diff" ? lines : []} isDark={isDark} onBack={() => router.back()} onNavigateHunk={(index) => listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.08 })} headerLabel={mode === "diff" ? "DIFF" : "FILE"} footer={start !== null && end !== null ? (
+      <FullScreenDiffReview title={path || t("files.fileTitle")} lines={mode === "diff" ? lines : []} isDark={isDark} visibleLineIndex={mode === "diff" ? visibleLine : null} onBack={() => router.back()} onNavigateHunk={(index) => listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.08 })} headerLabel={mode === "diff" ? "DIFF" : "FILE"} footer={start !== null && end !== null ? (
         <View style={[s.commentBox, isDark && s.commentBoxDark]}>
           <View style={s.selectionHead}><Text style={[s.selectionText, isDark && s.textDark]}>{t("files.selectedLines", { start, end })}</Text><TouchableOpacity onPress={() => { setAnchor(null); setFocus(null); setComment("") }}><Text style={s.clear}>{t("common.cancel")}</Text></TouchableOpacity></View>
           <TextInput style={[s.commentInput, isDark && s.commentInputDark]} value={comment} onChangeText={setComment} placeholder={t("files.commentPlaceholder")} placeholderTextColor="#777777" multiline maxLength={2000} />
@@ -122,6 +132,8 @@ export default function SessionFileScreen() {
             data={lines}
             keyExtractor={(item) => item.key}
             extraData={`${start}-${end}`}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
             renderItem={({ item }) => {
               const number = selectionLine(item, mode)
               const isSelected = number !== undefined && start !== null && end !== null && number >= start && number <= end
