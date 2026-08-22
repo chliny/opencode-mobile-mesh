@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import type { FileDiff, FileEntry } from "../src/lib/sdk"
 import { groupDiffs } from "../src/lib/file-review"
-import { cacheDiffs, clearCachedDiffs, getCachedDiffs } from "../src/lib/session-file-cache"
+import { cacheDiffs, cacheVcsDiffs, clearCachedDiffs, clearCachedVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../src/lib/session-file-cache"
 import { cacheFileEntries, clearCachedFileEntries, getCachedFileEntries } from "../src/lib/file-tree-cache"
 import { useConnections } from "../src/stores/connections"
 
@@ -58,8 +58,15 @@ export default function SessionFilesScreen() {
         return
       }
       if (mode === "git" || mode === "branch") {
+        const shared = getCachedVcsDiffs(directory, mode)
+        if (shared) {
+          cacheDiffs(directory, id, mode, shared)
+          setDiffs(shared)
+          return
+        }
         const value = await api.vcs.diff({ mode, context: 10 })
         if (currentRequest !== requestID.current) return
+        cacheVcsDiffs(directory, mode, value)
         cacheDiffs(directory, id, mode, value)
         setDiffs(value)
         return
@@ -78,7 +85,10 @@ export default function SessionFilesScreen() {
 
   const refresh = useCallback(() => {
     if (mode === "all") clearCachedFileEntries(directory)
-    else if (id) clearCachedDiffs(directory, id, mode)
+    else if (id) {
+      clearCachedDiffs(directory, id, mode)
+      if (mode === "git" || mode === "branch") clearCachedVcsDiffs(directory)
+    }
     void load()
   }, [directory, id, load, mode])
 

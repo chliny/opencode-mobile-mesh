@@ -54,7 +54,7 @@ import { modelNameFor } from "../../src/lib/model-display"
 import { activeMention, insertMention } from "../../src/lib/file-review"
 import { childSessionTitle } from "../../src/lib/subagent"
 import type { PromptFileReference } from "../../src/lib/sdk"
-import { cacheDiffs, getCachedDiffs } from "../../src/lib/session-file-cache"
+import { cacheDiffs, cacheVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../../src/lib/session-file-cache"
 
 // --- Builtin slash commands ---
 const BUILTIN_COMMANDS: SlashCommand[] = [
@@ -193,18 +193,34 @@ export default function SessionScreen() {
             }
           }
           if (!active || useSessions.getState().sending[sessionID] || getCachedDiffs(dir, sessionID, "git")) return
-          try {
-            const value = await sessionClient.vcs.diff({ mode: "git", context: 10 })
-            if (active) cacheDiffs(dir, sessionID, "git", value)
-          } catch {
-            return
+          const git = getCachedVcsDiffs(dir, "git")
+          if (git) {
+            cacheDiffs(dir, sessionID, "git", git)
+          } else {
+            try {
+              const value = await sessionClient.vcs.diff({ mode: "git", context: 10 })
+              if (active) {
+                cacheVcsDiffs(dir, "git", value)
+                cacheDiffs(dir, sessionID, "git", value)
+              }
+            } catch {
+              return
+            }
           }
           if (!active || useSessions.getState().sending[sessionID] || getCachedDiffs(dir, sessionID, "branch")) return
-          try {
-            const value = await sessionClient.vcs.diff({ mode: "branch", context: 10 })
-            if (active) cacheDiffs(dir, sessionID, "branch", value)
-          } catch {
-            return
+          const branch = getCachedVcsDiffs(dir, "branch")
+          if (branch) {
+            cacheDiffs(dir, sessionID, "branch", branch)
+          } else {
+            try {
+              const value = await sessionClient.vcs.diff({ mode: "branch", context: 10 })
+              if (active) {
+                cacheVcsDiffs(dir, "branch", value)
+                cacheDiffs(dir, sessionID, "branch", value)
+              }
+            } catch {
+              return
+            }
           }
         }
         void warm()

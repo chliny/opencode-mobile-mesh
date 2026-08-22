@@ -8,7 +8,7 @@ import { FullScreenDiffReview } from "../src/components/files/FullScreenDiffRevi
 import { parseUnifiedPatch } from "../src/lib/file-review"
 import { useConnections } from "../src/stores/connections"
 import { useSessions } from "../src/stores/sessions"
-import { cacheDiffs, getCachedDiffs } from "../src/lib/session-file-cache"
+import { cacheDiffs, cacheVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../src/lib/session-file-cache"
 
 interface DisplayLine extends SharedDiffLine {
   number: number
@@ -49,7 +49,11 @@ export default function SessionFileScreen() {
             cacheDiffs(directory, id, "turn", diffs)
           }
         } else if (!diffs) {
-          diffs = await api.vcs.diff({ mode: diffSource, context: 10 })
+          diffs = getCachedVcsDiffs(directory, diffSource)
+          if (!diffs) {
+            diffs = await api.vcs.diff({ mode: diffSource, context: 10 })
+            cacheVcsDiffs(directory, diffSource, diffs)
+          }
           cacheDiffs(directory, id, diffSource, diffs)
         }
         diffs = diffs || []
