@@ -518,7 +518,9 @@ export default function SessionsScreen() {
     )
   }
 
-  const shortPath = getShortPath(currentProject)
+  // Prefer the server-reported project; fall back to the configured
+  // directory so the project name always renders beside the connection.
+  const shortPath = getShortPath(currentProject) || (activeConnection.directory ? nameOf(activeConnection.directory) : "")
   const connectionColor = transport === "live" ? "#22c55e" : transport === "connecting" ? "#f59e0b" : "#9ca3af"
 
   return (
@@ -549,7 +551,6 @@ export default function SessionsScreen() {
             </>
           )}
         </View>
-        <Ionicons name="swap-horizontal-outline" size={16} color={isDark ? "#9a9a9a" : "#999999"} />
       </TouchableOpacity>
 
       {error && (
