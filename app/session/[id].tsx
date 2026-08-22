@@ -17,6 +17,7 @@ import {
   type TextInputSelectionChangeEventData,
 } from "react-native"
 import { useLocalSearchParams, Stack, useRouter, useFocusEffect } from "expo-router"
+import { useIsFocused } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useTranslation } from "react-i18next"
@@ -84,6 +85,8 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
 
 const EMPTY_PROMPT_REFERENCES: PromptFileReference[] = []
 const EMPTY_LIST: never[] = []
+const EMPTY_PARTS: Record<string, never[]> = {}
+const EMPTY_RECORD: Record<string, never> = {}
 
 function getShortDir(dir?: string): string | null {
   if (!dir) return null
@@ -98,6 +101,7 @@ export default function SessionScreen() {
   const isDark = colorScheme === "dark"
   const insets = useSafeAreaInsets()
   const { t } = useTranslation()
+  const isFocused = useIsFocused()
 
   const flatListRef = useRef<FlatList>(null)
   const scrollOffsetRef = useRef(0)
@@ -115,25 +119,23 @@ export default function SessionScreen() {
   const [selectedMentions, setSelectedMentions] = useState<string[]>([])
   const [showInfo, setShowInfo] = useState(false)
 
-  const {
-    currentSession,
-    messages,
-    parts,
-    transcriptRevision,
-    loadingMore,
-    hasMore,
-    error,
-    selectSession,
-    setDraft,
-    clearDraft,
-    removeFileContext,
-    clearFileContexts,
-    sendMessage,
-    abortSession,
-    loadOlderMessages,
-    revertToMessage,
-    unrevertSession,
-  } = useSessions()
+  const currentSession = useSessions((state) => (isFocused ? state.currentSession : null))
+  const messages = useSessions((state) => (isFocused ? state.messages : EMPTY_LIST))
+  const parts = useSessions((state) => (isFocused ? state.parts : EMPTY_PARTS))
+  const transcriptRevision = useSessions((state) => (isFocused ? state.transcriptRevision : EMPTY_RECORD))
+  const loadingMore = useSessions((state) => (isFocused ? state.loadingMore : false))
+  const hasMore = useSessions((state) => (isFocused ? state.hasMore : false))
+  const error = useSessions((state) => (isFocused ? state.error : null))
+  const selectSession = useSessions((state) => state.selectSession)
+  const setDraft = useSessions((state) => state.setDraft)
+  const clearDraft = useSessions((state) => state.clearDraft)
+  const removeFileContext = useSessions((state) => state.removeFileContext)
+  const clearFileContexts = useSessions((state) => state.clearFileContexts)
+  const sendMessage = useSessions((state) => state.sendMessage)
+  const abortSession = useSessions((state) => state.abortSession)
+  const loadOlderMessages = useSessions((state) => state.loadOlderMessages)
+  const revertToMessage = useSessions((state) => state.revertToMessage)
+  const unrevertSession = useSessions((state) => state.unrevertSession)
 
   const bindingAttempt = useRef(0)
   const [failedSessionID, setFailedSessionID] = useState<string | null>(null)
@@ -163,7 +165,8 @@ export default function SessionScreen() {
   const fileContexts = useSessions((s) => (id ? s.fileContexts[id] || EMPTY_PROMPT_REFERENCES : EMPTY_PROMPT_REFERENCES))
 
   const { authenticateForMessage } = useAuth()
-  const { client, clientForDirectory } = useConnections()
+  const client = useConnections((state) => (isFocused ? state.client : null))
+  const clientForDirectory = useConnections((state) => state.clientForDirectory)
 
   // Use directory-aware client for sessions that belong to a project other than the active one
   const sessionClient = useMemo(

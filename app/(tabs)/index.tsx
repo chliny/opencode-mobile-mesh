@@ -173,18 +173,21 @@ export default function SessionsScreen() {
   const creatingInFlight = useRef(false)
   const [serverProjects, setServerProjects] = useState<Project[]>([])
 
-  const { sessions, isLoading, error, loadSessions, createSession, deleteSession } = useSessions()
-  const {
-    activeConnection,
-    client,
-    currentProject,
-    serverHome,
-    refreshProject,
-    clientForDirectory,
-    switchDirectory,
-    addRecentDirectory,
-    recentDirectories,
-  } = useConnections()
+  const sessions = useSessions((state) => state.sessions)
+  const isLoading = useSessions((state) => state.isLoading)
+  const error = useSessions((state) => state.error)
+  const loadSessions = useSessions((state) => state.loadSessions)
+  const createSession = useSessions((state) => state.createSession)
+  const deleteSession = useSessions((state) => state.deleteSession)
+  const activeConnection = useConnections((state) => state.activeConnection)
+  const client = useConnections((state) => state.client)
+  const currentProject = useConnections((state) => state.currentProject)
+  const serverHome = useConnections((state) => state.serverHome)
+  const refreshProject = useConnections((state) => state.refreshProject)
+  const clientForDirectory = useConnections((state) => state.clientForDirectory)
+  const switchDirectory = useConnections((state) => state.switchDirectory)
+  const addRecentDirectory = useConnections((state) => state.addRecentDirectory)
+  const recentDirectories = useConnections((state) => state.recentDirectories)
   const authError = useEvents((s) => s.authError)
   const transport = useEvents((s) => s.transport)
   const reconnect = useEvents((s) => s.connect)
