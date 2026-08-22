@@ -107,23 +107,6 @@ export default function SettingsScreen() {
     }
   }, [])
 
-  // Settings is where a user goes to ask "what am I running?". Answer it, and if
-  // a newer build exists say so here too — the banner on the sessions list is
-  // dismissible, this row is not (AGE-110). Uses the same 24h-throttled check,
-  // so opening Settings repeatedly costs no extra requests.
-  const [updateAvailable, setUpdateAvailable] = useState<AvailableUpdate | null>(null)
-  useEffect(() => {
-    let cancelled = false
-    checkForUpdate({ ignoreDismissed: true })
-      .then((result) => {
-        if (!cancelled) setUpdateAvailable(result)
-      })
-      .catch(() => undefined)
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
   // Telemetry consent: hasTelemetryConsent() returns null (unknown), true, or false.
   // We initialise local state from in-memory value; updates call setTelemetryConsent().
   const [crashReporting, setCrashReporting] = useState<boolean>(hasTelemetryConsent() ?? false)
@@ -143,6 +126,23 @@ export default function SettingsScreen() {
     },
     [t],
   )
+
+  // Settings is where a user goes to ask "what am I running?". Answer it, and if
+  // a newer build exists say so here too — the banner on the sessions list is
+  // dismissible, this row is not (AGE-110). Uses the same 24h-throttled check,
+  // so opening Settings repeatedly costs no extra requests.
+  const [updateAvailable, setUpdateAvailable] = useState<AvailableUpdate | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    checkForUpdate({ ignoreDismissed: true })
+      .then((result) => {
+        if (!cancelled) setUpdateAvailable(result)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Check OS permission state on first toggle attempt
   const handleToggle = useCallback(
