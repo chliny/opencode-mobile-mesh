@@ -209,27 +209,6 @@ export default function SessionScreen() {
     }
   }, [currentSession?.directory, currentSession?.id, directory, sessionClient, transcriptBound])
 
-  useEffect(() => {
-    if (!transcriptBound || !sessionClient || !currentSession?.id) return
-    const sessionID = currentSession.id
-    const dir = currentSession.directory || directory
-    const warm = async () => {
-      const tasks: Promise<void>[] = []
-      if (!getCachedDiffs(dir, sessionID, "git")) {
-        tasks.push(sessionClient.vcs.diff({ mode: "git", context: 10 }).then((value) => cacheDiffs(dir, sessionID, "git", value)).catch(() => undefined))
-      }
-      if (!getCachedDiffs(dir, sessionID, "branch")) {
-        tasks.push(sessionClient.vcs.diff({ mode: "branch", context: 10 }).then((value) => cacheDiffs(dir, sessionID, "branch", value)).catch(() => undefined))
-      }
-      if (!getCachedDiffs(dir, sessionID, "turn")) {
-        const value = [...messagesRef.current].reverse().find((item) => item.role === "user" && item.summary?.diffs)?.summary?.diffs
-        if (value) cacheDiffs(dir, sessionID, "turn", value)
-      }
-      await Promise.all(tasks)
-    }
-    void warm()
-  }, [currentSession?.directory, currentSession?.id, directory, sessionClient, transcriptBound])
-
   // Catalog
   const catalog = useCatalog()
   const agents = Array.isArray(catalog.agents) ? catalog.agents : []
