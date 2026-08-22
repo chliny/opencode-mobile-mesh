@@ -688,7 +688,8 @@ export default function SessionScreen() {
       setInput((prev) => (prev ? prev : text))
       setAttachments((prev) => (prev.length ? prev : files))
       setSelectedMentions((prev) => prev.length ? prev : references.filter((item) => !item.comment).map((item) => item.path))
-      Alert.alert(t("session.alerts.sendFailedTitle"), t("session.alerts.sendFailedMessage"))
+      const detail = err instanceof Error ? err.message : String(err)
+      Alert.alert(t("session.alerts.sendFailedTitle"), `${t("session.alerts.sendFailedMessage")}\n\n${detail}`)
     }
   }
 

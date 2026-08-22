@@ -211,62 +211,64 @@ function RootLayout() {
   return (
     <ErrorBoundary>
       <I18nextProvider i18n={i18n}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <BottomSheetModalProvider>
-          <QueryClientProvider client={queryClient}>
-            <AuthGate>
-            <Stack
-              screenOptions={{
-                headerStyle: {
-                  backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
-                },
-                headerTintColor: isDark ? "#ffffff" : "#0a0a0a",
-                contentStyle: {
-                  backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
-                },
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="content-viewer" options={{ headerShown: false, presentation: "card" }} />
-              <Stack.Screen
-                name="session/[id]"
-                options={{
-                  title: t("session.titleFallback"),
-                  presentation: "card",
-                }}
-              />
-              <Stack.Screen
-                name="connection/add"
-                options={{
-                  title: t("nav.addConnectionTitle"),
-                  presentation: "modal",
-                }}
-              />
-              <Stack.Screen
-                name="connection/[id]"
-                options={{
-                  title: t("nav.editConnectionTitle"),
-                  presentation: "modal",
-                }}
-              />
-            </Stack>
-              <StatusBar style={isDark ? "light" : "dark"} />
-            </AuthGate>
-          </QueryClientProvider>
-        </BottomSheetModalProvider>
-      </GestureHandlerRootView>
-      {/* Telemetry consent modal — shown once on first launch */}
-      <TelemetryConsentModal
-        visible={consentState === "unknown"}
-        onAllow={async () => {
-          await setTelemetryConsent(true)
-          setConsentState("decided")
-        }}
-        onDecline={async () => {
-          await setTelemetryConsent(false)
-          setConsentState("decided")
-        }}
-      />
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <BottomSheetModalProvider>
+            <QueryClientProvider client={queryClient}>
+              <AuthGate>
+                <Stack
+                  screenOptions={{
+                    headerStyle: {
+                      backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
+                    },
+                    headerTintColor: isDark ? "#ffffff" : "#0a0a0a",
+                    contentStyle: {
+                      backgroundColor: isDark ? "#0a0a0a" : "#ffffff",
+                    },
+                  }}
+                >
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="content-viewer" options={{ headerShown: false, presentation: "card" }} />
+                  <Stack.Screen name="session-files" options={{ title: t("files.title"), presentation: "card" }} />
+                  <Stack.Screen name="session-file" options={{ title: t("files.fileTitle"), presentation: "card" }} />
+                  <Stack.Screen
+                    name="session/[id]"
+                    options={{
+                      title: t("session.titleFallback"),
+                      presentation: "card",
+                    }}
+                  />
+                  <Stack.Screen
+                    name="connection/add"
+                    options={{
+                      title: t("nav.addConnectionTitle"),
+                      presentation: "modal",
+                    }}
+                  />
+                  <Stack.Screen
+                    name="connection/[id]"
+                    options={{
+                      title: t("nav.editConnectionTitle"),
+                      presentation: "modal",
+                    }}
+                  />
+                </Stack>
+                <StatusBar style={isDark ? "light" : "dark"} />
+              </AuthGate>
+            </QueryClientProvider>
+          </BottomSheetModalProvider>
+        </GestureHandlerRootView>
+        {/* Telemetry consent modal — shown once on first launch */}
+        <TelemetryConsentModal
+          visible={consentState === "unknown"}
+          onAllow={async () => {
+            await setTelemetryConsent(true)
+            setConsentState("decided")
+          }}
+          onDecline={async () => {
+            await setTelemetryConsent(false)
+            setConsentState("decided")
+          }}
+        />
       </I18nextProvider>
     </ErrorBoundary>
   )
