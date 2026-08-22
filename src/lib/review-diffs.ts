@@ -16,11 +16,25 @@ export function reviewDiffsForMessage(message: Message, messages: Message[]): Fi
  * recorded diff and undefined when the transcript has no user message at all.
  */
 export function turnDiffsFromMessages(messages: Message[], revertMessageID?: string): FileDiff[] | undefined {
+  const last = lastVisibleUserMessage(messages, revertMessageID)
+  return last ? (last.summary?.diffs ?? []) : undefined
+}
+
+/**
+ * True only when the server has finished summarizing the last visible turn —
+ * i.e. an empty diff is authoritative and safe to cache. While a turn is
+ * streaming the summary is absent, and caching that transient [] would later
+ * blank the review for paths that no longer see the live transcript.
+ */
+export function turnSummaryRecorded(messages: Message[], revertMessageID?: string): boolean {
+  return lastVisibleUserMessage(messages, revertMessageID)?.summary?.diffs !== undefined
+}
+
+function lastVisibleUserMessage(messages: Message[], revertMessageID?: string): Message | undefined {
   let users = messages.filter((item) => item.role === "user")
   if (revertMessageID) {
     const boundary = users.findIndex((item) => item.id === revertMessageID)
     if (boundary >= 0) users = users.slice(0, boundary)
   }
-  const last = users.at(-1)
-  return last ? (last.summary?.diffs ?? []) : undefined
+  return users.at(-1)
 }

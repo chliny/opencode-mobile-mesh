@@ -7,7 +7,7 @@ import type { FileDiff, FileEntry } from "../src/lib/sdk"
 import { groupDiffs } from "../src/lib/file-review"
 import { cacheDiffs, cacheVcsDiffs, clearCachedDiffs, clearCachedVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../src/lib/session-file-cache"
 import { cacheFileEntries, clearCachedFileEntries, getCachedFileEntries } from "../src/lib/file-tree-cache"
-import { turnDiffsFromMessages } from "../src/lib/review-diffs"
+import { turnDiffsFromMessages, turnSummaryRecorded } from "../src/lib/review-diffs"
 import { useConnections } from "../src/stores/connections"
 import { useSessions } from "../src/stores/sessions"
 
@@ -61,7 +61,9 @@ export default function SessionFilesScreen() {
         const derived = local.currentSession?.id === id ? turnDiffsFromMessages(local.messages, local.currentSession.revert?.messageID) : undefined
         if (derived) {
           if (currentRequest !== requestID.current) return
-          cacheDiffs(directory, id, mode, derived)
+          // Cache empty results only when the server has summarized the turn;
+          // a mid-stream [] is transient and must not poison later loads.
+          if (derived.length > 0 || turnSummaryRecorded(local.messages, local.currentSession?.revert?.messageID)) cacheDiffs(directory, id, mode, derived)
           setDiffs(derived)
           return
         }
@@ -87,9 +89,11 @@ export default function SessionFilesScreen() {
         return
       }
       const transcript = await api.session.messages(id)
-      const value = turnDiffsFromMessages((transcript || []).map((item) => item.info)) ?? []
+      const infos = (transcript || []).map((item) => item.info)
+      const value = turnDiffsFromMessages(infos) ?? []
       if (currentRequest !== requestID.current) return
-      cacheDiffs(directory, id, mode, value)
+      // Same authority rule as the live path: only trust a server-computed empty.
+      if (value.length > 0 || turnSummaryRecorded(infos)) cacheDiffs(directory, id, mode, value)
       setDiffs(value)
     } catch (err) {
       if (currentRequest !== requestID.current) return

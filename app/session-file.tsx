@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next"
 import { DiffLineRow, type SharedDiffLine } from "../src/components/files/DiffRenderer"
 import { FullScreenDiffReview } from "../src/components/files/FullScreenDiffReview"
 import { parseUnifiedPatch } from "../src/lib/file-review"
-import { turnDiffsFromMessages } from "../src/lib/review-diffs"
+import { turnDiffsFromMessages, turnSummaryRecorded } from "../src/lib/review-diffs"
 import { useConnections } from "../src/stores/connections"
 import { useSessions } from "../src/stores/sessions"
 import { cacheDiffs, cacheVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../src/lib/session-file-cache"
@@ -52,8 +52,9 @@ export default function SessionFileScreen() {
           if (!diffs) diffs = getCachedDiffs(directory, id, "turn")
           if (!diffs) {
             const transcript = await api.session.messages(id)
-            diffs = turnDiffsFromMessages((transcript || []).map((item) => item.info)) ?? []
-            cacheDiffs(directory, id, "turn", diffs)
+            const infos = (transcript || []).map((item) => item.info)
+            diffs = turnDiffsFromMessages(infos) ?? []
+            if (diffs.length > 0 || turnSummaryRecorded(infos)) cacheDiffs(directory, id, "turn", diffs)
           }
         } else if (!diffs) {
           diffs = getCachedVcsDiffs(directory, diffSource)

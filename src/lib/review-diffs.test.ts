@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 import type { Message } from "./sdk.ts"
-import { reviewDiffsForMessage, turnDiffsFromMessages } from "./review-diffs.ts"
+import { reviewDiffsForMessage, turnDiffsFromMessages, turnSummaryRecorded } from "./review-diffs.ts"
 
 const user: Message = {
   id: "user-1",
@@ -129,4 +129,20 @@ test("turnDiffsFromMessages respects the revert boundary", () => {
   const reverted: Message = { ...user, id: "user-0", time: { created: 0 } }
   assert.deepEqual(turnDiffsFromMessages([reverted, user], user.id), reverted.summary?.diffs)
   assert.deepEqual(turnDiffsFromMessages([user, { ...user, id: "user-2", time: { created: 3 } }], "missing"), user.summary?.diffs)
+})
+
+test("turnSummaryRecorded distinguishes authoritative empty from mid-turn", () => {
+  const emptyTurn: Message = {
+    ...user,
+    id: "user-2",
+    time: { created: 3 },
+    summary: { diffs: [] },
+  }
+  const pending: Message = { id: "user-3", sessionID: "session-1", role: "user", time: { created: 4 } }
+
+  assert.equal(turnSummaryRecorded([user]), true)
+  assert.equal(turnSummaryRecorded([emptyTurn]), true)
+  assert.equal(turnSummaryRecorded([pending]), false)
+  assert.equal(turnSummaryRecorded([]), false)
+  assert.equal(turnSummaryRecorded([emptyTurn, pending], pending.id), true)
 })
