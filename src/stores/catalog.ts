@@ -19,7 +19,7 @@ export interface Provider {
   models: ProviderModel[]
 }
 
-interface ModelSelection {
+export interface ModelSelection {
   providerID: string
   modelID: string
 }
@@ -36,6 +36,7 @@ interface CatalogState {
   // Current selections
   agent: string // agent name, e.g. "build"
   model: ModelSelection | null
+  sessionModels: Record<string, ModelSelection>
   variant: string | null // model variant for reasoning effort (e.g. "low", "medium", "high")
   loaded: boolean
 
@@ -43,6 +44,7 @@ interface CatalogState {
   load: () => Promise<void>
   setAgent: (name: string) => void
   setModel: (selection: ModelSelection | null) => void
+  setSessionModel: (sessionID: string, selection: ModelSelection) => void
   setVariant: (variant: string | null) => void
   cycleAgent: (direction?: 1 | -1) => void
 }
@@ -54,6 +56,7 @@ export const useCatalog = create<CatalogState>((set, get) => ({
   defaults: {},
   agent: "",
   model: null,
+  sessionModels: {},
   variant: null,
   loaded: false,
 
@@ -138,6 +141,13 @@ export const useCatalog = create<CatalogState>((set, get) => ({
 
   setModel: (selection) =>
     set((state) => ({
+      model: selection,
+      variant: sameModel(state.model, selection) ? state.variant : null,
+    })),
+
+  setSessionModel: (sessionID, selection) =>
+    set((state) => ({
+      sessionModels: { ...state.sessionModels, [sessionID]: selection },
       model: selection,
       variant: sameModel(state.model, selection) ? state.variant : null,
     })),

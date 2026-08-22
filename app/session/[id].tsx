@@ -824,9 +824,11 @@ export default function SessionScreen() {
 
   const handleModelSelect = useCallback(
     (providerID: string, modelID: string) => {
-      setModel({ providerID, modelID })
+      const selection = { providerID, modelID }
+      setModel(selection)
+      if (id) setSessionModel(id, selection)
     },
-    [setModel],
+    [id, setModel, setSessionModel],
   )
 
   // Current agent display
