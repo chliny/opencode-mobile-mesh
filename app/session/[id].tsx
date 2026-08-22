@@ -238,16 +238,17 @@ export default function SessionScreen() {
   }, [currentSession?.directory, currentSession?.id, directory, sessionClient, transcriptBound])
 
   // Catalog
-  const catalog = useCatalog()
-  const agents = Array.isArray(catalog.agents) ? catalog.agents : []
-  const serverCommands = Array.isArray(catalog.commands) ? catalog.commands : []
-  const providers = Array.isArray(catalog.providers) ? catalog.providers : []
-  const agent = catalog.agent || ""
-  const model = catalog.model
-  const setModel = catalog.setModel
-  const variant = catalog.variant
-  const setVariant = catalog.setVariant
-  const cycleAgent = catalog.cycleAgent
+  const agents = useCatalog((state) => (isFocused ? state.agents : EMPTY_LIST))
+  const serverCommands = useCatalog((state) => (isFocused ? state.commands : EMPTY_LIST))
+  const providers = useCatalog((state) => (isFocused ? state.providers : EMPTY_LIST))
+  const agent = useCatalog((state) => (isFocused ? state.agent : ""))
+  const model = useCatalog((state) => (isFocused ? state.model : null))
+  const setModel = useCatalog((state) => state.setModel)
+  const sessionModels = useCatalog((state) => (isFocused ? state.sessionModels : EMPTY_RECORD))
+  const setSessionModel = useCatalog((state) => state.setSessionModel)
+  const variant = useCatalog((state) => (isFocused ? state.variant : null))
+  const setVariant = useCatalog((state) => state.setVariant)
+  const cycleAgent = useCatalog((state) => state.cycleAgent)
 
   // Permission & question state
   const sessionID = transcriptBound ? currentSession?.id : undefined
