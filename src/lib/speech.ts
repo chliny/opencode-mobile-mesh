@@ -7,7 +7,7 @@ interface SpeechState {
   error: SpeechErrorKind | null
 }
 
-export type SpeechErrorKind = "permission" | "network" | "unavailable" | "unknown"
+export type SpeechErrorKind = "permission" | "network" | "service" | "audio" | "busy" | "client" | "unknown"
 
 interface SpeechActions {
   start: () => Promise<void>
@@ -57,8 +57,12 @@ export function useSpeech(onResult: (text: string) => void): SpeechState & Speec
       setError("permission")
     } else if (event.error === "network") {
       setError("network")
-    } else if (event.error === "audio-capture" || event.error === "client" || event.error === "busy") {
-      setError("unavailable")
+    } else if (event.error === "audio-capture") {
+      setError("audio")
+    } else if (event.error === "busy") {
+      setError("busy")
+    } else if (event.error === "client") {
+      setError("client")
     } else {
       setError("unknown")
     }
@@ -68,7 +72,7 @@ export function useSpeech(onResult: (text: string) => void): SpeechState & Speec
   const start = useCallback(async () => {
     if (!alive.current || starting.current) return
     if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
-      setError("unavailable")
+      setError("service")
       return
     }
     const request = ++requestID.current

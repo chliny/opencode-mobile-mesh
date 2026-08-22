@@ -138,7 +138,10 @@
       "speechErrorMessage": "Could not use voice input. Please try again.",
       "speechErrorPermission": "Microphone access is denied. Allow OpenCode to use the microphone in system settings and try again.",
       "speechErrorNetwork": "Voice recognition encountered a network error. Check your connection and try again.",
-      "speechErrorUnavailable": "No speech recognition service is available on this device."
+      "speechErrorService": "No speech recognition service is available on this device. Install or enable a speech recognition service and try again.",
+      "speechErrorAudio": "The microphone could not be started. Close other apps using the microphone and try again.",
+      "speechErrorBusy": "Voice recognition is already in use. Stop the current recognition session and try again.",
+      "speechErrorClient": "The speech recognition service could not be started. Restart the app and try again."
     }
   },
   "files": {

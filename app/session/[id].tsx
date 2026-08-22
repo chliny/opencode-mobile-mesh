@@ -292,7 +292,10 @@ export default function SessionScreen() {
     const message = {
       permission: "session.alerts.speechErrorPermission",
       network: "session.alerts.speechErrorNetwork",
-      unavailable: "session.alerts.speechErrorUnavailable",
+      service: "session.alerts.speechErrorService",
+      audio: "session.alerts.speechErrorAudio",
+      busy: "session.alerts.speechErrorBusy",
+      client: "session.alerts.speechErrorClient",
       unknown: "session.alerts.speechErrorMessage",
     }[speech.error]
     Alert.alert(t("session.alerts.speechErrorTitle"), t(message))

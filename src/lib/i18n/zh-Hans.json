@@ -138,7 +138,10 @@
       "speechErrorMessage": "无法使用语音输入，请重试。",
       "speechErrorPermission": "麦克风权限被拒绝，请在系统设置中允许 OpenCode 使用麦克风后重试。",
       "speechErrorNetwork": "语音识别发生网络错误，请检查网络连接后重试。",
-      "speechErrorUnavailable": "此设备上没有可用的语音识别服务。"
+      "speechErrorService": "此设备上没有可用的语音识别服务，请安装或启用语音识别服务后重试。",
+      "speechErrorAudio": "无法启动麦克风，请关闭其他正在使用麦克风的应用后重试。",
+      "speechErrorBusy": "语音识别正在使用中，请先停止当前识别后重试。",
+      "speechErrorClient": "语音识别服务启动失败，请重启应用后重试。"
     }
   },
   "files": {
