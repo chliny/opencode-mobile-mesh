@@ -55,6 +55,7 @@ import { activeMention, insertMention } from "../../src/lib/file-review"
 import { childSessionTitle } from "../../src/lib/subagent"
 import type { PromptFileReference } from "../../src/lib/sdk"
 import { cacheDiffs, cacheVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../../src/lib/session-file-cache"
+import { turnDiffsFromMessages } from "../../src/lib/review-diffs"
 
 // --- Builtin slash commands ---
 const BUILTIN_COMMANDS: SlashCommand[] = [
@@ -184,14 +185,12 @@ export default function SessionScreen() {
       timer = setTimeout(() => {
         const warm = async () => {
           if (!active || useSessions.getState().sending[sessionID]) return
-          if (!getCachedDiffs(dir, sessionID, "turn")) {
-            try {
-              const value = await sessionClient.session.diff(sessionID)
-              if (active) cacheDiffs(dir, sessionID, "turn", value)
-            } catch {
-              return
-            }
-          }
+          // Turn diffs come from the last user message's summary (the server
+          // returns [] for /session/:id/diff without a messageID) — sync the
+          // cache from the live transcript instead of hitting the endpoint.
+          const local = useSessions.getState()
+          const turn = turnDiffsFromMessages(local.messages, currentSession.revert?.messageID)
+          if (turn && active && !local.sending[sessionID]) cacheDiffs(dir, sessionID, "turn", turn)
           if (!active || useSessions.getState().sending[sessionID] || getCachedDiffs(dir, sessionID, "git")) return
           const git = getCachedVcsDiffs(dir, "git")
           if (git) {

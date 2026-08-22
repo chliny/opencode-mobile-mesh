@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 import type { Message } from "./sdk.ts"
-import { reviewDiffsForMessage } from "./review-diffs.ts"
+import { reviewDiffsForMessage, turnDiffsFromMessages } from "./review-diffs.ts"
 
 const user: Message = {
   id: "user-1",
@@ -101,4 +101,32 @@ test("reviewDiffsForMessage renders once after multiple assistant messages in a 
 
   assert.equal(reviewDiffsForMessage(firstAssistant, [user, firstAssistant, lastAssistant]), undefined)
   assert.deepEqual(reviewDiffsForMessage(lastAssistant, [user, firstAssistant, lastAssistant]), user.summary?.diffs)
+})
+
+test("turnDiffsFromMessages reads the last user message's summary diffs", () => {
+  const laterUser: Message = {
+    ...user,
+    id: "user-2",
+    time: { created: 3 },
+    summary: { diffs: [{ file: "b.ts", patch: "+x", additions: 1, deletions: 0, status: "added" }] },
+  }
+
+  assert.deepEqual(turnDiffsFromMessages([user, laterUser]), laterUser.summary?.diffs)
+})
+
+test("turnDiffsFromMessages returns [] when the last turn has no summary yet", () => {
+  const pending: Message = { id: "user-2", sessionID: "session-1", role: "user", time: { created: 3 } }
+  assert.deepEqual(turnDiffsFromMessages([user, pending]), [])
+})
+
+test("turnDiffsFromMessages returns undefined without any user message", () => {
+  const assistant: Message = { id: "a-1", sessionID: "session-1", role: "assistant", time: { created: 2 } }
+  assert.equal(turnDiffsFromMessages([]), undefined)
+  assert.equal(turnDiffsFromMessages([assistant]), undefined)
+})
+
+test("turnDiffsFromMessages respects the revert boundary", () => {
+  const reverted: Message = { ...user, id: "user-0", time: { created: 0 } }
+  assert.deepEqual(turnDiffsFromMessages([reverted, user], user.id), reverted.summary?.diffs)
+  assert.deepEqual(turnDiffsFromMessages([user, { ...user, id: "user-2", time: { created: 3 } }], "missing"), user.summary?.diffs)
 })

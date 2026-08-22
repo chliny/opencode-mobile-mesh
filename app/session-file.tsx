@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next"
 import { DiffLineRow, type SharedDiffLine } from "../src/components/files/DiffRenderer"
 import { FullScreenDiffReview } from "../src/components/files/FullScreenDiffReview"
 import { parseUnifiedPatch } from "../src/lib/file-review"
+import { turnDiffsFromMessages } from "../src/lib/review-diffs"
 import { useConnections } from "../src/stores/connections"
 import { useSessions } from "../src/stores/sessions"
 import { cacheDiffs, cacheVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../src/lib/session-file-cache"
@@ -44,8 +45,14 @@ export default function SessionFileScreen() {
         const diffSource: "git" | "branch" = source === "branch" ? "branch" : "git"
         let diffs = source === "turn" ? getCachedDiffs(directory, id, "turn") : getCachedDiffs(directory, id, diffSource)
         if (source === "turn") {
+          // /session/:id/diff returns [] without a messageID — derive from the
+          // live transcript's last user message (upstream's source of truth).
+          const local = useSessions.getState()
+          diffs = local.currentSession?.id === id ? turnDiffsFromMessages(local.messages, local.currentSession.revert?.messageID) : undefined
+          if (!diffs) diffs = getCachedDiffs(directory, id, "turn")
           if (!diffs) {
-            diffs = await api.session.diff(id)
+            const transcript = await api.session.messages(id)
+            diffs = turnDiffsFromMessages((transcript || []).map((item) => item.info)) ?? []
             cacheDiffs(directory, id, "turn", diffs)
           }
         } else if (!diffs) {

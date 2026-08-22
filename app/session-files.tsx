@@ -7,7 +7,9 @@ import type { FileDiff, FileEntry } from "../src/lib/sdk"
 import { groupDiffs } from "../src/lib/file-review"
 import { cacheDiffs, cacheVcsDiffs, clearCachedDiffs, clearCachedVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../src/lib/session-file-cache"
 import { cacheFileEntries, clearCachedFileEntries, getCachedFileEntries } from "../src/lib/file-tree-cache"
+import { turnDiffsFromMessages } from "../src/lib/review-diffs"
 import { useConnections } from "../src/stores/connections"
+import { useSessions } from "../src/stores/sessions"
 
 type Mode = "git" | "turn" | "branch" | "all"
 type DiffItem =
@@ -51,6 +53,19 @@ export default function SessionFilesScreen() {
         setEntries(value)
         return
       }
+      if (mode === "turn") {
+        // The server returns [] for /session/:id/diff without a messageID, so
+        // turn diffs are derived from the last user message's summary (the
+        // same source upstream's UI uses). Live transcript beats any cache.
+        const local = useSessions.getState()
+        const derived = local.currentSession?.id === id ? turnDiffsFromMessages(local.messages, local.currentSession.revert?.messageID) : undefined
+        if (derived) {
+          if (currentRequest !== requestID.current) return
+          cacheDiffs(directory, id, mode, derived)
+          setDiffs(derived)
+          return
+        }
+      }
       const cached = getCachedDiffs(directory, id, mode)
       if (cached) {
         if (currentRequest !== requestID.current) return
@@ -71,7 +86,8 @@ export default function SessionFilesScreen() {
         setDiffs(value)
         return
       }
-      const value = await api.session.diff(id)
+      const transcript = await api.session.messages(id)
+      const value = turnDiffsFromMessages((transcript || []).map((item) => item.info)) ?? []
       if (currentRequest !== requestID.current) return
       cacheDiffs(directory, id, mode, value)
       setDiffs(value)
