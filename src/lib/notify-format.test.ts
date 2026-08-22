@@ -53,3 +53,7 @@ test("lock-screen notification copy never includes server-derived content", () =
   assert.equal(completionNotificationBody(), "A session finished processing")
   assert.equal(errorNotificationBody(), "A session needs your attention")
 })
+
+test("error notifications include a sanitized provider message", () => {
+  assert.equal(errorNotificationBody("  Region\nunavailable  "), "Region unavailable")
+})

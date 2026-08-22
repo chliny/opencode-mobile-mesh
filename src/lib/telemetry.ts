@@ -1,10 +1,8 @@
 /**
  * Telemetry consent + initialisation gate.
  *
- * Wraps sentry.ts AND analytics.ts so that initSentry()/initAnalytics() are
- * only called when the user has explicitly opted in. Both crash reporting
- * and activation-funnel analytics share this single consent flag — there is
- * no separate toggle for analytics. Consent state is persisted in
+ * Gates Sentry crash reporting and activation-funnel analytics behind explicit
+ * consent. Consent state is persisted in
  * expo-secure-store so it survives app restarts.
  *
  * Usage:
@@ -15,7 +13,7 @@
  *   if (state === 'granted') { initSentry(); initAnalytics() }
  *
  *   // After the user taps "Allow" in the consent modal:
- *   await setTelemetryConsent(true)   // persists + calls initSentry()/initAnalytics() if not already done
+ *   await setTelemetryConsent(true)   // persists + starts Sentry/analytics if needed
  *
  *   // Check in Settings screen:
  *   const current = hasTelemetryConsent()   // boolean | null (null = not yet decided)

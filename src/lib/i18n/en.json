@@ -8,6 +8,8 @@
     "save": "Save",
     "shareReport": "Share report",
     "back": "Back",
+    "previous": "Previous",
+    "next": "Next",
     "copy": "Copy",
     "copied": "Copied",
     "done": "Done"
@@ -470,6 +472,7 @@
       "empty": "Content is no longer available"
     },
     "sessionInfo": {
+      "open": "Show session information",
       "noUsageData": "No usage data yet",
       "loading": "Loading...",
       "loadAllMessages": "Load all messages",
@@ -484,12 +487,12 @@
         "meta": {
           "branch": "Branch",
           "created": "Created",
-        "updated": "Updated",
-        "messages": "Messages",
-        "changes": "Changes",
-        "shared": "Shared",
-        "yes": "Yes"
-      },
+          "updated": "Updated",
+          "messages": "Messages",
+          "changes": "Changes",
+          "shared": "Shared",
+          "yes": "Yes"
+        },
       "time": {
         "justNow": "just now",
         "minutesAgo": "{{count}}m ago",

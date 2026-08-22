@@ -43,6 +43,11 @@ test("chatwootConfigured false without inbox identifier", () => {
   assert.equal(chatwootConfigured(), false)
 })
 
+test("chatwootConfigured false without base URL", () => {
+  delete process.env.EXPO_PUBLIC_CHATWOOT_BASE_URL
+  assert.equal(chatwootConfigured(), false)
+})
+
 test("sendSupportReport returns false when unconfigured, makes no calls", async () => {
   delete process.env.EXPO_PUBLIC_CHATWOOT_INBOX_IDENTIFIER
   const { fetchFn, calls } = mockFetch([])

@@ -8,6 +8,8 @@
     "save": "保存",
     "shareReport": "分享报告",
     "back": "返回",
+    "previous": "上一个",
+    "next": "下一个",
     "copy": "复制",
     "copied": "已复制",
     "done": "完成"
@@ -470,6 +472,7 @@
       "empty": "内容已不可用"
     },
     "sessionInfo": {
+      "open": "查看会话信息",
       "noUsageData": "暂无使用数据",
       "loading": "加载中...",
       "loadAllMessages": "加载全部消息",
@@ -484,12 +487,12 @@
         "meta": {
           "branch": "分支",
           "created": "创建于",
-        "updated": "更新于",
-        "messages": "消息数",
-        "changes": "变更",
-        "shared": "已分享",
-        "yes": "是"
-      },
+          "updated": "更新于",
+          "messages": "消息数",
+          "changes": "变更",
+          "shared": "已分享",
+          "yes": "是"
+        },
       "time": {
         "justNow": "刚刚",
         "minutesAgo": "{{count}} 分钟前",
