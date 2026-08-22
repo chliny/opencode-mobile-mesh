@@ -133,8 +133,6 @@ export default function SessionScreen() {
     revertToMessage,
     unrevertSession,
   } = useSessions()
-  const messagesRef = useRef(messages)
-  messagesRef.current = messages
 
   const bindingAttempt = useRef(0)
   const [failedSessionID, setFailedSessionID] = useState<string | null>(null)
@@ -179,8 +177,12 @@ export default function SessionScreen() {
         const warm = async () => {
           if (!active || useSessions.getState().sending[sessionID]) return
           if (!getCachedDiffs(dir, sessionID, "turn")) {
-            const value = [...messagesRef.current].reverse().find((item) => item.role === "user" && item.summary?.diffs)?.summary?.diffs
-            if (value) cacheDiffs(dir, sessionID, "turn", value)
+            try {
+              const value = await sessionClient.session.diff(sessionID)
+              if (active) cacheDiffs(dir, sessionID, "turn", value)
+            } catch {
+              return
+            }
           }
           if (!active || useSessions.getState().sending[sessionID] || getCachedDiffs(dir, sessionID, "git")) return
           try {

@@ -64,10 +64,8 @@ export default function SessionFilesScreen() {
         setDiffs(value)
         return
       }
-      const messages = await api.session.messages(id, { limit: 50 })
+      const value = await api.session.diff(id)
       if (currentRequest !== requestID.current) return
-      const user = [...messages].reverse().find((item) => item.info.role === "user" && item.info.summary?.diffs)
-      const value = user?.info.summary?.diffs || []
       cacheDiffs(directory, id, mode, value)
       setDiffs(value)
     } catch (err) {

@@ -45,9 +45,7 @@ export default function SessionFileScreen() {
         let diffs = source === "turn" ? getCachedDiffs(directory, id, "turn") : getCachedDiffs(directory, id, diffSource)
         if (source === "turn") {
           if (!diffs) {
-            const messages = await api.session.messages(id, { limit: 50 })
-            const user = [...messages].reverse().find((item) => item.info.role === "user" && item.info.summary?.diffs)
-            diffs = user?.info.summary?.diffs || []
+            diffs = await api.session.diff(id)
             cacheDiffs(directory, id, "turn", diffs)
           }
         } else if (!diffs) {
