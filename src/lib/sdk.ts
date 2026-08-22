@@ -162,6 +162,7 @@ export interface Part {
     | "agent"
   // Text / reasoning part
   text?: string
+  synthetic?: boolean
   // Patch part
   hash?: string
   files?: string[]

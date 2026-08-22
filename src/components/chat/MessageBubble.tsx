@@ -9,6 +9,7 @@ import type { FileDiff, Message, Part } from "../../lib/sdk"
 import { messageErrorText } from "../../lib/model-error"
 import { modelNameFor } from "../../lib/model-display"
 import { useCatalog } from "../../stores/catalog"
+import { messageTextFromParts } from "../../lib/message-text"
 
 const SCREEN_WIDTH = Dimensions.get("window").width
 
@@ -44,11 +45,14 @@ export const MessageBubble = memo(
         ? modelNameFor(providers, message.providerID, message.modelID) || message.modelID
         : undefined
 
-    const textParts = parts.filter((p) => p.type === "text")
+    // Upstream renders only the real user text. Synthetic text can contain
+    // expanded file context and must not flood the conversation bubble.
     const reasoningParts = parts.filter((p) => p.type === "reasoning")
     const toolParts = parts.filter((p) => p.type === "tool")
-    const fileParts = parts.filter((p) => p.type === "file" && isImageMime(p.mime))
-    const text = textParts.map((p) => p.text).join("\n") || ""
+    const fileParts = parts.filter((p) => p.type === "file")
+    const imageParts = fileParts.filter((p) => isImageMime(p.mime))
+    const referenceParts = fileParts.filter((p) => !isImageMime(p.mime))
+    const text = messageTextFromParts(parts)
     const reasoning = reasoningParts.map((p) => p.text).join("\n") || ""
     const canLongPress = !!onLongPress && (isUser || text.trim().length > 0)
 
@@ -77,14 +81,14 @@ export const MessageBubble = memo(
         </View>
 
         {/* Image attachments */}
-        {fileParts.length > 0 && (
+        {imageParts.length > 0 && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={s.imageRow}
             style={s.imageScroll}
           >
-            {fileParts.map((fp) => (
+            {imageParts.map((fp) => (
               <View key={fp.id} style={s.imageWrap}>
                 <Image source={{ uri: fp.url }} style={s.attachedImage} resizeMode="cover" />
                 {fp.filename && (
@@ -95,6 +99,20 @@ export const MessageBubble = memo(
               </View>
             ))}
           </ScrollView>
+        )}
+
+        {isUser && referenceParts.length > 0 && (
+          <View style={s.fileRow}>
+            {referenceParts.map((fp) => {
+              const name = fp.filename || fp.source?.path || fp.url || "file"
+              return (
+                <View key={fp.id} style={[s.fileChip, isDark && s.fileChipDark]}>
+                  <Ionicons name="document-text-outline" size={14} color="#8b5cf6" />
+                  <Text style={[s.fileLabel, isDark && s.fileLabelDark]} numberOfLines={1}>{name}</Text>
+                </View>
+              )
+            })}
+          </View>
         )}
 
         {/* Reasoning (collapsible) */}
@@ -211,4 +229,9 @@ const s = StyleSheet.create({
   },
   imageLabel: { fontSize: 10, color: "#666666", marginTop: 2, maxWidth: 200 },
   imageLabelDark: { color: "#888888" },
+  fileRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 8 },
+  fileChip: { maxWidth: "100%", flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 7, backgroundColor: "#f3e8ff" },
+  fileChipDark: { backgroundColor: "#291a3b" },
+  fileLabel: { maxWidth: 220, color: "#6d28d9", fontSize: 12, fontFamily: "monospace" },
+  fileLabelDark: { color: "#c4b5fd" },
 })
