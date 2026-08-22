@@ -21,7 +21,6 @@ import type { ConnectionType, ZeroTierPlanet } from "../../src/lib/types"
 import { embeddedZeroTier } from "@opencode-ai/zerotier"
 import { parseZeroTierTarget } from "../../src/lib/zerotier-routing"
 import { probeConnection, shareReport } from "../../src/lib/diagnostics"
-import { captureDiagnostic } from "../../src/lib/sentry"
 import { parseUrl } from "../../src/lib/diagnostics-classify"
 import { buildAuth } from "../../src/lib/auth"
 import { AnalyticsEvent, track } from "../../src/lib/analytics"
@@ -29,8 +28,8 @@ import { submitWaitlistSignup, buildWaitlistMailtoUrl, needsManualEscapeHatch, t
 import { flushPendingSignups, queuePendingSignup, readPendingSignups, dropPendingSignup } from "../../src/lib/waitlist-queue-storage"
 import appJson from "../../app.json"
 
-// Same read as sentry.ts: app.json is the single source of the user-visible
-// version (package.json/gradle are kept in parity by `npm run check:versions`).
+// app.json is the single source of the user-visible version
+// (package.json/gradle are kept in parity by `npm run check:versions`).
 const APP_VERSION = (appJson as { expo?: { version?: string } }).expo?.version ?? "unknown"
 
 export default function AddConnectionScreen() {
@@ -156,9 +155,8 @@ export default function AddConnectionScreen() {
         )
       }
     } else {
-      // Failed: run active diagnostics, capture to Sentry, offer a shareable report.
+      // Failed: run active diagnostics and offer a local shareable report.
       const report = await probeConnection(serverUrl, buildAuth(undefined, password))
-      captureDiagnostic(report)
       setIsConnecting(false)
       Alert.alert(
         t("connection.shared.alerts.connectionFailedTitle"),
@@ -250,7 +248,7 @@ export default function AddConnectionScreen() {
     }
 
     // Failed: same "Connection Failed" alert as Quick Connect — run active
-    // diagnostics, capture to Sentry, and offer a shareable report instead of
+    // diagnostics and offer a shareable report instead of
     // silently persisting an unreachable/unauthorized connection.
     if (type === "zerotier") {
       setIsConnecting(false)
@@ -261,7 +259,6 @@ export default function AddConnectionScreen() {
       return
     }
     const report = await probeConnection(url.trim(), buildAuth(username, password))
-    captureDiagnostic(report)
     setIsConnecting(false)
     Alert.alert(
       t("connection.shared.alerts.connectionFailedTitle"),
