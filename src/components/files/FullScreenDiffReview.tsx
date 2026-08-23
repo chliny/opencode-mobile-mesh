@@ -72,5 +72,5 @@ const s = StyleSheet.create({
   toolbarButton: { flexDirection: "row", alignItems: "center", gap: 5, minWidth: 72 }, backText: { fontSize: 13, color: "#111" }, title: { flex: 1, textAlign: "center", fontSize: 15, fontWeight: "700", color: "#111" },
   navigation: { flexDirection: "row", alignItems: "center", gap: 6, minWidth: 72, justifyContent: "flex-end" }, position: { minWidth: 28, textAlign: "center", fontSize: 11, color: "#666" }, positionDark: { color: "#aaa" },
   copyText: { fontSize: 12, color: "#6d28d9" }, copyTextDark: { color: "#c4b5fd" }, language: { paddingHorizontal: 12, paddingVertical: 8, fontSize: 11, fontWeight: "700", color: "#666", textTransform: "uppercase", backgroundColor: "#e8e8e8" }, languageDark: { color: "#aaa", backgroundColor: "#2a2a2a" },
-  content: { flex: 1, margin: 10, borderRadius: 8, overflow: "hidden", backgroundColor: "#fff" }, contentDark: { backgroundColor: "#1a1a1a" }, textDark: { color: "#fff" },
+  content: { flex: 1, margin: 10, alignSelf: "stretch", borderRadius: 8, overflow: "hidden", backgroundColor: "#fff" }, contentDark: { backgroundColor: "#1a1a1a" }, textDark: { color: "#fff" },
 })

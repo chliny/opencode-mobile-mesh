@@ -64,12 +64,12 @@ export function DiffRenderer({ lines, isDark, maxHeight, showLineNumbers, select
 
 const s = StyleSheet.create({
   lines: { alignSelf: "flex-start", minWidth: "100%" },
-  line: { flexDirection: "row", alignItems: "flex-start", paddingHorizontal: 8, paddingVertical: 1, minHeight: 22 },
+  line: { width: "100%", flexDirection: "row", alignItems: "flex-start", paddingHorizontal: 8, paddingVertical: 1, minHeight: 22 },
   add: { backgroundColor: "#dcfce7" }, addDark: { backgroundColor: "#052e16" },
   remove: { backgroundColor: "#fee2e2" }, removeDark: { backgroundColor: "#2a0a0a" },
   header: { backgroundColor: "#edf2ff" }, headerDark: { backgroundColor: "#182036" },
   selected: { backgroundColor: "#ddd6fe", borderLeftWidth: 3, borderLeftColor: "#8b5cf6" },
   gutter: { width: 48, paddingRight: 9, textAlign: "right", color: "#999999", fontFamily: mono, fontSize: 11, lineHeight: 20 }, gutterDark: { color: "#777777" },
   prefix: { width: 22, color: "#999999", fontFamily: mono, fontSize: 12, lineHeight: 20, textAlign: "center" }, prefixDark: { color: "#9a9a9a" },
-  code: { flex: 1 },
+  code: { flex: 1, minWidth: 0 },
 })
