@@ -1,6 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { loadSessionList, normalizeSessions, legacySessionQuery, type SessionListTransport } from "./session-list.ts"
+import { loadSessionList, normalizeSessions, legacySessionQuery, sessionPage, type SessionListTransport } from "./session-list.ts"
 import type { Session } from "./sdk.ts"
 
 // Minimal Session factory — only the fields the list logic reads.
@@ -141,6 +141,11 @@ test("loadSessionList: non-404 experimental error propagates (no silent fallback
 
 test("normalizeSessions: tolerates non-array input", () => {
   assert.deepEqual(normalizeSessions(undefined as unknown as Session[]), [])
+})
+
+test("sessionPage returns only the requested zero-indexed page", () => {
+  assert.deepEqual(sessionPage(["a", "b", "c", "d", "e"], 1, 2), ["c", "d"])
+  assert.deepEqual(sessionPage(["a", "b"], 2, 2), [])
 })
 
 test("legacySessionQuery: builds the same query the old code sent", () => {

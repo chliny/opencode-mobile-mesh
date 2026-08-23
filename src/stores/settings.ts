@@ -2,7 +2,7 @@ import { create } from "zustand"
 import * as SecureStore from "expo-secure-store"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { type Category, defaultPreferences } from "../lib/notifications"
-import { clampPageSize, normalizeStoredSettings } from "../lib/settings-merge"
+import { clampPageSize, clampSessionPageSize, normalizeStoredSettings } from "../lib/settings-merge"
 import { setAppLocale } from "../lib/i18n/config"
 import { isLocalePreference, type LocalePreference } from "../lib/i18n/locale-resolve"
 import { loadMigratedSettings } from "../lib/settings-storage"
@@ -12,12 +12,14 @@ export const SETTINGS_KEY = "opencode_settings"
 
 interface Settings {
   pageSize: number
+  sessionPageSize: number
   notifications: Record<Category, boolean>
   locale: LocalePreference
 }
 
 const DEFAULTS: Settings = {
   pageSize: 25,
+  sessionPageSize: 10,
   notifications: { ...defaultPreferences },
   locale: "system",
 }
@@ -26,12 +28,18 @@ interface SettingsState extends Settings {
   loaded: boolean
   load: () => Promise<void>
   setPageSize: (size: number) => Promise<void>
+  setSessionPageSize: (size: number) => Promise<void>
   setNotification: (category: Category, enabled: boolean) => Promise<void>
   setLocale: (locale: LocalePreference) => Promise<void>
 }
 
 function snapshot(get: () => SettingsState): Settings {
-  return { pageSize: get().pageSize, notifications: get().notifications, locale: get().locale }
+  return {
+    pageSize: get().pageSize,
+    sessionPageSize: get().sessionPageSize,
+    notifications: get().notifications,
+    locale: get().locale,
+  }
 }
 
 async function persist(settings: Settings) {
@@ -81,6 +89,13 @@ export const useSettings = create<SettingsState>((set, get) => ({
     await get().load()
     const clamped = clampPageSize(size)
     const next = { ...snapshot(get), pageSize: clamped }
+    set(next)
+    await enqueuePersist(next)
+  },
+
+  setSessionPageSize: async (size) => {
+    await get().load()
+    const next = { ...snapshot(get), sessionPageSize: clampSessionPageSize(size) }
     set(next)
     await enqueuePersist(next)
   },

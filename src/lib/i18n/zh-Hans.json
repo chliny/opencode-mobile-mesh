@@ -18,6 +18,7 @@
     "sections": {
       "security": "安全",
       "notifications": "通知",
+      "sessions": "会话",
       "privacy": "隐私",
       "about": "关于"
     },
@@ -38,6 +39,13 @@
     },
     "notifications": {
       "disabledNotice": "通知已在系统层面关闭。请在系统设置中启用通知以接收提醒。"
+    },
+    "sessions": {
+      "pageSizeLabel": "每页会话数",
+      "pageSizeDescription": "限制会话列表数量，方便浏览不同项目。",
+      "pageSizeTitle": "每页会话数",
+      "pageSizeOption": "{{count}} 个会话",
+      "pageSizeValue": "每页 {{count}} 个"
     },
     "privacy": {
       "crashReporting": {
@@ -298,6 +306,9 @@
       "daysAgo": "{{count}} 天前"
     },
     "filesCount": "{{count}} 个文件",
+    "pagination": {
+      "page": "第 {{page}} / {{total}} 页"
+    },
     "actions": {
       "rename": "重命名"
     },

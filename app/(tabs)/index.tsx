@@ -27,9 +27,11 @@ import type BottomSheet from "@gorhom/bottom-sheet"
 import type { Session, Project } from "../../src/lib/sdk"
 import { DirectorySwitcher, DirectoryBrowserSheet } from "../../src/components/chat"
 import { groupByDirectory } from "../../src/lib/session-grouping"
+import { sessionPage } from "../../src/lib/session-list"
 import { UpdateBanner } from "../../src/components/UpdateBanner"
 import { nameOf } from "../../src/lib/path-utils"
 import { SETUP_GUIDE_URL } from "../../src/lib/links"
+import { useSettings } from "../../src/stores/settings"
 
 function formatTime(timestamp: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const date = new Date(timestamp)
@@ -192,6 +194,7 @@ export default function SessionsScreen() {
   const transport = useEvents((s) => s.transport)
   const reconnect = useEvents((s) => s.connect)
   const loadCatalog = useCatalog((s) => s.load)
+  const sessionPageSize = useSettings((state) => state.sessionPageSize)
   const dirSheetRef = useRef<BottomSheet>(null)
   const browserSheetRef = useRef<BottomSheet>(null)
   const [browseStartDir, setBrowseStartDir] = useState<string | null>(null)
@@ -202,6 +205,14 @@ export default function SessionsScreen() {
   // Directories collapsed in the grouped session list. Empty by default —
   // all groups start expanded (#67).
   const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(new Set())
+  const [page, setPage] = useState(0)
+
+  const pageCount = Math.max(1, Math.ceil(sessions.length / sessionPageSize))
+  const pageSessions = useMemo(() => sessionPage(sessions, page, sessionPageSize), [sessions, page, sessionPageSize])
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, pageCount - 1))
+  }, [pageCount])
 
   const toggleGroup = useCallback((directory: string) => {
     setCollapsedDirs((prev) => {
@@ -215,9 +226,9 @@ export default function SessionsScreen() {
   // Flatten sessions into header+item rows. Skip headers entirely when
   // everything lives in one directory — a lone header adds noise, not clarity.
   const rows = useMemo<ListRow[]>(() => {
-    const groups = groupByDirectory(sessions)
+    const groups = groupByDirectory(pageSessions)
     if (groups.length <= 1) {
-      return sessions.map((session) => ({ type: "session", session }))
+      return pageSessions.map((session) => ({ type: "session", session }))
     }
     const out: ListRow[] = []
     for (const group of groups) {
@@ -234,7 +245,7 @@ export default function SessionsScreen() {
       }
     }
     return out
-  }, [sessions, collapsedDirs])
+  }, [pageSessions, collapsedDirs])
 
   // Fetch server-known projects when the new session modal opens
   useEffect(() => {
@@ -248,6 +259,7 @@ export default function SessionsScreen() {
   const handleSwitchDirectory = useCallback(
     async (dir?: string) => {
       await switchDirectory(dir)
+      setPage(0)
       loadSessions()
       refreshProject()
       loadCatalog()
@@ -266,6 +278,7 @@ export default function SessionsScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
+    setPage(0)
     try {
       await Promise.all([loadSessions(), refreshProject()])
     } catch (err) {
@@ -589,6 +602,35 @@ export default function SessionsScreen() {
               <Text style={[styles.emptyListText, isDark && styles.metaDark]}>{t("sessionsList.empty.noSessions")}</Text>
             </View>
           )
+        }
+        ListFooterComponent={
+          sessions.length > sessionPageSize ? (
+            <View style={styles.pagination}>
+              <TouchableOpacity
+                style={[styles.pageButton, page === 0 && styles.pageButtonDisabled]}
+                onPress={() => setPage((current) => current - 1)}
+                disabled={page === 0}
+                testID="sessions-page-previous"
+              >
+                <Ionicons name="chevron-back" size={18} color={page === 0 ? "#9a9a9a" : isDark ? "#ffffff" : "#0a0a0a"} />
+              </TouchableOpacity>
+              <Text style={[styles.pageLabel, isDark && styles.metaDark]}>
+                {t("sessionsList.pagination.page", { page: page + 1, total: pageCount })}
+              </Text>
+              <TouchableOpacity
+                style={[styles.pageButton, page === pageCount - 1 && styles.pageButtonDisabled]}
+                onPress={() => setPage((current) => current + 1)}
+                disabled={page === pageCount - 1}
+                testID="sessions-page-next"
+              >
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={page === pageCount - 1 ? "#9a9a9a" : isDark ? "#ffffff" : "#0a0a0a"}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null
         }
         contentContainerStyle={sessions.length === 0 ? styles.emptyContent : undefined}
       />
@@ -966,6 +1008,30 @@ const styles = StyleSheet.create({
   },
   groupHeaderCount: {
     fontSize: 12,
+    color: "#666666",
+  },
+  pagination: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    paddingVertical: 16,
+  },
+  pageButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  pageButtonDisabled: {
+    backgroundColor: "#e5e5e5",
+  },
+  pageLabel: {
+    minWidth: 88,
+    fontSize: 13,
+    textAlign: "center",
     color: "#666666",
   },
   sessionItem: {

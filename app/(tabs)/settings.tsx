@@ -26,6 +26,8 @@ import { hasTelemetryConsent, setTelemetryConsent } from "../../src/lib/telemetr
 import { CURRENT_VERSION, checkForUpdate, type AvailableUpdate } from "../../src/lib/update-check"
 import type { LocalePreference } from "../../src/lib/i18n/locale-resolve"
 
+const SESSION_PAGE_SIZE_OPTIONS = [5, 10, 15, 20, 25, 30] as const
+
 function SettingRow({
   icon,
   label,
@@ -76,7 +78,7 @@ export default function SettingsScreen() {
   const { t } = useTranslation()
 
   const { settings, hasBiometrics, updateSettings, lock } = useAuth()
-  const { notifications, setNotification, locale, setLocale } = useSettings()
+  const { notifications, setNotification, sessionPageSize, setSessionPageSize, locale, setLocale } = useSettings()
   const [osGranted, setOsGranted] = useState<boolean | null>(null)
   const [telemetryUpdating, setTelemetryUpdating] = useState(false)
 
@@ -174,6 +176,16 @@ export default function SettingsScreen() {
     ])
   }, [t, setLocale, localeLabels])
 
+  const handleSessionPageSizePress = useCallback(() => {
+    Alert.alert(t("settings.sessions.pageSizeTitle"), undefined, [
+      ...SESSION_PAGE_SIZE_OPTIONS.map((size) => ({
+        text: t("settings.sessions.pageSizeOption", { count: size }),
+        onPress: () => setSessionPageSize(size),
+      })),
+      { text: t("common.cancel"), style: "cancel" },
+    ])
+  }, [setSessionPageSize, t])
+
   return (
     <ScrollView style={[styles.container, isDark && styles.containerDark]} contentContainerStyle={styles.content}>
       <SettingSection title={t("settings.sections.security")} isDark={isDark}>
@@ -248,6 +260,24 @@ export default function SettingsScreen() {
             </Text>
           </View>
         )}
+      </SettingSection>
+
+      <SettingSection title={t("settings.sections.sessions")} isDark={isDark}>
+        <SettingRow
+          icon="albums-outline"
+          label={t("settings.sessions.pageSizeLabel")}
+          description={t("settings.sessions.pageSizeDescription")}
+          isDark={isDark}
+          onPress={handleSessionPageSizePress}
+          right={
+            <View style={styles.settingValue}>
+              <Text style={[styles.settingValueText, isDark && styles.metaDark]}>
+                {t("settings.sessions.pageSizeValue", { count: sessionPageSize })}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={isDark ? "#9a9a9a" : "#999999"} />
+            </View>
+          }
+        />
       </SettingSection>
 
       <SettingSection title={t("settings.sections.privacy")} isDark={isDark}>
@@ -381,6 +411,15 @@ const styles = StyleSheet.create({
   },
   settingContent: {
     flex: 1,
+  },
+  settingValue: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  settingValueText: {
+    fontSize: 14,
+    color: "#666666",
   },
   settingLabel: {
     fontSize: 16,

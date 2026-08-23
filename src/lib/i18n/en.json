@@ -18,6 +18,7 @@
     "sections": {
       "security": "Security",
       "notifications": "Notifications",
+      "sessions": "Sessions",
       "privacy": "Privacy",
       "about": "About"
     },
@@ -38,6 +39,13 @@
     },
     "notifications": {
       "disabledNotice": "Notifications are disabled at the system level. Enable them in Settings to receive alerts."
+    },
+    "sessions": {
+      "pageSizeLabel": "Sessions per page",
+      "pageSizeDescription": "Limit the session list so projects are easier to browse.",
+      "pageSizeTitle": "Sessions per page",
+      "pageSizeOption": "{{count}} sessions",
+      "pageSizeValue": "{{count}} per page"
     },
     "privacy": {
       "crashReporting": {
@@ -298,6 +306,9 @@
       "daysAgo": "{{count}}d ago"
     },
     "filesCount": "{{count}} files",
+    "pagination": {
+      "page": "Page {{page}} of {{total}}"
+    },
     "actions": {
       "rename": "Rename"
     },

@@ -45,6 +45,10 @@ export function normalizeSessions(all: Session[], params?: SessionListParams): S
   return out
 }
 
+export function sessionPage<T>(items: T[], page: number, size: number): T[] {
+  return items.slice(page * size, (page + 1) * size)
+}
+
 // Build the query string for the legacy directory-scoped /session fallback,
 // preserving the exact params the old code sent so old servers behave as before.
 export function legacySessionQuery(params?: SessionListParams): string {

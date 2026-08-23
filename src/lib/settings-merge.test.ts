@@ -1,10 +1,11 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { clampPageSize, mergeStoredSettings, normalizeStoredSettings } from "./settings-merge.ts"
+import { clampPageSize, clampSessionPageSize, mergeStoredSettings, normalizeStoredSettings } from "./settings-merge.ts"
 import { isLocalePreference } from "./i18n/locale-resolve.ts"
 
 const DEFAULTS = {
   pageSize: 25,
+  sessionPageSize: 10,
   notifications: { idle: true, error: true, permission: false },
   locale: "system" as const,
 }
@@ -24,6 +25,14 @@ test("clampPageSize floors below 10 and caps above 200", () => {
   assert.equal(clampPageSize(Number.NaN), 25)
 })
 
+test("clampSessionPageSize enforces the 5 to 30 range", () => {
+  assert.equal(clampSessionPageSize(5), 5)
+  assert.equal(clampSessionPageSize(30), 30)
+  assert.equal(clampSessionPageSize(4), 5)
+  assert.equal(clampSessionPageSize(31), 30)
+  assert.equal(clampSessionPageSize(Number.NaN), 10)
+})
+
 test("normalizeStoredSettings rejects malformed and non-object JSON", () => {
   assert.equal(normalizeStoredSettings("not json", DEFAULTS, isLocalePreference), null)
   assert.equal(normalizeStoredSettings("[]", DEFAULTS, isLocalePreference), null)
@@ -34,6 +43,7 @@ test("normalizeStoredSettings validates page size, locale, categories and boolea
   const normalized = normalizeStoredSettings(
     JSON.stringify({
       pageSize: 999,
+      sessionPageSize: 99,
       locale: "future-locale",
       notifications: { idle: false, error: "yes", unknown: true },
     }),
@@ -43,6 +53,7 @@ test("normalizeStoredSettings validates page size, locale, categories and boolea
 
   assert.deepEqual(normalized, {
     pageSize: 200,
+    sessionPageSize: 30,
     locale: "system",
     notifications: { idle: false, error: true, permission: false },
   })
@@ -69,7 +80,7 @@ test("upgrade path: a category missing from storage gets its default", () => {
 })
 
 test("does not mutate the inputs", () => {
-  const defaults = { pageSize: 25, notifications: { a: true } }
+  const defaults = { pageSize: 25, sessionPageSize: 10, notifications: { a: true } }
   const parsed = { notifications: { a: false } }
   const merged = mergeStoredSettings(defaults, parsed)
   assert.equal(defaults.notifications.a, true) // untouched
