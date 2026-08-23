@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-speech-recognition"
+import { log } from "./logbuffer"
 
 interface SpeechState {
   listening: boolean
@@ -58,13 +59,20 @@ export function useSpeech(onResult: (text: string) => void): SpeechState & Speec
   })
 
   useSpeechRecognitionEvent("error", (event) => {
+    log.warn("speech", "Recognition error", {
+      error: event.error,
+      message: event.message,
+      code: event.code,
+    })
     // These are expected when the user stops, cancels, or says nothing.
     if (event.error === "aborted" || event.error === "no-speech" || event.error === "speech-timeout") {
       setListening(false)
       return
     }
-    if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+    if (event.error === "not-allowed") {
       reportError("permission")
+    } else if (event.error === "service-not-allowed") {
+      reportError("service")
     } else if (event.error === "network") {
       reportError("network")
     } else if (event.error === "audio-capture") {
