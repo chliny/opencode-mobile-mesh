@@ -35,17 +35,27 @@ on:
         description: "Natural-language test query (enables --query mode, overrides scenario)"
         required: false
         default: ""
-  push:
-    branches: [main]
-    tags: ["v*"]
-    paths:
-      - "scripts/android-cua-smoke.py"
-      - "src/**"
-      - "app/**"
-      - ".github/workflows/cua-smoke.yml"
-
 jobs:
+  cua-credentials:
+    runs-on: ubuntu-latest
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    steps:
+      - id: check
+        env:
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+        run: |
+          if [ -n "$AZURE_OPENAI_API_KEY" ] && [ -n "$AZURE_OPENAI_ENDPOINT" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Azure OpenAI credentials are not configured; skipping CUA smoke test."
+          fi
+
   cua-test:
+    needs: cua-credentials
+    if: ${{ needs.cua-credentials.outputs.available == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
