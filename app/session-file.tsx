@@ -43,6 +43,9 @@ export default function SessionFileScreen() {
     }, null)
     if (index != null) setVisibleLine(index)
   }).current
+  const onScrollToIndexFailed = useRef(({ index, averageItemLength }: { index: number; averageItemLength: number }) => {
+    listRef.current?.scrollToOffset({ offset: Math.max(0, index * averageItemLength), animated: false })
+  }).current
 
   useEffect(() => {
     if (!api || !path) return
@@ -148,6 +151,7 @@ export default function SessionFileScreen() {
             extraData={`${start}-${end}`}
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={viewabilityConfig}
+            onScrollToIndexFailed={onScrollToIndexFailed}
             renderItem={({ item }) => {
               const number = selectionLine(item, mode)
               const isSelected = number !== undefined && start !== null && end !== null && number >= start && number <= end
