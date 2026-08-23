@@ -35,8 +35,18 @@ export default function SessionFileScreen() {
   const [comment, setComment] = useState("")
   const [visibleLine, setVisibleLine] = useState<number | null>(null)
   const listRef = useRef<FlatList<DisplayLine>>(null)
+  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const retriedIndices = useRef(new Set<number>())
+  const targetLineRef = useRef<number | null>(null)
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const target = targetLineRef.current
+    if (target !== null) {
+      if (!viewableItems.some((item) => item.index === target)) return
+      targetLineRef.current = null
+      setVisibleLine(target)
+      return
+    }
     const index = viewableItems.reduce<number | null>((current, item) => {
       if (item.index == null) return current
       return current == null ? item.index : Math.min(current, item.index)
@@ -44,8 +54,20 @@ export default function SessionFileScreen() {
     if (index != null) setVisibleLine(index)
   }).current
   const onScrollToIndexFailed = useRef(({ index, averageItemLength }: { index: number; averageItemLength: number }) => {
+    if (retriedIndices.current.has(index)) return
+    retriedIndices.current.add(index)
     listRef.current?.scrollToOffset({ offset: Math.max(0, index * averageItemLength), animated: false })
+    retryRef.current = setTimeout(() => {
+      listRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0.08 })
+    }, 50)
   }).current
+
+  const scrollToLine = (index: number, animated: boolean) => {
+    retriedIndices.current.delete(index)
+    targetLineRef.current = index
+    setVisibleLine(index)
+    listRef.current?.scrollToIndex({ index, animated, viewPosition: 0.08 })
+  }
 
   useEffect(() => {
     if (!api || !path) return
@@ -95,9 +117,12 @@ export default function SessionFileScreen() {
     const first = diffHunkStarts(lines)[0]
     if (first === undefined) return
     const frame = requestAnimationFrame(() => {
-      listRef.current?.scrollToIndex({ index: first, animated: false, viewPosition: 0.08 })
+      scrollToLine(first, false)
     })
-    return () => cancelAnimationFrame(frame)
+    return () => {
+      cancelAnimationFrame(frame)
+      if (retryRef.current) clearTimeout(retryRef.current)
+    }
   }, [lines, mode])
 
   const start = anchor === null || focus === null ? null : Math.min(anchor, focus)
@@ -135,7 +160,7 @@ export default function SessionFileScreen() {
   return (
     <KeyboardAvoidingView style={[s.container, isDark && s.containerDark]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Stack.Screen options={{ title: path?.split("/").pop() || t("files.fileTitle") }} />
-      <FullScreenDiffReview title={path || t("files.fileTitle")} lines={mode === "diff" ? lines : []} isDark={isDark} visibleLineIndex={mode === "diff" ? visibleLine : null} onBack={() => router.back()} onNavigateHunk={(index) => listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.08 })} headerLabel={mode === "diff" ? "DIFF" : "FILE"} footer={start !== null && end !== null ? (
+      <FullScreenDiffReview title={path || t("files.fileTitle")} lines={mode === "diff" ? lines : []} isDark={isDark} visibleLineIndex={mode === "diff" ? visibleLine : null} onBack={() => router.back()} onNavigateHunk={(index) => scrollToLine(index, true)} headerLabel={mode === "diff" ? "DIFF" : "FILE"} footer={start !== null && end !== null ? (
         <View style={[s.commentBox, isDark && s.commentBoxDark]}>
           <View style={s.selectionHead}><Text style={[s.selectionText, isDark && s.textDark]}>{t("files.selectedLines", { start, end })}</Text><TouchableOpacity onPress={() => { setAnchor(null); setFocus(null); setComment("") }}><Text style={s.clear}>{t("common.cancel")}</Text></TouchableOpacity></View>
           <TextInput style={[s.commentInput, isDark && s.commentInputDark]} value={comment} onChangeText={setComment} placeholder={t("files.commentPlaceholder")} placeholderTextColor="#777777" multiline maxLength={2000} />

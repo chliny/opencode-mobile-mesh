@@ -25,10 +25,13 @@ export function FullScreenDiffReview({ title, lines, isDark, children, footer, t
   const [hunkIndex, setHunkIndex] = useState(0)
   const hunks = diffHunkStarts(lines)
   const visibleHunkIndex = visibleLineIndex == null ? undefined : diffHunkIndexAtLine(hunks, visibleLineIndex)
-  const currentHunkIndex = visibleHunkIndex ?? hunkIndex
+  const currentHunkIndex = hunkIndex
 
   const lineSignature = `${lines.length}:${lines[0]?.key ?? ""}:${lines[lines.length - 1]?.key ?? ""}`
   useEffect(() => setHunkIndex(0), [title, lineSignature])
+  useEffect(() => {
+    if (visibleHunkIndex !== undefined) setHunkIndex(visibleHunkIndex)
+  }, [visibleHunkIndex])
 
   const navigate = (offset: number) => {
     const next = Math.max(0, Math.min(hunks.length - 1, currentHunkIndex + offset))
