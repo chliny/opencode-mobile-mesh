@@ -61,33 +61,15 @@ Manual paths, still available when you need them:
 - **Recommended — Play Console:** Production → Create release → **Add from library** → select the build by its **versionName** (e.g. `0.4.10`) and confirm its `versionCode` (the run_number-derived one, e.g. `142` — not the `app.json` number) → review → roll out. If the "What's new" field is empty, paste from `distribution/whatsnew/whatsnew-en-US`. No rebuild.
 - **Fully automated (optional):** `workflow_dispatch` with `track=production`, `status=completed` — same thing the tag push does, useful for re-shipping `main` without cutting a tag.
 
-## Resubmitting after a Data Safety rejection (issue #143)
+## Data Safety form
 
-Google Play rejected `cc.agentlabs.opencode` on 2026-07-22 because the app's Data Safety
-declaration did not disclose collection of **Email Address**. Root cause: the "OpenCode
-Connect" waitlist card on the Connect screen (`app/connection/add.tsx` →
-`src/lib/waitlist.ts` → `POST https://opencode.agentlabs.cc/api/beta-signup`) collects an
-email address when a user opts in, and the backend forwards it to **Brevo** (email
-marketing/CRM). This was true collection that the Data Safety form did not declare — Play
-requires *all* personal-info collection to be declared, even when it's optional and
-unrelated to the app's core function.
-
-The repo-side declaration is now fixed (this PR): `distribution/play-listing.md` Data Safety
-table, `distribution/privacy-policy.md`/`.html`, and `docs/privacy/index.html` all disclose
-the email collection. To resubmit:
+The app does not collect email addresses or operate a hosted-service signup. The current
+Data Safety answers are maintained in `distribution/play-listing.md` and cover only the
+opt-in diagnostics, analytics, and user-submitted support reports. To review the form:
 
 1. **Play Console → your app → App content → Data safety → Manage**.
-2. Under **Data types → Personal info**, check **Email address**.
-   - **Is this data collected, shared, or both?** → **Collected and shared**.
-   - **Is this data processed ephemerally?** → No.
-   - **Is data collection required for your app, or can users choose whether this data is
-     collected?** → **Users can choose whether this data is collected** (optional — only
-     collected if the user opts into the waitlist).
-   - **Why is this user data collected?** → check **Account management** (the waitlist is a
-     signup for the not-yet-launched hosted service). Optionally also check **App
-     functionality** if Console requires at least one additional purpose.
-   - Under sharing: declare it is shared with a third party (Brevo) for the same purpose.
-3. Re-verify the existing declared types are still accurate (unchanged by this fix):
+2. Do not declare **Personal info → Email address**; the waitlist feature was removed.
+3. Verify the remaining declared types are accurate:
    **App activity** (PostHog analytics), **App info and performance / Crash logs** (Sentry),
    and **Diagnostics — user-submitted reports** (Chatwoot) — all opt-in, default OFF, shared
    with the named third parties. See the full table in `distribution/play-listing.md` →

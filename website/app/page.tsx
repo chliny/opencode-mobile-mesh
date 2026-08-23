@@ -195,21 +195,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 border-t" style={{ borderColor: 'var(--border)' }}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: 'var(--fg)' }}>
-            Join the beta
-          </h2>
-          <p className="text-sm mb-8 max-w-lg mx-auto" style={{ color: 'var(--muted)' }}>
-            We need 20 testers to unlock the public Google Play release.
-            Sign up and get early access today.
-          </p>
-          <Link href="/beta" className="btn-primary text-sm">
-            Join the closed beta
-          </Link>
-        </div>
-      </section>
     </>
   )
 }

@@ -152,7 +152,7 @@ produces it. Check it before waiting days for the monthly rate to bend.
 **Do not try to segment the after-number by app release.** While the org is over quota,
 rate-limited events are never stored, so the project's `release`/`dist` tag values and issue
 list stop dead (last value: `opencode-mobile@0.4.12`, 2026-08-08) even though clients keep
-submitting. Version share comes from Play (`scripts/play-version-share.mjs`), not Sentry.
+submitting. Version share is not inferred from Sentry.
 
 Pre-rollout baseline for the v0.4.14 comparison (measured 2026-08-14 14:00 UTC, before
 production rollout at 14:22 UTC), two windows agreeing to within 0.2%:
@@ -203,8 +203,7 @@ expected_post = baseline_rate x (1 - gated_share x 0.969)
 ```
 
 `scripts/noise-gate-report.mjs` does exactly this: it pulls the Sentry rate
-(`sentry-volume-report.mjs`) and the Play install share (`play-version-share.mjs`,
-versionCode >= 150 = v0.4.14 = gated), prints measured-vs-expected-vs-100%-uptake, and
+(`sentry-volume-report.mjs`), prints measured-vs-expected-vs-100%-uptake, and
 **refuses to grade** a window where `client_discard/before_send` is 0 or Play share is 0 —
 neither of which is a pass or a failure, only an absence of evidence. It also inverts the
 model to report the *implied* on-device efficacy, so the 96.9% constant is checked against

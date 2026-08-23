@@ -4,7 +4,6 @@ import test from "node:test"
 import {
   GATE_EFFICACY,
   ORG_MONTHLY_GATE,
-  gatedShareFromPlay,
   BASELINE_WINDOW,
   resolveWindows,
   grade,
@@ -85,28 +84,6 @@ test("zero uptake is ungraded, not a pass — a quiet weekend is not efficacy", 
   })
   assert.equal(g.verdict, "UNGRADED")
   assert.equal(g.impliedEfficacy, null)
-})
-
-test("uptake share counts only builds that contain the gate", () => {
-  const play = {
-    versions: [
-      { versionCode: 151, users: 30 },
-      { versionCode: 150, users: 10 },
-      { versionCode: 149, users: 50 },
-      { versionCode: 146, users: 10 },
-    ],
-    window: { start: "2026-08-10", end: "2026-08-16" },
-  }
-  const s = gatedShareFromPlay(play)
-  assert.equal(s.gated, 40)
-  assert.equal(s.total, 100)
-  assert.equal(s.share, 0.4)
-})
-
-test("no Play rows at all reads as 0% uptake, never as a divide-by-zero pass", () => {
-  const s = gatedShareFromPlay({ versions: [] })
-  assert.equal(s.share, 0)
-  assert.equal(grade({ baselinePerHour: BASELINE, actualPerHour: 0, gatedShare: s.share }).verdict, "UNGRADED")
 })
 
 test("org outlook subtracts this project before projecting it forward", () => {

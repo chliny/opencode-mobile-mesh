@@ -38,7 +38,6 @@ const ALLOWED_PERSISTED_KEYS = new Map<string, string>([
   ["LAST_CHECK_KEY", "update checker: last successful check timestamp"],
   ["LATEST_KEY", "update checker: latest known release metadata"],
   ["DISMISSED_KEY", "update checker: dismissed release version"],
-  ["WAITLIST_QUEUE_KEY", "user-entered waitlist signups pending retry"],
 ])
 
 const SRC = path.join(import.meta.dirname, "..")

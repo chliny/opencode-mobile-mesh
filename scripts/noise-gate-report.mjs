@@ -19,7 +19,7 @@
  * reverse mistake is just as easy — a drop caused by fewer users opening the app
  * over a weekend, read as gate efficacy.
  *
- * This script folds Play's version share into the comparison:
+ * This script folds an external version share into the comparison when one is available:
  *
  *   expected_post = baseline_rate x (1 - gated_share x efficacy)
  *
@@ -33,13 +33,13 @@
  * up first. This script surfaces it and refuses to grade a window without it.
  *
  * USAGE
- *   SENTRY_AUTH_TOKEN=... GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=... \
+ *   SENTRY_AUTH_TOKEN=... \
  *     node scripts/noise-gate-report.mjs \
  *       --pre  2026-08-14T07:00:00Z..2026-08-14T14:00:00Z \
  *       --post 2026-08-17T00:00:00Z..now
  *
  *   --json            machine-readable
- *   --no-play         skip Play (grades at gated_share=0, i.e. "no credit for uptake")
+ *   --no-play         grade at gated_share=0, i.e. "no credit for uptake"
  *   --project SLUG    default opencode-mobile
  *
  * Neither credential lives on a laptop. Run it through
@@ -50,10 +50,9 @@
  * report, not a crash. Non-zero only when the data cannot be obtained.
  */
 
-import { execFileSync } from "node:child_process"
 import { readFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
-import { dirname, join } from "node:path"
+import { dirname } from "node:path"
 
 import { gateRollout, parseRolloutHistory } from "./sentry-volume-report.mjs"
 
@@ -197,38 +196,14 @@ export function orgOutlook({ orgPerHour, projectPerHour, projectFullUptakePerMon
 }
 
 /** Share of active users on a build that contains the gate. */
-export function gatedShareFromPlay(playJson, firstGatedVersionCode = GATE_FIRST_VERSION_CODE) {
-  const versions = playJson?.versions ?? []
-  const total = versions.reduce((s, v) => s + (v.users || 0), 0)
-  const gated = versions
-    .filter((v) => Number(v.versionCode) >= firstGatedVersionCode)
-    .reduce((s, v) => s + (v.users || 0), 0)
-  return {
-    gated,
-    total,
-    share: total > 0 ? gated / total : 0,
-    window: playJson?.window ?? null,
-  }
-}
-
-function runJson(script, args) {
-  const out = execFileSync(process.execPath, [join(HERE, script), ...args], {
-    encoding: "utf8",
-    maxBuffer: 32 * 1024 * 1024,
-    stdio: ["ignore", "pipe", "pipe"],
-  })
-  return JSON.parse(out)
-}
-
 function parseArgs(argv) {
-  const out = { project: "opencode-mobile", play: true }
+  const out = { project: "opencode-mobile" }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === "--pre") out.pre = argv[++i]
     else if (a === "--post") out.post = argv[++i]
     else if (a === "--project") out.project = argv[++i]
     else if (a === "--json") out.json = true
-    else if (a === "--no-play") out.play = false
   }
   return out
 }
@@ -291,12 +266,8 @@ async function main() {
   const pre = pick(volume, "pre", args.project)
   const post = pick(volume, "post", args.project)
 
-  let play = null
-  let shareInfo = { gated: 0, total: 0, share: 0, window: null }
-  if (args.play) {
-    play = runJson("play-version-share.mjs", ["--json"])
-    shareInfo = gatedShareFromPlay(play)
-  }
+  const play = null
+  const shareInfo = { gated: 0, total: 0, share: 0, window: null }
 
   const g = grade({
     baselinePerHour: pre.perHour,

@@ -20,7 +20,6 @@ export default function Nav() {
           {[
             { href: 'https://opencode.ai', label: 'Docs', external: true },
             { href: 'https://github.com/dzianisv/opencode-mobile', label: 'GitHub', external: true },
-            { href: '/beta', label: 'Beta' },
           ].map((link) => (
             <Link
               key={link.href}
@@ -68,7 +67,6 @@ export default function Nav() {
           {[
             { href: 'https://opencode.ai', label: 'Docs', external: true },
             { href: 'https://github.com/dzianisv/opencode-mobile', label: 'GitHub', external: true },
-            { href: '/beta', label: 'Join Beta' },
             { href: 'https://play.google.com/store/apps/details?id=cc.agentlabs.opencode', label: 'Download', external: true },
           ].map((link) => (
             <Link

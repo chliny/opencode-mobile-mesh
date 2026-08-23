@@ -142,21 +142,6 @@ The check is unauthenticated, throttled to once per 24 hours, and does not
 send app identifiers or analytics properties. GitHub still observes the
 request IP and standard HTTP metadata.
 
-### Waitlist signup
-
-When the user explicitly submits the hosted-service waitlist form, the app
-sends the normalized email and a source label to:
-
-```text
-https://opencode.agentlabs.cc/api/beta-signup
-```
-
-The email is persisted locally for retry when the request fails. The fallback
-`mailto:` flow is user initiated and is not opened automatically.
-
-This endpoint is currently hardcoded in `src/lib/waitlist.ts`; it is not
-controlled by an environment variable.
-
 ### User-opened links
 
 Settings and onboarding contain links to documentation, the privacy policy,
@@ -241,8 +226,8 @@ EXPO_PUBLIC_CHATWOOT_INBOX_IDENTIFIER
 EXPO_PUBLIC_CHATWOOT_BASE_URL
 ```
 
-The app still performs normal OpenCode server traffic, update checks,
-diagnostic probes, and explicit waitlist requests.
+The app still performs normal OpenCode server traffic, update checks, and
+diagnostic probes.
 
 ### Crash reporting to a private Sentry project
 

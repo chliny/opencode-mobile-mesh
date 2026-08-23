@@ -9,8 +9,9 @@
  *
  *     expected_post = baseline x (1 - gated_share x efficacy)
  *
- * so `gated_share` decides the verdict. Until now the only source for it was
- * `play-version-share.mjs` (Play Developer Reporting API). That source has three
+ * so `gated_share` decides the verdict. The report defaults to zero uptake when
+ * no external version-share data is available. This avoids coupling the report
+ * to the removed Play version-share utility.
  * defects for this specific question, and all three bias the same way — they
  * make uptake look higher than it is, which makes the gate look like it failed:
  *

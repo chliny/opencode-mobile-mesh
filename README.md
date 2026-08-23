@@ -133,7 +133,6 @@ Open the app, tap **Add Connection**, and choose your connection type:
 - **Tunnel** — a Cloudflare Tunnel or ngrok URL, e.g. `https://my-opencode.trycloudflare.com`
 - **Tailscale** — your machine's Tailscale IP, e.g. `http://100.x.x.x:4096`
 - **ZeroTier** — your machine's ZeroTier-managed IP, e.g. `http://10.147.x.x:4096` — with this edition the app can join the ZeroTier network itself, no system VPN required ([details](#zerotier-networking))
-- **opencode Cloud** *(planned — not yet shipped)* — one-tap managed hosting, no server to run
 
 Enter the password you set in Step 1, tap **Connect**, and you're in.
 
@@ -211,7 +210,6 @@ planet files and build requirements: [docs/embedded-zerotier.md](docs/embedded-z
 | Sentry crash reporting (opt-in) | Stable |
 | Custom ZeroTier planet files | Stable |
 | Cloudflare / ngrok tunnel wizard | Beta |
-| opencode Cloud one-tap connect | Planned |
 | iPad / tablet layout | Planned |
 | Offline session history | Planned |
 
