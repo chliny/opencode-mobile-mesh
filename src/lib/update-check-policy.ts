@@ -3,23 +3,11 @@
  *
  * WHY THIS EXISTS (AGE-110)
  * -------------------------
- * This app has no update mechanism of its own. It ships through four channels
- * and only ONE of them auto-updates:
- *
- *   Play Store            auto-updates ... but only to whatever is on the
- *                         production track (which lagged eight weeks, see
- *                         .github/workflows/publish-play-store.yml)
- *   self-hosted F-Droid   updates only if the user enabled auto-update AND has
- *                         the repo added
- *   direct APK download   never updates
- *   third-party mirrors   never update (APKCombo currently advertises v0.4.10
- *                         as its newest listing)
- *
- * The measured result on 2026-08-14: 64% of 30d-active users sat on v0.4.10 and
- * 0.2% on the newest build. A device on a direct-APK install has literally no
- * way to learn a newer version exists — so any client-side fix (the AGE-105
- * Sentry noise gate, for one) is capped at the slice of the base that happens to
- * update by luck.
+ * This app has no update mechanism of its own. The direct APK distributed by
+ * this fork does not auto-update, so the app checks the fork's GitHub Releases
+ * API and sends the user to the release page when a newer version is found.
+ * Without this check, a direct-APK install has no reliable way to learn that a
+ * newer version exists.
  *
  * DESIGN RULES, so this never becomes an ad
  * -----------------------------------------

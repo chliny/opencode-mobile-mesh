@@ -12,6 +12,12 @@ import {
   LATEST_KEY,
   DISMISSED_KEY,
 } from "./update-check-policy.ts"
+import { RELEASES_API, RELEASES_PAGE } from "./update-check-config.ts"
+
+test("update checks use this fork's GitHub Releases", () => {
+  assert.equal(RELEASES_API, "https://api.github.com/repos/chliny/opencode-mobile-zerotier/releases/latest")
+  assert.equal(RELEASES_PAGE, "https://github.com/chliny/opencode-mobile-zerotier/releases/latest")
+})
 
 test("parseVersion accepts the shapes our releases actually use", () => {
   assert.deepEqual(parseVersion("0.4.10"), [0, 4, 10])

@@ -37,7 +37,7 @@ from datetime import datetime, timezone, timedelta
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-REPO = os.environ.get("GITHUB_REPOSITORY", "dzianisv/opencode-mobile")
+REPO = os.environ.get("GITHUB_REPOSITORY", "chliny/opencode-mobile-zerotier")
 PACKAGE_NAME = os.environ.get("PACKAGE_NAME", "cc.agentlabs.opencode")
 DAYS_BACK = int(os.environ.get("DAYS_BACK", "7"))
 GH_TOKEN = os.environ.get("GH_TOKEN", "")

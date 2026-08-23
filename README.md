@@ -1,7 +1,7 @@
 # OpenCode Mobile (ZeroTier Edition)
 
 **The open-source Android client for the [opencode](https://github.com/sst/opencode) AI coding agent.**
-AI-assisted coding from your phone — Android, via Google Play, F-Droid, or a direct APK.
+AI-assisted coding from your phone — Android, via a direct APK or a build from source.
 
 > **This edition** is a feature fork of [dzianisv/opencode-mobile](https://github.com/dzianisv/opencode-mobile)
 > that embeds **ZeroTier mesh networking** directly in the app (no VPN slot, no tunnel service), adds a
@@ -10,9 +10,7 @@ AI-assisted coding from your phone — Android, via Google Play, F-Droid, or a d
 > Based on upstream **v0.4.15**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![F-Droid repo](https://img.shields.io/badge/F--Droid-add_our_repo-1976D2?logo=f-droid)](https://dzianisv.github.io/opencode-mobile/fdroid/repo)
-[![Download APK](https://img.shields.io/badge/Download-APK-green?logo=android)](https://github.com/dzianisv/opencode-mobile/releases/latest)
-[![Google Play](https://img.shields.io/badge/Google_Play-Available-4CAF50?logo=google-play)](https://play.google.com/store/apps/details?id=cc.agentlabs.opencode)
+[![Download APK](https://img.shields.io/badge/Download-APK-green?logo=android)](https://github.com/chliny/opencode-mobile-zerotier/releases/latest)
 
 > **Not affiliated with opencode.** OpenCode Mobile is an independent, community-built client and is
 > not made by, endorsed by, or affiliated with the opencode / Anomaly team. It talks to an opencode
@@ -28,20 +26,14 @@ AI-assisted coding from your phone — Android, via Google Play, F-Droid, or a d
 
 ## Install (Android)
 
-There are **three working ways** to install OpenCode Mobile today, all for Android:
+There are **two ways** to install OpenCode Mobile today, both for Android:
 
-1. **Google Play** — **https://play.google.com/store/apps/details?id=cc.agentlabs.opencode**
+1. **Direct signed APK** — download the latest release and install it manually:
+   **https://github.com/chliny/opencode-mobile-zerotier/releases/latest**
 
-2. **F-Droid (self-hosted repo)** — add our self-hosted repo to any F-Droid client, then install/update from there:
-   ```
-   https://dzianisv.github.io/opencode-mobile/fdroid/repo
-   ```
-   In the F-Droid app: **Settings → Repositories → + (add)** and paste the URL above. Current version: **v0.4.15**.
+2. **Build from source** — follow the instructions in [Contributing](#contributing).
 
-3. **Direct signed APK** — download the latest release and install it manually:
-   **https://github.com/dzianisv/opencode-mobile/releases/latest**
-
-> iOS is not available (see [Roadmap](#roadmap)). IzzyOnDroid submission is pending.
+> Google Play and F-Droid publishing are not maintained by this fork. iOS is not available (see [Roadmap](#roadmap)).
 
 ---
 
@@ -103,18 +95,17 @@ OpenCode Mobile is a React Native / Expo app that brings the power of the [openc
 
 Package: `cc.agentlabs.opencode` · Android only · based on upstream v0.4.15
 
-> The channels above distribute the upstream builds. The ZeroTier Edition in this repository is built
-> from source — see [Building from source](#contributing).
+> The ZeroTier Edition in this repository is built from source and distributed through this fork's
+> GitHub Releases — see [Building from source](#contributing).
 
 | Channel | Status | How |
 |---|---|---|
-| **Google Play** | **Live** | [play.google.com/store/apps/details?id=cc.agentlabs.opencode](https://play.google.com/store/apps/details?id=cc.agentlabs.opencode) |
-| **F-Droid (self-hosted repo)** | **Live** | Add [`https://dzianisv.github.io/opencode-mobile/fdroid/repo`](https://dzianisv.github.io/opencode-mobile/fdroid/repo) in your F-Droid client |
-| **Direct APK** | **Live** | [github.com/dzianisv/opencode-mobile/releases/latest](https://github.com/dzianisv/opencode-mobile/releases/latest) |
-| IzzyOnDroid | Submission pending | Not live yet |
+| **Direct APK** | **Available** | [github.com/chliny/opencode-mobile-zerotier/releases/latest](https://github.com/chliny/opencode-mobile-zerotier/releases/latest) |
+| Build from source | **Available** | Follow [Contributing](#contributing) |
+| Google Play / F-Droid | Not maintained by this fork | Use the direct APK or build from source |
 | Apple App Store / iOS | Not available | See [Roadmap](#roadmap) |
 
-> The three live, supported install channels are **Google Play**, the **F-Droid self-hosted repo**, and the **direct signed APK**, all Android. IzzyOnDroid is pending, and there is no iOS build.
+> The supported install channels for this fork are the **direct signed APK** and **builds from source**. Google Play and F-Droid publishing are not maintained here, and there is no iOS build.
 
 ---
 
@@ -132,7 +123,7 @@ npm install -g opencode-ai
 OPENCODE_SERVER_PASSWORD=yourpassword opencode serve --hostname 0.0.0.0 --port 4096
 ```
 
-**Step 2 — Install OpenCode Mobile** via [Google Play, F-Droid, or a direct APK](#install-android) (or build from source — see [CONTRIBUTING.md](CONTRIBUTING.md)).
+**Step 2 — Install OpenCode Mobile** via the [latest direct APK](#install-android) (or build from source — see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 **Step 3 — Add a connection in the app**
 
@@ -246,11 +237,10 @@ Questions or private support: [support@agentlabs.cc](mailto:support@agentlabs.cc
 
 ## Roadmap
 
-Tracked on the [GitHub Projects board](https://github.com/dzianisv/opencode-mobile/projects) and in the [open milestones](https://github.com/dzianisv/opencode-mobile/milestones).
+Tracked on the [GitHub Projects board](https://github.com/chliny/opencode-mobile-zerotier/projects) and in the [open milestones](https://github.com/chliny/opencode-mobile-zerotier/milestones).
 
 Near-term priorities:
 - opencode Cloud one-tap connect + managed hosting
-- F-Droid mainline acceptance (FCM audit + reproducible build verification)
 - Tunnel setup wizard (Cloudflare / ngrok / Tailscale)
 - iPad / tablet layout
 - Offline session history cache

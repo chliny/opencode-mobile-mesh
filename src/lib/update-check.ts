@@ -9,9 +9,9 @@
  * ------------------------------------------
  * expo-updates ships JS over the air, which cannot replace a native binary and
  * would not have fixed the cohort this targets (they need a new APK). The
- * GitHub releases API is the one source that is correct for every non-Play
- * channel at once: the direct APK, the self-hosted F-Droid repo and the
- * third-party mirrors are all downstream of a GitHub release.
+ * GitHub releases API is the source for the direct APK distributed by this
+ * fork. The app opens the release page so users can choose the appropriate APK
+ * for their device.
  *
  * WHY ANDROID ONLY
  * ----------------
@@ -35,14 +35,14 @@ import {
   type AvailableUpdate,
   type UpdateStorage,
 } from "./update-check-policy"
+import { RELEASES_API, RELEASES_PAGE } from "./update-check-config"
 
 export type { AvailableUpdate }
+export { RELEASES_API, RELEASES_PAGE }
 
 /** Same source Sentry uses for `release`, so the two always agree. */
 export const CURRENT_VERSION = (appJson as { expo?: { version?: string } }).expo?.version ?? "unknown"
 
-const RELEASES_API = "https://api.github.com/repos/dzianisv/opencode-mobile/releases/latest"
-const RELEASES_PAGE = "https://github.com/dzianisv/opencode-mobile/releases/latest"
 const TIMEOUT_MS = 8000
 
 const storage: UpdateStorage = {

@@ -262,7 +262,7 @@ async function main() {
   const options = args(process.argv.slice(2))
   const now = Date.now()
   const date = new Date(now).toISOString().slice(0, 10)
-  const repo = process.env.GITHUB_REPOSITORY ?? "dzianisv/opencode-mobile"
+  const repo = process.env.GITHUB_REPOSITORY ?? "chliny/opencode-mobile-zerotier"
   const [github, sentry] = await Promise.all([
     collectGithub(process.env.GITHUB_TOKEN, repo, now),
     collectSentry(process.env.SENTRY_AUTH_TOKEN, process.env.SENTRY_ORG, process.env.SENTRY_PROJECT, now),

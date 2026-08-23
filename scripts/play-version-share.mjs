@@ -54,10 +54,10 @@ const PACKAGE_NAME = process.env.PLAY_PACKAGE_NAME || "cc.agentlabs.opencode";
 /**
  * CAREFUL: Play versionCodes are NOT the ones in android/app/build.gradle. The
  * publish workflow overwrites them with `github.run_number + 100`
- * (.github/workflows/publish-play-store.yml), so the gradle/tag mapping is
- * meaningless on Play. The table below was derived from the publish runs:
+ * (the former Play Store workflow), so the gradle/tag mapping is not useful
+ * for this fork. The table below was derived from the historical publish runs:
  *
- *   gh api repos/dzianisv/opencode-mobile/actions/workflows/278415225/runs \
+ *   gh run list --repo chliny/opencode-mobile-zerotier --workflow build.yml \
  *     --jq '.workflow_runs[]|select(.conclusion=="success")|"\(.run_number+100) \(.head_sha)"'
  *   # then, per sha: version from package.json, API path via
  *   #   git merge-base --is-ancestor 0fdfb54 <sha>   (0fdfb54 = the beta-signup call)
@@ -115,7 +115,7 @@ function isPreApiSignupTag(tag) {
  * signal this channel emits, and the ratio is what we quote, never the absolute.
  */
 async function githubSideloadShare() {
-  const repo = process.env.GITHUB_RELEASES_REPO || "dzianisv/opencode-mobile";
+  const repo = process.env.GITHUB_RELEASES_REPO || "chliny/opencode-mobile-zerotier";
   const headers = { accept: "application/vnd.github+json" };
   if (process.env.GH_TOKEN || process.env.GITHUB_TOKEN)
     headers.authorization = `Bearer ${process.env.GH_TOKEN || process.env.GITHUB_TOKEN}`;
