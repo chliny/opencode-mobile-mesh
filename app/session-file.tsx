@@ -117,7 +117,7 @@ export default function SessionFileScreen() {
     const first = diffHunkStarts(lines)[0]
     if (first === undefined) return
     const frame = requestAnimationFrame(() => {
-      scrollToLine(first, false)
+      scrollToLine(first, true)
     })
     return () => {
       cancelAnimationFrame(frame)
