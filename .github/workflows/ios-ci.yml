@@ -2,8 +2,8 @@
 #
 # Requires NO Apple/EAS secrets: it validates the Expo config, exports the iOS JS
 # bundle, generates the native project, installs CocoaPods, and compiles an
-# UNSIGNED iPhone Simulator target with xcodebuild. Signing/TestFlight lives in
-# publish-app-store.yml.
+# UNSIGNED iPhone Simulator target with xcodebuild. App Store publishing is not
+# supported by this repository.
 #
 # Cheap platform-neutral checks (typecheck + unit tests) run first on Linux and
 # gate the costly macOS native build.
