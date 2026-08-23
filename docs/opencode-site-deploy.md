@@ -1,6 +1,9 @@
-# agentlabs.cc/opencode — Deploy Guide
+# Historical Site Deployment Notes
 
-## Status
+> This document records a deployment owned by the former repository. It is not a deployment
+> runbook for `chliny/opencode-mobile-zerotier`.
+
+## Former status
 
 - Vercel project: `opencode-mobile-site` (team `dzianisvs-projects`)
 - Auto-domain (live now): https://opencode-mobile-site.vercel.app
@@ -53,8 +56,7 @@ The `/privacy` page reads `../../../opencode-mobile/distribution/privacy-policy.
 at build time (relative to the Next.js project root, resolved server-side).
 When the privacy policy changes, re-deploy the site to pick up the new version.
 
-## Verification command
+## Migration note
 
-```bash
-curl -sI https://dzianisv.github.io/opencode-mobile/privacy/ | head -3
-```
+The former site's verification endpoint is intentionally not repeated here. Publish and verify
+a new site under a domain controlled by this repository before treating it as a release channel.

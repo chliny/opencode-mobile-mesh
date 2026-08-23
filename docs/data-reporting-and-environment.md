@@ -135,7 +135,7 @@ telemetry consent is granted.
 On Android, the app checks GitHub Releases at:
 
 ```text
-https://api.github.com/repos/dzianisv/opencode-mobile/releases/latest
+https://api.github.com/repos/chliny/opencode-mobile-zerotier/releases/latest
 ```
 
 The check is unauthenticated, throttled to once per 24 hours, and does not
@@ -187,11 +187,8 @@ The following workflows pass optional public variables into the full-featured
 builds:
 
 - `.github/workflows/build.yml`
-- `.github/workflows/publish-play-store.yml`
-- `.github/workflows/publish-fdroid.yml`
-- `.github/workflows/publish-app-store.yml` documents the EAS variables used by remote iOS builds
 
-The main build and Play Store workflow currently map these GitHub Secrets:
+The main build workflow currently maps these GitHub Secrets:
 
 ```text
 EXPO_PUBLIC_SENTRY_DSN
@@ -204,9 +201,8 @@ SENTRY_ORG
 SENTRY_PROJECT
 ```
 
-The F-Droid workflow maps Sentry and PostHog variables but intentionally does
-not receive Chatwoot configuration. Its isolated build job in `build.yml`
-also receives none of the telemetry secrets.
+The release workflow in `build.yml` creates the signed APK without an additional
+publishing workflow.
 
 An unset GitHub Secret becomes an empty environment variable. Based on the
 runtime guards above, that disables the corresponding optional integration;

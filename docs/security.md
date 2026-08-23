@@ -37,7 +37,7 @@ Auditor: automated agent (claude-sonnet-4-6)
   - The org ID and project ID are enumerable.
 **Remediation:**
 1. This is unavoidable with client-side error reporting; it is not a secret in the traditional sense.
-2. Enable Sentry's "allowed domains" / ingest rate-limit: in Sentry project settings, set the allowed origins to `ai.opencode.mobile` (App ID) to block abuse from arbitrary origins. Android DSN abuse is harder to block; apply a Sentry ingest rate-limit rule.
+2. Enable Sentry's "allowed domains" / ingest rate-limit: in Sentry project settings, set the allowed origins to `cc.agentlabs.opencode` (App ID) to block abuse from arbitrary origins. Android DSN abuse is harder to block; apply a Sentry ingest rate-limit rule.
 3. Document this in the threat model (done below).
 **Status:** Open (partially mitigable)
 
@@ -152,7 +152,7 @@ When the opencode AI agent requests a file-access permission, the notification b
 **Files:** `app.json:29`, `app.json:38-39`
 **Description:** Both platforms allow HTTP connections, which is required for local/LAN servers. This is intentional and correct for the use case. However, neither the Play Store listing, App Store listing, nor a privacy policy document currently explains that HTTP connections may be made to user-provided servers. Google Play's Data Safety section and Apple's App Privacy report will flag arbitrary network access if not documented.
 **Remediation:**
-1. Update the canonical privacy policy at `https://dzianisv.github.io/opencode-mobile/privacy/` to explain that the app connects to user-configured server addresses that may use HTTP.
+1. Publish the privacy policy in `docs/privacy/index.html` under a URL controlled by this repository and explain that the app connects to user-configured server addresses that may use HTTP.
 2. In Play Store Data Safety: disclose "Other app performance data" collected (crash reports via Sentry — opt-in).
 **Status:** Open
 

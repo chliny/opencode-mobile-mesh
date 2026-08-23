@@ -2,11 +2,9 @@
 title: "Drive your self-hosted AI coding agent from your phone"
 published: true
 tags: [android, selfhosted, ai, devtools]
-cover_image: https://dzianisv.github.io/opencode-mobile/play-graphics/feature-graphic.png
-canonical_url: https://dzianisv.github.io/opencode-mobile/
 ---
 
-> Publish on dev.to a day or two AFTER the HN/Reddit launch — it's evergreen SEO, not a same-day play. Set `canonical_url` to the landing page so the landing page gets SEO credit. Swap `cover_image` for a hosted hero/feature graphic before publishing. Replace `{{PLAY_URL}}` with the Play link once approved.
+> Publish on dev.to a day or two AFTER the HN/Reddit launch. Add a hosted cover image and canonical URL only after this repository has a verified public site.
 
 I run [opencode](https://github.com/sst/opencode) — an open-source AI coding agent — on my home server. It connects to Claude or GPT via my own API keys and edits code through tool calls: reading files, writing diffs, running shell commands.
 
@@ -62,10 +60,8 @@ Tool-call approval required coordinating two async streams: the inbound SSE stre
 
 ## Open source
 
-MIT licensed. Source at [github.com/dzianisv/opencode-mobile](https://github.com/dzianisv/opencode-mobile). Issues and PRs welcome.
+MIT licensed. Source at [github.com/chliny/opencode-mobile-zerotier](https://github.com/chliny/opencode-mobile-zerotier). Issues and PRs welcome.
 
-Install ([all options on one page](https://dzianisv.github.io/opencode-mobile/download/)): add the self-hosted F-Droid repo `https://dzianisv.github.io/opencode-mobile/fdroid/repo` in your F-Droid client, or grab the [direct APK](https://github.com/dzianisv/opencode-mobile/releases/latest). Google Play is in review and going live shortly: {{PLAY_URL}}
-
-Landing page and setup guide: [dzianisv.github.io/opencode-mobile](https://dzianisv.github.io/opencode-mobile/)
+Install the [direct APK](https://github.com/chliny/opencode-mobile-zerotier/releases/latest).
 
 If you run opencode and try it, I'm especially interested in feedback on latency with local models — the streaming UI has a minimum render interval to avoid thrashing, and I don't know where that threshold feels wrong on slow hardware.

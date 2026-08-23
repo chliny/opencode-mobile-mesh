@@ -3,7 +3,6 @@
 > Post as a native thread (write tweet 1, then "add another tweet" for 2–8). Don't paste links in tweet 1 — X suppresses reach on link-first tweets. Put the main link in the last tweet and/or the first reply.
 > Best windows: 9–11am ET or 1–3pm ET on weekdays.
 > After posting, quote-tweet your own thread later that day linking the HN/PH post for a second impression.
-> `{{PLAY_URL}}` = `https://play.google.com/store/apps/details?id=cc.agentlabs.opencode` once approved.
 
 ---
 
@@ -60,17 +59,14 @@ MIT licensed. No subscription. No ads.
 
 Sentry crash reporting is opt-in and OFF by default. Connection secrets live in the Android Keystore.
 
-Source: github.com/dzianisv/opencode-mobile
+Source: github.com/chliny/opencode-mobile-zerotier
 ```
 
 **Tweet 7 (CTA)**
 ```
 On Android now:
 
-Install (F-Droid + direct APK): dzianisv.github.io/opencode-mobile/download
-Setup guide: dzianisv.github.io/opencode-mobile/guide
-
-Google Play going live shortly: {{PLAY_URL}}
+Install: github.com/chliny/opencode-mobile-zerotier/releases/latest
 
 If you run opencode, give it a try. Issues + PRs welcome.
 ```

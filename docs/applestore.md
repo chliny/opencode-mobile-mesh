@@ -85,7 +85,7 @@ Because the answer is "No", no ERN (Encryption Registration Number) is required 
 | 4 | App icon — 1024×1024 PNG, opaque (no alpha) | ✅ Done | `assets/icon.png` is RGB with no alpha channel |
 | 5 | iPhone screenshots 6.7" (1290×2796) + 6.5" (1242×2688) | Mac | 🔴 Placeholder mockups exist; recapture the current app in Simulator |
 | 6 | iPad screenshots 12.9" (2048×2732) | Mac | 🔴 Placeholder mockups exist; recapture the current app in Simulator |
-| 7 | Privacy policy — live at https://dzianisv.github.io/opencode-mobile/privacy/ | ✅ done | Live & verified (HTTP 200) on gh-pages. Content handled by Android agent (`distribution/privacy-policy.{md,html}`). iOS-specific ATT / nutrition label addendum written in `distribution/app-store-listing.md`. |
+| 7 | Privacy policy | ⚠️ pending publication | Publish `docs/privacy/index.html` at a URL controlled by this repository before submission. |
 | 8 | Privacy nutrition label (App Tracking + Data Collection) | ✅ Done | Updated in `distribution/app-store-listing.md` — ATT explicitly noted (not used), Sentry opt-in status documented |
 | 9 | Export compliance | ✅ Done | `ITSAppUsesNonExemptEncryption: false` added to `app.json`. Answers + rationale in this doc (see Export Compliance section above) and `distribution/app-store-listing.md`. |
 | 10 | ATS justification in App Review notes | ✅ Done | Full justification text in `distribution/app-store-listing.md` under "App Review Notes — ATS Justification" |

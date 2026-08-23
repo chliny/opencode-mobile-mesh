@@ -22,6 +22,8 @@ See [`.agents/retro.md`](.agents/retro.md) for lessons from past tasks. Read ent
 
 **Stop discipline:** If a tool returns the same error 3× (or no new artifact/commit is produced across several turns), STOP. Print a BLOCKED summary with the single human action needed. A vague "please do X and let me know" that leaves you idle is worse than a clean stop — don't do it.
 
+**Default commit scope:** When committing code, exclude test scripts and build intermediates by default. Include relevant Git configuration changes, including `.gitignore`, when they are part of the task. Never include generated build output unless explicitly requested.
+
 **Work-tracking discipline:**
 - Track multi-step/upgrade work in the **related GitHub issue**, updated via `gh issue comment` — NOT by repeatedly editing AGENTS.md and NOT in scratch files under `/tmp` (e.g. no `/tmp/playconsole-fill.md`). Keep reference material (listing copy, form answers) in the repo under `distribution/` or as issue comments.
 - AGENTS.md is for durable conventions only; do not churn it with task status.
@@ -32,7 +34,7 @@ See [`.agents/retro.md`](.agents/retro.md) for lessons from past tasks. Read ent
 
 React Native / Expo mobile client for opencode. Connects to an opencode server instance via HTTP + SSE for real-time updates.
 
-**Repo**: `dzianisv/opencode-mobile` (standalone, not part of opencode monorepo)
+**Repo**: `chliny/opencode-mobile-zerotier` (standalone, not part of opencode monorepo)
 **Package name**: `cc.agentlabs.opencode`
 
 ## Architecture
@@ -81,6 +83,19 @@ npm install
 npx expo start        # Expo dev server
 npx expo run:android  # Android emulator
 ```
+
+### Android Release Build Rule
+
+After every code change, run the repository release build script and verify that
+it succeeds before reporting the work complete:
+
+```bash
+./scripts/build-android-release.sh
+```
+
+Do not replace this with a direct Gradle command. The script selects the required
+Android SDK/JDK, runs `assembleRelease`, verifies the APK signature, and copies
+the APK to `/usr/share/nginx/html/release/`.
 
 ## Connecting
 
@@ -170,7 +185,7 @@ The correct Azure AI Services endpoint (with actual deployments) is:
 ### CI
 
 GitHub Actions workflow: `.github/workflows/cua-smoke.yml`
-Secrets required: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` (already set on `dzianisv/opencode-mobile`).
+Secrets required: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` (configure them in this repository before enabling CI).
 
 **Triggers**: Runs on push to `main` (with path filters) AND on `v*` tags (releases).
 
@@ -216,7 +231,7 @@ Secrets stored in vault:
 - `SENTRY_ORG` — `vibetechnologies`
 - `SENTRY_PROJECT` — `opencode-mobile`
 
-These same secrets are set as GitHub Actions secrets on `dzianisv/opencode-mobile` for CI builds.
+Configure these values as GitHub Actions secrets on `chliny/opencode-mobile-zerotier` before enabling CI builds.
 
 **Do NOT store secrets in `.env` files committed to the repo.** `.env` is gitignored — local copy only.
 
@@ -254,7 +269,7 @@ For pushes/gh CLI on this repo: `source ~/.env.d/github-dzianisv.env`
 ## Google Play Console
 
 - **Developer account**: VIBE TECHNOLOGIES, LLC (ID: `8842655543970815326`), Google login `vibeteaichnologies@gmail.com`. The `/u/N/` index is NOT stable — if a console URL bounces to accept-terms/create-developer-account you're on the wrong Google account (e.g. `dzianisvv@gmail.com` hits a ToS gate); use the developer-account chooser to reach VIBE.
-- **Rebrand (2026-05-30)**: package renamed `ai.opencode.mobile` → `cc.agentlabs.opencode`. **App IS live on Play Store internal track** (v0.4.6, versionCode 33). CI publishes updates automatically via the service account after the first manual upload was completed. CI `packageName` = `cc.agentlabs.opencode`. NOTE: CI publish build needs the "Purge stale generated sources" step (commit 67e4c1f) or cached old-package autolinking breaks compile.
+- **Historical rebrand (2026-05-30)**: package renamed `ai.opencode.mobile` → `cc.agentlabs.opencode`. The former repository published to Play's internal track; this repository releases signed APKs through GitHub Releases. CI `packageName` = `cc.agentlabs.opencode`.
 - **Legacy app (orphaned)**: `ai.opencode.mobile`, app ID `4975545755653045321` — published v19 to internal track (run 26662900471), superseded by the rebrand.
 - **Track**: Internal testing (no review required, up to 100 testers)
 - **Service account**: `playstore-deploy@opencode-mobile-deploy.iam.gserviceaccount.com` (account-level API access already granted)

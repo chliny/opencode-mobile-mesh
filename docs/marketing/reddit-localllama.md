@@ -4,7 +4,6 @@
 > **Flair:** `Resources` or `Other` (this sub uses topic flairs, not "Project"; `Resources` fits a tool release best). If a `Tutorial`/`News` flair fits a future post, save those for the follow-up.
 > **Rules that matter here:** This community is allergic to cloud-first / closed products and to thin hype. Lead with the **bring-your-own / local-model** angle — emphasize that all inference stays on the user's hardware and the app is just a UI. No marketing voice; be a builder talking to builders. End with a real technical question to invite discussion (mods and users reward that, and it boosts comment count → ranking).
 > **Best time:** US daytime, but this sub is global and active late — 9am–1pm ET is safe.
-> `{{PLAY_URL}}` = `https://play.google.com/store/apps/details?id=cc.agentlabs.opencode` once approved.
 > **Sequencing:** Post this on a DIFFERENT day from r/selfhosted to avoid cross-post spam perception.
 
 ---
@@ -33,11 +32,7 @@ opencode supports any OpenAI-compatible API via its provider config. Point it at
 
 **Source / install**
 
-- Source (MIT): https://github.com/dzianisv/opencode-mobile
-- Install (F-Droid + APK, one page): https://dzianisv.github.io/opencode-mobile/download/
-- All install options + guide: https://dzianisv.github.io/opencode-mobile/
-- F-Droid repo: https://dzianisv.github.io/opencode-mobile/fdroid/repo
-- Direct APK: https://github.com/dzianisv/opencode-mobile/releases/latest
-- Google Play: in review, live shortly — {{PLAY_URL}}
+- Source (MIT): https://github.com/chliny/opencode-mobile-zerotier
+- Direct APK: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
 
 I'm especially interested in feedback from people running local models: how does the streaming UI feel when tokens arrive at 3–5 tok/s on slower hardware? The renderer has a minimum repaint interval to avoid thrashing and I'm not sure the threshold is right for slow generation. Also curious which local backends people are pairing with opencode.

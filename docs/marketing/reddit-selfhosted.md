@@ -4,7 +4,6 @@
 > **Flair:** `Release` (use Release for an app launch; if not available, use `Product Announcement`).
 > **Rules that matter here:** Self-promotion is allowed for your own project but must be genuinely self-hostable and you must be present to answer questions. Lead with the self-hosting angle, not the AI hype. No URL shorteners. Do NOT post the same title/body to multiple subreddits the same day (looks like spam and r/selfhosted mods notice).
 > **Best time:** Weekday mornings US Eastern (8–11am ET). This community skews US/EU.
-> `{{PLAY_URL}}` = `https://play.google.com/store/apps/details?id=cc.agentlabs.opencode` once Play approval lands.
 
 ---
 
@@ -42,11 +41,7 @@ Your API keys stay on your server. No accounts, no analytics, no proprietary bac
 
 **Install**
 
-- Install (F-Droid + APK, one page): https://dzianisv.github.io/opencode-mobile/download/
-- All options + setup guide: https://dzianisv.github.io/opencode-mobile/
-- F-Droid repo (add this URL in your F-Droid client): https://dzianisv.github.io/opencode-mobile/fdroid/repo
-- Direct APK: https://github.com/dzianisv/opencode-mobile/releases/latest
-- Source: https://github.com/dzianisv/opencode-mobile
-- Google Play: in review, going live shortly — {{PLAY_URL}}
+- Direct APK: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
+- Source: https://github.com/chliny/opencode-mobile-zerotier
 
 Happy to answer anything about the tunnel setup or the API. Feedback welcome, especially from anyone already self-hosting opencode.

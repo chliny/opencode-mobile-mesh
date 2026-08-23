@@ -3,8 +3,6 @@
 > **Launch timing:** Submit at 12:01am PT. PH ranks by upvotes-per-day and the leaderboard resets at midnight PT, so launching the second the day opens maximizes your window. Avoid launching the same day as a huge consumer product (check the upcoming page first). Tue/Wed/Thu tend to be calmer than Mon.
 > **Hunter:** self-hunt is fine; a hunter with reach is a bonus but not required.
 > **First comment must be posted by you within the first minute** — it sets the narrative.
-> `{{PLAY_URL}}` = `https://play.google.com/store/apps/details?id=cc.agentlabs.opencode` once approved (PH lets you add the Play link as a product link on the day it goes live).
-
 ---
 
 ## Name
@@ -26,12 +24,8 @@ Drive your self-hosted AI coding agent from your phone
 
 ## Links
 
-- Website (primary): https://dzianisv.github.io/opencode-mobile/
-- Install (F-Droid + APK, one page): https://dzianisv.github.io/opencode-mobile/download/
-- GitHub: https://github.com/dzianisv/opencode-mobile
-- F-Droid repo: https://dzianisv.github.io/opencode-mobile/fdroid/repo
-- Direct APK: https://github.com/dzianisv/opencode-mobile/releases/latest
-- Google Play: {{PLAY_URL}}  *(add on launch day once approved)*
+- GitHub: https://github.com/chliny/opencode-mobile-zerotier
+- Direct APK: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
 
 ---
 
@@ -56,7 +50,7 @@ A few things worth knowing:
 - It's a client for [opencode](https://github.com/sst/opencode) (by the sst team, MIT). You need opencode running somewhere — laptop, home server, VPS. Setup is `npm install -g opencode-ai && opencode serve`, then paste the URL into the app.
 - Connect however you already reach home: local network, Tailscale, Cloudflare Tunnel, ngrok.
 - Works with any model opencode supports: Claude, GPT, Gemini, or local LLMs via any OpenAI-compatible endpoint. Your keys stay on your server.
-- MIT licensed, source public. Available now via a self-hosted F-Droid repo and a direct APK; Google Play is in review and going live shortly.
+- MIT licensed, source public. Available through a direct signed APK.
 
 Happy to answer anything — especially about the SSE streaming + tool-call approval flow, which was the trickiest part to get right. Thanks for checking it out!
 

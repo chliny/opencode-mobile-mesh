@@ -1,7 +1,7 @@
 # OpenCode Mobile — Launch Campaign Plan
 
-> Owner: dzianisv (dzianisvv@gmail.com). All copy in this folder is verified-true. Do not invent metrics, ratings, or store claims.
-> `{{PLAY_URL}}` = `https://play.google.com/store/apps/details?id=cc.agentlabs.opencode` — Play submitted to production review 2026-06-02, IN REVIEW, auto-publishes on approval (typically ≤7 days). Treat as "launching imminently"; swap the placeholder the moment it goes live.
+> Repository: `chliny/opencode-mobile-zerotier`. All copy in this folder is verified-true. Do not invent metrics, ratings, or store claims.
+> The supported install channel is the signed APK attached to GitHub Releases. Do not claim Google Play, F-Droid, or a hosted website without verifying this repository operates that channel.
 
 ---
 
@@ -23,7 +23,7 @@
 - Open source, MIT, public repo + CI building signed AAB on every tag.
 - Real engineering substance (SSE polyfill fix, WebView-free diff renderer, async approval coordination).
 - Zero lock-in: no account, no required subscription, no analytics by default.
-- Multiple legitimate install channels already live (F-Droid self-hosted repo + direct APK + landing/guide), Play imminent.
+- Direct signed APK releases are available through GitHub.
 
 **Honest friction to address head-on (don't hide it):** You need your own opencode server. See risk list (§9) for messaging.
 
@@ -39,18 +39,18 @@
 | Android engineers | RN/Expo implementation story | r/androiddev, Android Weekly, Kotlin/Android Slacks, X #AndroidDev |
 | AI-coding / dev-tools crowd | New tool in a hot category | HN, r/programming (carefully), dev.to, Product Hunt, X dev community |
 | Tailscale / Cloudflare Tunnel users | The connectivity story is native to them | Tailscale community forum/Discord, r/Tailscale, Cloudflare community |
-| F-Droid / FOSS Android users | MIT + F-Droid repo + privacy | r/fdroid, r/fossdroid, IzzyOnDroid ecosystem |
+| FOSS Android users | MIT + source availability + privacy | r/fossdroid, Android open-source communities |
 
 ---
 
 ## 3. Day-by-day launch sequence (T-7 → T+30)
 
 ### Pre-launch (T-7 → T-1)
-- **T-7:** Lock all assets. Capture/finish the 6 PH/landing screenshots + a 20–40s demo GIF/video (see ASSETS.md). Verify landing, guide, F-Droid repo, and latest APK release are all reachable. Polish the GitHub README so the repo (the link everything points to) converts.
-- **T-6:** Pre-seed the niche communities that are NOT launch-day broadcasts: open a friendly post/comment in **sst/opencode Discussions** ("built a mobile client for opencode, feedback welcome") and the **opencode Discord**. These warm users are your earliest upvoters and most credible commenters.
-- **T-5:** Submit listings that take time to appear: **AlternativeTo**, **LibHunt/Awesome lists** PRs (awesome-selfhosted, awesome-android, awesome-ai-coding/awesome-opencode if one exists), **F-Droid IzzyOnDroid** consideration. These are evergreen and don't compete with launch day.
+- **T-7:** Lock all assets. Capture/finish the screenshots + a 20–40s demo GIF/video (see ASSETS.md). Verify the latest APK release is reachable. Polish the GitHub README so the repository converts.
+- **T-6:** Pre-seed the niche communities that are NOT launch-day broadcasts: open a friendly post/comment in opencode community channels ("built a mobile client for opencode, feedback welcome"). These warm users are your earliest upvoters and most credible commenters.
+- **T-5:** Submit listings that take time to appear: **AlternativeTo** and relevant **LibHunt/Awesome lists** PRs. These are evergreen and don't compete with launch day.
 - **T-3:** Draft and schedule the X thread; line up the Product Hunt page as a draft (don't publish). Decide exact HN day (Tue–Thu).
-- **T-1:** Final reachability check of every URL in every post. Confirm whether Play has approved — if yes, replace `{{PLAY_URL}}` everywhere; if not, keep "in review, going live shortly." Pre-write answers to the top 10 anticipated questions (§7).
+- **T-1:** Final reachability check of every URL in every post, especially the latest GitHub Release APK. Pre-write answers to the top 10 anticipated questions (§7).
 
 ### Launch day (T0 — pick a Tuesday, Wednesday, or Thursday)
 Tight single-day sequence; do NOT blast every channel at once — stagger to build momentum and look organic.
@@ -66,15 +66,14 @@ Tight single-day sequence; do NOT blast every channel at once — stagger to bui
 
 ### T+1 → T+2
 - **T+1:** **r/LocalLLaMA** (different day from r/selfhosted to avoid cross-post spam perception). Reply to all Reddit comments within a few hours.
-- **T+2:** **Publish dev.to article** (evergreen SEO; canonical → landing page). Cross-link from the X thread.
+- **T+2:** **Publish dev.to article** (evergreen SEO). Cross-link from the X thread.
 
 ### T+3 (or next clean midnight PT)
 - **Product Hunt** launch at 12:01am PT. Maker comment within 60s. Rally any friendly network early (PH weighs early velocity). Reply to every PH comment.
 
 ### T+4 → T+7
 - File/finish **awesome-list PRs** that weren't done in pre-launch.
-- Post to secondary subreddits one per day, spaced out: r/homelab, r/ollama, r/fdroid, r/Tailscale (tailor each to its angle; never copy-paste identical bodies).
-- Watch for the Play approval; when it lands, **edit every live post** that allows editing to swap in `{{PLAY_URL}}`, and post a short "now on Google Play" follow-up tweet.
+- Post to secondary subreddits one per day, spaced out: r/homelab, r/ollama, and r/Tailscale (tailor each to its angle; never copy-paste identical bodies).
 
 ### T+7 → T+30 (sustain)
 - **Content cadence:** 1 short technical post/week (dev.to / blog) — e.g. "How opencode's tool-call approval works", "Reaching your homelab from your phone: Tailscale vs Cloudflare Tunnel", "Running opencode with a local model". Each links back to the app naturally.
@@ -109,7 +108,7 @@ Tight single-day sequence; do NOT blast every channel at once — stagger to bui
 - **AlternativeTo** — list as an alternative to terminal AI tools / mobile dev clients.
 - **awesome-selfhosted**, **awesome-android**, **awesome-react-native**, any **awesome-ai-coding / awesome-opencode** list — open PRs.
 - **LibHunt** — submit the GitHub repo.
-- **F-Droid / IzzyOnDroid** — beyond the self-hosted repo, pursue mainline/IzzyOnDroid inclusion (MR #39530 pending per project memory; chase it). Wider reach than the self-hosted repo alone.
+- **F-Droid / IzzyOnDroid** — pursue inclusion only after validating a submission for this repository's current package and signing key.
 - **OpenSourceAlternative.to**, **Slant**, **SaaSHub** — quick listings.
 
 **Communities to be present in (not spam):**
@@ -123,12 +122,12 @@ Tight single-day sequence; do NOT blast every channel at once — stagger to bui
 - "How to reach your self-hosted opencode server from your phone (Tailscale / Cloudflare Tunnel / ngrok)" — captures setup search intent.
 - "Running opencode with a local LLM and a mobile UI."
 - "Tool-call approval: why human-in-the-loop matters for autonomous coding agents."
-- Each canonical-points to the landing page; each embeds the demo video.
+- Each post links to the repository or release; add a canonical URL only after a public site is deployed for this repository.
 
 **YouTube / demo:**
 - 60–90s screen-recorded real session (connect → prompt → stream → diff → approve → done). This is the single most conversion-lifting asset for PH, landing, dev.to, and Reddit. Also cut a 15s vertical clip for X/Shorts.
 
-**SEO basics (mostly done — verify):** sitemap, robots, OG image, IndexNow already live per project memory. Make sure the landing page has the demo video and clear "you need your own server" framing above the fold.
+**SEO basics:** verify any public site and social assets before referencing them. Keep the "you need your own server" framing prominent.
 
 ---
 
@@ -136,17 +135,16 @@ Tight single-day sequence; do NOT blast every channel at once — stagger to bui
 
 **Track (weekly):**
 - GitHub: stars, unique clones, release (APK) download counts, issues/PRs opened.
-- F-Droid repo: index.json fetches / APK downloads (server logs).
-- Play Console (once live): installs, store-listing views, conversion %, crash-free rate, ratings.
-- Referral traffic to landing page (GitHub Pages analytics / Plausible if added) by source.
+- GitHub Release APK download counts.
+- Repository referral traffic by source.
 - Per-channel: HN points + rank + comments; Reddit upvotes/comments per sub; PH rank + upvotes; X impressions/engagement; dev.to reads/reactions.
 
 **Realistic targets (a niche dev tool with a self-hosting prerequisite — be honest, this is not a consumer app):**
-- **Launch week:** HN front page (top 30) for a few hours = several thousand repo visits; 150–400 GitHub stars; 200–800 APK + F-Droid downloads combined; PH top 10 in Dev Tools for the day.
-- **Month 1:** 400–1,000 stars; 1,000–3,000 total installs across F-Droid + APK + Play; a handful of community issues/PRs (a good health signal).
+- **Launch week:** HN front page (top 30) for a few hours = several thousand repository visits; 150–400 GitHub stars; 200–800 APK downloads; PH top 10 in Dev Tools for the day.
+- **Month 1:** 400–1,000 stars; 1,000–3,000 APK installs; a handful of community issues/PRs (a good health signal).
 - **Leading indicator that matters most:** retained, returning users (people who connect a server and come back) and inbound issues — both signal real adoption beyond a launch-day spike.
 
-Note: download numbers hinge heavily on Play going live (massively lowers install friction) and on the demo video existing. Both are the biggest levers.
+Note: download numbers hinge heavily on clear direct-APK installation guidance and the demo video.
 
 ---
 
@@ -176,7 +174,7 @@ Note: download numbers hinge heavily on Play going live (massively lowers instal
   Streams token-by-token via SSE with a minimum render interval to avoid UI thrash. Genuinely want feedback on how it feels at low tok/s.
 
 - **"Is it on Google Play / F-Droid main catalog?"**
-  Available now via a self-hosted F-Droid repo and direct signed APK. Google Play is in review and going live shortly. Mainline F-Droid/IzzyOnDroid inclusion is in progress.
+  This repository distributes a direct signed APK through GitHub Releases. It does not maintain Google Play or F-Droid publishing.
 
 - **"What models does it support?"**
   Whatever opencode supports — Claude, GPT, Gemini, or any OpenAI-compatible/local endpoint. The app is model-agnostic; opencode handles the provider.
@@ -200,7 +198,7 @@ Note: download numbers hinge heavily on Play going live (massively lowers instal
 |---|---|---|
 | **"I need my own server" friction** turns away casual installers | Lower install→active conversion | Reframe as the feature (privacy, no lock-in, BYO model). Make the guide dead-simple (two commands). Target audiences who already self-host. Don't market to people who want a turnkey chatbot. |
 | HN/Reddit reads it as spam or low-effort | Removal, downvotes | Lead with engineering substance, tailor every post per platform, never copy-paste across subs, be present to answer. |
-| Play approval slips past launch week | Higher install friction during peak attention | Drafts already say "going live shortly" with swappable `{{PLAY_URL}}`; F-Droid repo + APK carry installs in the meantime; do a "now on Play" follow-up wave when it lands. |
+| Direct APK install friction | Higher install friction during peak attention | Make the GitHub Release link prominent and document the Android unknown-sources install step. |
 | No demo video at launch | Big conversion loss (this is the #1 gap) | Prioritize the 60–90s demo before T0 (see ASSETS.md). At minimum ship the GIF. |
 | Confusion: people think the app *is* the AI / runs models | Wrong expectations, bad reviews | Every post states plainly "you need a running opencode server; the app is a thin client." Keep saying it. |
 | Security FUD about exposing a home server | Hesitation | Push Tailscale as the default safe path; mention server password; link the guide. |

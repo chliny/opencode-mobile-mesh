@@ -33,7 +33,7 @@ There are **two ways** to install OpenCode Mobile today, both for Android:
 
 2. **Build from source** — follow the instructions in [Contributing](#contributing).
 
-> Google Play and F-Droid publishing are not maintained by this fork. iOS is not available (see [Roadmap](#roadmap)).
+> Google Play and F-Droid publishing are not maintained by this fork. iOS is not available.
 
 ---
 
@@ -192,20 +192,7 @@ planet files and build requirements: [docs/embedded-zerotier.md](docs/embedded-z
 | Sentry crash reporting (opt-in) | Stable |
 | Custom ZeroTier planet files | Stable |
 | Cloudflare / ngrok tunnel wizard | Beta |
-| iPad / tablet layout | Planned |
-| Offline session history | Planned |
-
----
-
-## Roadmap
-
-Tracked on the [GitHub Projects board](https://github.com/chliny/opencode-mobile-zerotier/projects) and in the [open milestones](https://github.com/chliny/opencode-mobile-zerotier/milestones).
-
-Near-term priorities:
-- opencode Cloud one-tap connect + managed hosting
-- Tunnel setup wizard (Cloudflare / ngrok / Tailscale)
-- iPad / tablet layout
-- Offline session history cache
+| Built-in Tailscale networking | Planned |
 
 ---
 
@@ -236,8 +223,6 @@ Full privacy policy: [dzianisv.github.io/opencode-mobile/privacy](https://dziani
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-Copyright (c) 2026 VIBE TECHNOLOGIES, LLC
 
 ---
 

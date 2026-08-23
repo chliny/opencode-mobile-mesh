@@ -1,6 +1,6 @@
 # Google Play Store — opencode-mobile
 
-Operational doc for shipping `ai.opencode.mobile` to Google Play under VIBE TECHNOLOGIES, LLC.
+Historical operational notes for the former Play distribution of `cc.agentlabs.opencode` under VIBE TECHNOLOGIES, LLC. This repository releases signed APKs through GitHub Releases and does not publish to Google Play.
 
 For full company facts (D-U-N-S, address, governor, etc.) see `~/.agents/skills/vibetechnologies-llc/SKILL.md` and Bitwarden item `GOOGLE_PLAY_CONSOLE_ACCOUNT`.
 
@@ -64,7 +64,7 @@ For full company facts (D-U-N-S, address, governor, etc.) see `~/.agents/skills/
 | 3 | Adaptive icon — 432×432 foreground PNG | Agent | ✅ done — `assets/adaptive-icon.png` (432×432, transparent bg) |
 | 4 | Feature graphic — 1024×500 PNG | Agent | ✅ done — `distribution/play-graphics/feature-graphic.png` |
 | 5 | At least 2 phone screenshots (1080×1920 or similar) | Agent | ✅ done — `distribution/play-graphics/phone-{01,02,03}.png` (1080×2400 each; 3 screens: connection, chat, diff viewer) |
-| 6 | Privacy policy — live at https://dzianisv.github.io/opencode-mobile/privacy/ | Agent | ✅ done — live & verified (HTTP 200) on gh-pages; `distribution/privacy-policy.html` (source), `distribution/privacy-policy.md` (markdown mirror) |
+| 6 | Privacy policy | Fork maintainer | Publish `docs/privacy/index.html` at a URL controlled by this repository before any independent Play submission. |
 | 7 | Data safety form answers (drafted in `distribution/play-listing.md`) | User (in Console after app created) | ✅ drafted — declare only the opt-in diagnostics, analytics, and user-submitted support reports listed in `distribution/play-listing.md`. |
 | 8 | Content rating questionnaire (IARC, drafted) | User (in Console after app created) | ✅ verified — no violence/sexual/gambling/UGC; "interact with other users" = No (user talks to own AI agent) |
 | 9 | App access — reviewer instructions for self-hosted opencode (drafted) | User | ✅ verified — instructions accurate; `npm install -g opencode-ai && opencode serve` flow confirmed in `play-listing.md` |
@@ -76,7 +76,7 @@ For full company facts (D-U-N-S, address, governor, etc.) see `~/.agents/skills/
 ## Publishing process (after identity verified)
 
 1. (manual) Setup → API access → Link `opencode-mobile-deploy`. Grant `playstore-deploy@…` "Release to production, exclude devices, and use Play App Signing".
-2. (manual) Create app `ai.opencode.mobile`. Fill listing from `distribution/play-listing.md`.
+2. (manual) Create app `cc.agentlabs.opencode`. Fill listing from `distribution/play-listing.md`.
 3. (manual) Upload graphic assets + privacy policy URL.
 4. (manual) Complete Data safety + Content rating + App access forms.
 5. (manual, first time only) Upload `app-release.aab` to Internal testing track → add tester emails → publish.
@@ -113,7 +113,7 @@ and it is never equal to `app.json`'s committed `android.versionCode`.
 | Version | Internal versionCode (tag push) | Production versionCode | Production rollout (UTC) | Notes |
 |---|---|---|---|---|
 | v0.4.14 | 150 (run 50) | **151** (run 51, dispatch) | 2026-08-14 14:22 | Sentry client-side noise gate (#169) — post-deploy Sentry measurement window for AGE-105 starts at this date, not at merge |
-| v0.4.15 | — | **153** (run 53, **tag push**) | 2026-08-14 17:58 | In-app update check for non-Play installs (#179). First release to reach production **without a dispatch** — #177 verified in the wild: run [31824702844](https://github.com/dzianisv/opencode-mobile/actions/runs/31824702844) logged `event=push -> track=production status=completed`. Code 152 (run 52, 17:04) was the same version from the pre-#180 tag, superseded by 153 |
+| v0.4.15 | — | **153** (former repository, tag push) | 2026-08-14 17:58 | Historical record: the former repository's production release. It does not describe this fork's release automation. |
 
 ---
 
@@ -154,7 +154,7 @@ scraped or manually copied review text.
 OpenCode Mobile is also distributed via F-Droid (mainline) and IzzyOnDroid —
 the two primary OSS Android app stores for privacy-conscious users.
 
-All three channels use the **same signing key and same package id** (`ai.opencode.mobile`),
+Any independently published channel must use the **same signing key and package id** (`cc.agentlabs.opencode`),
 so users can update in-place across stores.
 
 Submission packets (ready to file after the first Play release is live):

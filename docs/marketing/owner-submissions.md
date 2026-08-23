@@ -28,9 +28,9 @@ These directories drive real, durable discovery (organic search + their own audi
 >
 > - App name: OpenCode Mobile
 > - Package id: cc.agentlabs.opencode
-> - Source code: https://github.com/dzianisv/opencode-mobile
+> - Source code: https://github.com/chliny/opencode-mobile-zerotier
 > - License: MIT (FOSS)
-> - Releases (signed APK attached to each tag): https://github.com/dzianisv/opencode-mobile/releases
+> - Releases (signed APK attached to each tag): https://github.com/chliny/opencode-mobile-zerotier/releases
 > - Fastlane metadata: yes — fastlane/metadata/android/en-US/ (title, short/full description,
 >   changelogs, icon, featureGraphic, phoneScreenshots)
 > - UpdateCheckMode equivalent: GitHub Releases, tags vX.Y.Z, APK asset name app-release.apk
@@ -49,8 +49,8 @@ These directories drive real, durable discovery (organic search + their own audi
 ---
 
 
-All URLs are live and verified. Do these **any time** — they don't depend on Google Play
-going live. When Play is live, come back and add the Play URL where noted.
+Use only URLs verified for this repository. The direct APK release link below is the current
+supported install channel.
 
 **Canonical facts (reuse everywhere):**
 
@@ -61,12 +61,8 @@ going live. When Play is live, come back and add the Play URL where noted.
 | Category | Developer Tools / AI Coding |
 | License | MIT (open source) |
 | Platforms | Android (Linux/macOS/Windows for the opencode server) |
-| Website | https://dzianisv.github.io/opencode-mobile/ |
-| Install page | https://dzianisv.github.io/opencode-mobile/download/ |
-| Source | https://github.com/dzianisv/opencode-mobile |
-| F-Droid repo | https://dzianisv.github.io/opencode-mobile/fdroid/repo |
-| Direct APK | https://github.com/dzianisv/opencode-mobile/releases/latest |
-| Google Play | in review — add `https://play.google.com/store/apps/details?id=cc.agentlabs.opencode` once live |
+| Source | https://github.com/chliny/opencode-mobile-zerotier |
+| Direct APK | https://github.com/chliny/opencode-mobile-zerotier/releases/latest |
 | Screenshots | `fastlane/metadata/android/en-US/images/phoneScreenshots/02.png` (diff+approve — best), `03.png`, `01.png` |
 | Icon | `distribution/play-graphics/icon-512.png` |
 | Pricing | Free |
@@ -95,8 +91,7 @@ Highest-value: ranks well in Google for "<tool> alternative" queries.
 Curated open-source directory; strong SEO + newsletter.
 
 - **Name:** `OpenCode Mobile`
-- **Website:** https://dzianisv.github.io/opencode-mobile/
-- **Repository:** https://github.com/dzianisv/opencode-mobile
+- **Repository:** https://github.com/chliny/opencode-mobile-zerotier
 - **Tagline:** Drive your self-hosted AI coding agent from your phone
 - **Description:**
   > Open-source Android client for the opencode AI coding agent. Connect to an opencode server you run yourself and code from your phone — real-time streaming, file-diff review, and tool-call approval. Your keys, your code, your infrastructure. MIT licensed.
@@ -106,7 +101,7 @@ Curated open-source directory; strong SEO + newsletter.
 ## 3. LibHunt  → https://www.libhunt.com/ (submit via the relevant topic, or the "Suggest" link)
 
 - **Name:** `opencode-mobile`
-- **Repo:** https://github.com/dzianisv/opencode-mobile
+- **Repo:** https://github.com/chliny/opencode-mobile-zerotier
 - **Description:** Free, open-source Android client for the opencode AI coding agent — self-hosted, MIT licensed.
 - **Topic/category:** Artificial Intelligence / Developer Tools / Mobile
 
