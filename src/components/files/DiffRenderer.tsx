@@ -47,23 +47,27 @@ interface Props {
   showLineNumbers?: boolean
   selectedKeys?: ReadonlySet<string>
   onLinePress?: (line: SharedDiffLine) => void
+  wrap?: boolean
 }
 
-export function DiffRenderer({ lines, isDark, maxHeight, showLineNumbers, selectedKeys, onLinePress }: Props) {
+export function DiffRenderer({ lines, isDark, maxHeight, showLineNumbers, selectedKeys, onLinePress, wrap }: Props) {
   if (lines.length === 0) return null
+  const content = <View style={wrap ? s.wrappedLines : s.lines}>
+    {lines.map((line) => (
+      <DiffLineRow key={line.key} line={line} isDark={isDark} showLineNumbers={showLineNumbers} selected={selectedKeys?.has(line.key)} onPress={onLinePress ? () => onLinePress(line) : undefined} />
+    ))}
+  </View>
+  if (wrap) return content
   return (
     <WideScroll style={maxHeight ? { maxHeight } : undefined} nestedScrollEnabled={maxHeight !== undefined} testID="diff-view-scroll">
-      <View style={s.lines}>
-        {lines.map((line) => (
-          <DiffLineRow key={line.key} line={line} isDark={isDark} showLineNumbers={showLineNumbers} selected={selectedKeys?.has(line.key)} onPress={onLinePress ? () => onLinePress(line) : undefined} />
-        ))}
-      </View>
+      {content}
     </WideScroll>
   )
 }
 
 const s = StyleSheet.create({
   lines: { alignSelf: "flex-start", minWidth: "100%" },
+  wrappedLines: { alignSelf: "stretch" },
   line: { width: "100%", flexDirection: "row", alignItems: "flex-start", paddingHorizontal: 8, paddingVertical: 1, minHeight: 22 },
   add: { backgroundColor: "#dcfce7" }, addDark: { backgroundColor: "#052e16" },
   remove: { backgroundColor: "#fee2e2" }, removeDark: { backgroundColor: "#2a0a0a" },

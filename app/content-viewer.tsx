@@ -35,11 +35,13 @@ export default function ContentViewerScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <FullScreenDiffReview title={viewer.title} lines={diffLines} isDark={isDark} topInset={insets.top + 8} onBack={() => router.back()} onCopy={copy} copied={copied} onNavigateHunk={(index) => scrollRef.current?.scrollTo({ y: index * 22, animated: true })} headerLabel={viewer.language || t("chat.contentViewer.output")}>
-        <WideScroll style={s.horizontal} contentContainerStyle={s.scrollContent}>
+        {isDiff ? <ScrollView ref={scrollRef} nestedScrollEnabled contentContainerStyle={s.verticalContent}>
+          <DiffRenderer lines={diffLines} isDark={isDark} wrap />
+        </ScrollView> : <WideScroll style={s.horizontal} contentContainerStyle={s.scrollContent}>
           <ScrollView ref={scrollRef} nestedScrollEnabled contentContainerStyle={s.verticalContent}>
-            {isDiff ? <DiffRenderer lines={diffLines} isDark={isDark} /> : <Text selectable style={[s.code, isDark && s.codeDark]}>{viewer.content}</Text>}
+            <Text selectable style={[s.code, isDark && s.codeDark]}>{viewer.content}</Text>
           </ScrollView>
-        </WideScroll>
+        </WideScroll>}
       </FullScreenDiffReview>
     </>
   )
