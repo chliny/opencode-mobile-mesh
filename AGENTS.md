@@ -84,19 +84,6 @@ npx expo start        # Expo dev server
 npx expo run:android  # Android emulator
 ```
 
-### Android Release Build Rule
-
-After every code change, run the repository release build script and verify that
-it succeeds before reporting the work complete:
-
-```bash
-./scripts/build-android-release.sh
-```
-
-Do not replace this with a direct Gradle command. The script selects the required
-Android SDK/JDK, runs `assembleRelease`, verifies the APK signature, and copies
-the APK to `/usr/share/nginx/html/release/`.
-
 ## Connecting
 
 Run `opencode serve --hostname 0.0.0.0 --port 4096` on your machine, then add a connection in the app with your machine's local IP and port 4096.
