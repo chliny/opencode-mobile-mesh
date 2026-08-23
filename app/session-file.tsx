@@ -113,7 +113,10 @@ export default function SessionFileScreen() {
       preview: selected.slice(0, 2).map((line) => line.text).join("\n"),
       origin: mode === "diff" ? "review" : "file",
     })
-    Alert.alert(t("files.commentAddedTitle"), t("files.commentAddedMessage"), [{ text: t("common.ok"), onPress: () => router.back() }])
+    setAnchor(null)
+    setFocus(null)
+    setComment("")
+    Alert.alert(t("files.commentAddedTitle"), t("files.commentAddedMessage"))
   }
 
   return (
