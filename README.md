@@ -216,8 +216,6 @@ Toolchain requirements (JDK 17, NDK 27, CMake 3.30.5, …) and step-by-step buil
 
 OpenCode Mobile does not collect personal data. Optional Sentry crash reporting (opt-in, off by default) sends anonymised crash traces to Sentry. No analytics SDKs are bundled. Credentials are stored exclusively on-device in the OS keystore.
 
-Full privacy policy: [dzianisv.github.io/opencode-mobile/privacy](https://dzianisv.github.io/opencode-mobile/privacy/)
-
 ---
 
 ## License

@@ -9,16 +9,16 @@ License: MIT
 AuthorName: VIBE TECHNOLOGIES, LLC
 AuthorEmail: support@agentlabs.cc
 WebSite: https://agentlabs.cc/opencode
-SourceCode: https://github.com/dzianisv/opencode-mobile
-IssueTracker: https://github.com/dzianisv/opencode-mobile/issues
-Changelog: https://github.com/dzianisv/opencode-mobile/releases
+SourceCode: https://github.com/chliny/opencode-mobile-zerotier
+IssueTracker: https://github.com/chliny/opencode-mobile-zerotier/issues
+Changelog: https://github.com/chliny/opencode-mobile-zerotier/releases
 
 AutoName: OpenCode
 
 RepoType: git
-Repo: https://github.com/dzianisv/opencode-mobile
+Repo: https://github.com/chliny/opencode-mobile-zerotier
 
-Binaries: https://github.com/dzianisv/opencode-mobile/releases/download/v%v/app-release-fdroid.apk
+Binaries: https://github.com/chliny/opencode-mobile-zerotier/releases/download/v%v/app-release-fdroid.apk
 
 Builds:
   - versionName: 0.4.3

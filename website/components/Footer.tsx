@@ -8,7 +8,7 @@ export default function Footer() {
           {/* Links */}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm" style={{ color: 'var(--muted)' }}>
             <a
-              href="https://github.com/dzianisv/opencode-mobile"
+              href="https://github.com/chliny/opencode-mobile-zerotier"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:opacity-80 transition-colors"

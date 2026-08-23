@@ -2,8 +2,7 @@
 /**
  * readiness-check — verify OpenCode Mobile is PRODUCTION READY.
  *
- * Verdict is PRODUCTION READY only if every REQUIRED gate passes:
- *   A app-health, B fdroid-selfhosted, C fdroid-mainline, D google-play, E web.
+ * Verdict is PRODUCTION READY only if the app-health and GitHub release gates pass.
  *
  * Runs natively on Node >= 23.6 (TypeScript type-stripping) — no build, no deps.
  * Usage:
@@ -15,11 +14,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
 const APP_ID = "cc.agentlabs.opencode";
-const SITE = "https://dzianisv.github.io/opencode-mobile";
-const FDROID_INDEX = `${SITE}/fdroid/repo/index-v1.json`;
-const RELEASES = "https://github.com/dzianisv/opencode-mobile/releases/latest";
-const PLAY = `https://play.google.com/store/apps/details?id=${APP_ID}`;
-const FDROID_MAINLINE = `https://f-droid.org/packages/${APP_ID}/`;
+const RELEASES = "https://github.com/chliny/opencode-mobile-zerotier/releases/latest";
 const TIMEOUT_MS = 20_000;
 
 type Status = "PASS" | "FAIL" | "WARN" | "UNKNOWN";
@@ -27,10 +22,7 @@ interface Result { id: string; label: string; status: Status; detail: string }
 
 // Gates that must PASS for a PRODUCTION READY verdict.
 const REQUIRED = new Set([
-  "A_typecheck", "A_test",
-  "B_selfhosted", "B_release",
-  "C_mainline", "D_play",
-  "E_landing", "E_guide", "E_privacy", "E_sitemap", "E_robots", "E_og", "E_fdroidqr", "E_apkqr",
+  "A_typecheck", "A_test", "B_release",
 ]);
 
 const QUICK = process.argv.includes("--quick");
@@ -101,63 +93,14 @@ if (QUICK) {
     t.status === 0 ? "npm test green" : "test failures");
 }
 
-// ===================== B. F-Droid self-hosted (REQUIRED) =====================
-section("B. F-Droid — self-hosted repo (REQUIRED)");
-try {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-  const res = await fetch(FDROID_INDEX, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
-  if (!res.ok) {
-    record("B_selfhosted", "fdroid-selfhosted", "FAIL", `index-v1.json HTTP ${res.status}`);
-  } else {
-    const idx = await res.json() as { packages?: Record<string, Array<{ versionName?: string }>> };
-    const versions = idx.packages?.[APP_ID];
-    if (versions && versions.length) {
-      record("B_selfhosted", "fdroid-selfhosted", "PASS", `serves ${APP_ID} v${versions[0].versionName ?? "?"}`);
-    } else {
-      record("B_selfhosted", "fdroid-selfhosted", "FAIL", `${APP_ID} not present in self-hosted index`);
-    }
-  }
-} catch (e) {
-  record("B_selfhosted", "fdroid-selfhosted", "UNKNOWN", `could not fetch/parse index-v1.json (${(e as Error).name})`);
-}
+// ===================== B. GitHub release (REQUIRED) =====================
+section("B. GitHub Releases (REQUIRED)");
 {
   const code = await httpCode(RELEASES);
   if (code === 0) record("B_release", "fdroid-apk-release", "UNKNOWN", "releases/latest unreachable");
   else if (code >= 200 && code < 400) record("B_release", "fdroid-apk-release", "PASS", `releases/latest HTTP ${code}`);
   else record("B_release", "fdroid-apk-release", "FAIL", `releases/latest HTTP ${code}`);
 }
-
-// ===================== C. F-Droid mainline (REQUIRED, headline) =====================
-section("C. F-Droid — MAINLINE on f-droid.org (REQUIRED · headline)");
-{
-  const code = await httpCode(FDROID_MAINLINE);
-  if (code === 0) record("C_mainline", "fdroid-mainline", "UNKNOWN", "f-droid.org unreachable");
-  else if (code === 200) record("C_mainline", "fdroid-mainline", "PASS", "LIVE on f-droid.org (HTTP 200)");
-  else if (code === 404) record("C_mainline", "fdroid-mainline", "FAIL", "not yet published (HTTP 404 — MR not merged)");
-  else record("C_mainline", "fdroid-mainline", "FAIL", `unexpected HTTP ${code}`);
-}
-
-// ===================== D. Google Play (REQUIRED, headline) =====================
-section("D. Google Play — PUBLISHED (REQUIRED · headline)");
-{
-  const code = await httpCode(PLAY);
-  if (code === 0) record("D_play", "google-play", "UNKNOWN", "play.google.com unreachable");
-  else if (code === 200) record("D_play", "google-play", "PASS", "PUBLISHED on Google Play (HTTP 200)");
-  else if (code === 404) record("D_play", "google-play", "FAIL", "not public — in review/draft (HTTP 404)");
-  else record("D_play", "google-play", "FAIL", `unexpected HTTP ${code}`);
-}
-
-// ===================== E. Web presence (REQUIRED) =====================
-section("E. Web presence (REQUIRED)");
-await checkUrl("E_landing", "landing", `${SITE}/`);
-await checkUrl("E_guide", "guide", `${SITE}/guide/`);
-await checkUrl("E_privacy", "privacy", `${SITE}/privacy/`);
-await checkUrl("E_sitemap", "sitemap.xml", `${SITE}/sitemap.xml`);
-await checkUrl("E_robots", "robots.txt", `${SITE}/robots.txt`);
-await checkUrl("E_og", "og.png", `${SITE}/og.png`);
-await checkUrl("E_fdroidqr", "fdroid-qr.png", `${SITE}/fdroid-qr.png`);
-await checkUrl("E_apkqr", "apk-qr.png", `${SITE}/apk-qr.png`);
 
 // ===================== F. Repo discoverability (WARN only) =====================
 section("F. Repo discoverability (nice-to-have)");
@@ -166,7 +109,7 @@ if (!has("gh")) {
 } else if (spawnSync("gh", ["auth", "status"], { encoding: "utf8" }).status !== 0) {
   record("F_repo", "gh-repo-meta", "WARN", "gh unauthenticated — skipped");
 } else {
-  const r = spawnSync("gh", ["repo", "view", "dzianisv/opencode-mobile", "--json", "repositoryTopics,homepageUrl"], { encoding: "utf8" });
+  const r = spawnSync("gh", ["repo", "view", "chliny/opencode-mobile-zerotier", "--json", "repositoryTopics,homepageUrl"], { encoding: "utf8" });
   try {
     const m = JSON.parse(r.stdout) as { repositoryTopics?: Array<{ name: string }>; homepageUrl?: string };
     const topics = (m.repositoryTopics ?? []).map(t => t.name).join(",");

@@ -142,13 +142,13 @@ OpenCode Mobile is a thin client for the opencode CLI (github.com/sst/opencode).
 Install opencode on any machine: npm install -g opencode-ai, then run opencode serve. Enter the server URL in the app. That's it — your AI coding agent is now on your phone.
 
 <b>OPEN SOURCE</b>
-OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discussion at github.com/dzianisv/opencode-mobile. Contributions welcome.
+OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discussion at github.com/chliny/opencode-mobile-zerotier. Contributions welcome.
 
 <b>PRIVACY</b>
 OpenCode Mobile does not collect your code, prompts, or AI responses. All traffic goes directly from the app to YOUR opencode server — never through our infrastructure. We use Sentry for crash diagnostics only (no PII, no message content, opt-in available).
 
 Support: support@agentlabs.cc
-Issues: github.com/dzianisv/opencode-mobile/issues
+Issues: github.com/chliny/opencode-mobile-zerotier/issues
 ```
 
 (Approx. 2,750 chars — within 4,000 char limit, room to expand)
@@ -348,7 +348,7 @@ This is defensible, differentiating, and accurate.
 | Single language (English only) | Low | Acceptable for v1; revisit at 1,000+ DAU |
 | No LiveOps/Promotional content | Low | Not applicable until Production track |
 | Data Safety form not yet submitted | BLOCKER (for Production) | Required before Production submit |
-| Package ID recently changed (`ai.opencode.mobile` → `cc.agentlabs.opencode`) | Note | Update all external links (README shields, F-Droid submission, IzzyOnDroid) to new package ID |
+| Package ID recently changed (`ai.opencode.mobile` → `cc.agentlabs.opencode`) | Historical note | Current external links and package references use `cc.agentlabs.opencode` |
 
 ---
 

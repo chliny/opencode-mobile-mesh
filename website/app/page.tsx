@@ -74,15 +74,15 @@ export default function HomePage() {
           {/* Install / Download */}
           <div className="flex flex-wrap gap-3 mb-4">
             <a
-              href="https://play.google.com/store/apps/details?id=cc.agentlabs.opencode"
+              href="https://github.com/chliny/opencode-mobile-zerotier/releases/latest"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary text-sm"
             >
-              Download for Android
+              Download APK
             </a>
             <a
-              href="https://github.com/dzianisv/opencode-mobile/releases"
+              href="https://github.com/chliny/opencode-mobile-zerotier/releases"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary text-sm"
@@ -90,12 +90,12 @@ export default function HomePage() {
               GitHub Releases
             </a>
             <a
-              href="https://dzianisv.github.io/opencode-mobile/fdroid/repo"
+              href="https://github.com/chliny/opencode-mobile-zerotier/releases/latest"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary text-sm"
             >
-              F-Droid
+              Latest APK
             </a>
           </div>
 
@@ -184,7 +184,7 @@ export default function HomePage() {
               </p>
             </div>
             <a
-              href="https://github.com/dzianisv/opencode-mobile"
+              href="https://github.com/chliny/opencode-mobile-zerotier"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary text-sm shrink-0"

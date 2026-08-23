@@ -22,7 +22,7 @@ export default function TermsPage() {
         <p className="text-sm" style={{ color: 'var(--muted)' }}>
           Effective date: 2026-05-24&nbsp;&nbsp;|&nbsp;&nbsp;
           Operator: VIBE TECHNOLOGIES, LLC&nbsp;&nbsp;|&nbsp;&nbsp;
-          App: OpenCode Mobile (<code className="text-xs px-1 rounded" style={{ background: 'var(--card)' }}>ai.opencode.mobile</code>)
+          App: OpenCode Mobile (<code className="text-xs px-1 rounded" style={{ background: 'var(--card)' }}>cc.agentlabs.opencode</code>)
         </p>
       </header>
 
@@ -42,8 +42,8 @@ export default function TermsPage() {
           these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree, do not use the App.
         </p>
         <p>
-          These Terms apply to all versions of the App, including builds distributed via Google Play,
-          F-Droid, Apple App Store, or directly from the GitHub repository.
+          These Terms apply to all versions of the App, including builds distributed directly from
+          this repository's GitHub Releases.
         </p>
 
         <h2>2. Open-Source License</h2>
@@ -51,8 +51,8 @@ export default function TermsPage() {
           The App is released under the{' '}
           <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">MIT License</a>.
           Source code is available at{' '}
-          <a href="https://github.com/dzianisv/opencode-mobile" target="_blank" rel="noopener noreferrer">
-            github.com/dzianisv/opencode-mobile
+          <a href="https://github.com/chliny/opencode-mobile-zerotier" target="_blank" rel="noopener noreferrer">
+            github.com/chliny/opencode-mobile-zerotier
           </a>.
         </p>
         <p>
@@ -124,7 +124,7 @@ export default function TermsPage() {
           VIBE TECHNOLOGIES, LLC provides OpenCode Mobile free of charge and has no obligation to
           provide technical support, maintenance, updates, or bug fixes. We genuinely try to respond
           to issues on{' '}
-          <a href="https://github.com/dzianisv/opencode-mobile/issues" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/chliny/opencode-mobile-zerotier/issues" target="_blank" rel="noopener noreferrer">
             GitHub Issues
           </a>{' '}
           and via{' '}

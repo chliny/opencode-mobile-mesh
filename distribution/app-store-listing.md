@@ -61,7 +61,7 @@ WHAT IT IS NOT
 OPEN SOURCE
 
 OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discussion:
-https://github.com/dzianisv/opencode-mobile
+https://github.com/chliny/opencode-mobile-zerotier
 
 PRIVACY
 
@@ -79,7 +79,7 @@ If you cannot self-host, contact support@agentlabs.cc and we will provide a temp
 SUPPORT
 
 Email: support@agentlabs.cc
-Issues: https://github.com/dzianisv/opencode-mobile/issues
+Issues: https://github.com/chliny/opencode-mobile-zerotier/issues
 ```
 
 (Character count: ~1,750 — well under 4,000 limit. Add more feature detail or FAQ if desired.)
@@ -102,8 +102,8 @@ Alternative / supplemental terms to rotate in A/B: `code review`, `AI assistant`
 | Field | Value |
 |---|---|
 | Support URL | https://agentlabs.cc/opencode |
-| Marketing URL | https://github.com/dzianisv/opencode-mobile |
-| Privacy Policy URL | https://dzianisv.github.io/opencode-mobile/privacy/ |
+| Marketing URL | https://github.com/chliny/opencode-mobile-zerotier |
+| Privacy Policy URL | Publish `docs/privacy/index.html` at a URL controlled by this repository before submission. |
 
 ---
 
@@ -332,7 +332,7 @@ To use: you need opencode running somewhere accessible (local Wi-Fi, Tailscale, 
 - [x] App icon 1024×1024 PNG (no alpha, no rounded corners)
 - [ ] Capture current iPhone screenshots (6.7" minimum; 6.5" strongly recommended)
 - [ ] Capture current iPad screenshots (12.9" minimum)
-- [x] Privacy policy live at https://dzianisv.github.io/opencode-mobile/privacy/
+- [ ] Privacy policy: publish `docs/privacy/index.html` at a URL controlled by this repository
 - [ ] App Store Connect API key created (for CI — Key ID, Issuer ID, .p8 file)
 - [ ] Apple Distribution certificate + provisioning profile (or use EAS managed signing)
 - [ ] Export compliance answered (No to custom encryption)

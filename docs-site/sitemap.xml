@@ -1,80 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/</loc>
+    <loc>https://opencode.agentlabs.cc/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/download/</loc>
+    <loc>https://opencode.agentlabs.cc/download/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/guide/</loc>
+    <loc>https://opencode.agentlabs.cc/guide/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/features/</loc>
+    <loc>https://opencode.agentlabs.cc/features/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/troubleshooting/</loc>
+    <loc>https://opencode.agentlabs.cc/troubleshooting/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/comparison/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <lastmod>2026-06-05</lastmod>
-  </url>
-  <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/vs-termux/</loc>
+    <loc>https://opencode.agentlabs.cc/comparison/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <lastmod>2026-06-05</lastmod>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/claude-code-android/</loc>
+    <loc>https://opencode.agentlabs.cc/vs-termux/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-06-05</lastmod>
+  </url>
+  <url>
+    <loc>https://opencode.agentlabs.cc/claude-code-android/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <lastmod>2026-06-05</lastmod>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/opencode-on-phone/</loc>
+    <loc>https://opencode.agentlabs.cc/opencode-on-phone/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <lastmod>2026-06-08</lastmod>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/remote-access/</loc>
+    <loc>https://opencode.agentlabs.cc/remote-access/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <lastmod>2026-06-08</lastmod>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/ios/</loc>
+    <loc>https://opencode.agentlabs.cc/ios/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <lastmod>2026-06-08</lastmod>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/try-demo/</loc>
+    <loc>https://opencode.agentlabs.cc/try-demo/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <lastmod>2026-07-18</lastmod>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/gpt-gemini-android/</loc>
+    <loc>https://opencode.agentlabs.cc/gpt-gemini-android/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <lastmod>2026-07-18</lastmod>
   </url>
   <url>
-    <loc>https://dzianisv.github.io/opencode-mobile/privacy/</loc>
+    <loc>https://opencode.agentlabs.cc/privacy/</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

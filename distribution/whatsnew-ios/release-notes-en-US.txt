@@ -29,7 +29,7 @@ For remote access from outside your network, use Tailscale or Cloudflare Tunnel 
 
 OPEN SOURCE
 
-MIT licensed. Source + issues: https://github.com/dzianisv/opencode-mobile
+MIT licensed. Source + issues: https://github.com/chliny/opencode-mobile-zerotier
 
 FEEDBACK
 

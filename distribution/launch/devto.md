@@ -3,7 +3,6 @@ title: "Drive your self-hosted AI coding agent from your phone"
 published: true
 tags: [android, selfhosted, ai, devtools]
 cover_image:
-canonical_url: https://dzianisv.github.io/opencode-mobile/
 ---
 
 I run [opencode](https://github.com/sst/opencode) — an open-source AI coding agent — on my home server. It connects to Claude or GPT-4 via my own API keys and edits code through tool calls: reading files, writing diffs, running shell commands.
@@ -62,9 +61,8 @@ Tool call approval required coordinating two async streams: the SSE stream comin
 
 ## Open source
 
-MIT licensed. Source at [github.com/dzianisv/opencode-mobile](https://github.com/dzianisv/opencode-mobile). Issues and PRs welcome.
+MIT licensed. Source at [github.com/chliny/opencode-mobile-zerotier](https://github.com/chliny/opencode-mobile-zerotier). Issues and PRs welcome.
 
-Install: add the self-hosted F-Droid repo `https://dzianisv.github.io/opencode-mobile/fdroid/repo` in your F-Droid client, or grab the [direct APK](https://github.com/dzianisv/opencode-mobile/releases/latest). Google Play is in internal testing and coming soon.
-Landing page and docs: [https://dzianisv.github.io/opencode-mobile/](https://dzianisv.github.io/opencode-mobile/)
+Install the [direct APK](https://github.com/chliny/opencode-mobile-zerotier/releases/latest).
 
 If you run opencode and try it, I'm especially interested in feedback on latency when using local models — the streaming UI has a minimum render interval to avoid thrashing, but I don't know where that threshold feels wrong on slow hardware.

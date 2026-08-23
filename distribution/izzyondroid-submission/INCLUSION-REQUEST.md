@@ -12,8 +12,8 @@ Use the text below (starting from "---") as the issue body. Replace all
 **App name:** OpenCode Mobile
 **Package / App ID:** `cc.agentlabs.opencode`
 **License:** MIT
-**Source code:** https://github.com/dzianisv/opencode-mobile
-**GitHub releases:** https://github.com/dzianisv/opencode-mobile/releases
+**Source code:** https://github.com/chliny/opencode-mobile-zerotier
+**GitHub releases:** https://github.com/chliny/opencode-mobile-zerotier/releases
 
 ---
 
@@ -22,12 +22,12 @@ Use the text below (starting from "---") as the issue body. Replace all
 APK attached to each GitHub release tag following the pattern:
 
 ```
-https://github.com/dzianisv/opencode-mobile/releases/download/<TAG>/app-release.apk
+https://github.com/chliny/opencode-mobile-zerotier/releases/download/<TAG>/app-release.apk
 ```
 
 Example (first production release):
 ```
-https://github.com/dzianisv/opencode-mobile/releases/download/v0.4.2/app-release.apk
+https://github.com/chliny/opencode-mobile-zerotier/releases/download/v0.4.2/app-release.apk
 ```
 
 Note: IzzyOnDroid should use the GitHub releases tag pattern for auto-update
@@ -85,8 +85,8 @@ No other anti-features apply:
 
 ### FOSS confirmation
 
-- Source code is fully public: https://github.com/dzianisv/opencode-mobile
-- License: MIT (https://github.com/dzianisv/opencode-mobile/blob/main/LICENSE
+- Source code is fully public: https://github.com/chliny/opencode-mobile-zerotier
+- License: MIT (https://github.com/chliny/opencode-mobile-zerotier/blob/main/LICENSE
   or inferred from package.json `"license": "MIT"`)
 - No proprietary SDKs are required for core functionality
 - The APK on GitHub releases is signed with the key fingerprint above
@@ -107,4 +107,4 @@ We will notify the IzzyOnDroid team via this issue when that happens.
 Developer: VIBE TECHNOLOGIES, LLC
 Email: support@agentlabs.cc
 Website: https://agentlabs.cc/opencode
-Privacy policy: https://dzianisv.github.io/opencode-mobile/privacy/
+Privacy policy: publish `docs/privacy/index.html` at a URL controlled by this repository.

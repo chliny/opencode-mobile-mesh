@@ -19,7 +19,7 @@ export default function Nav() {
         <div className="hidden md:flex items-center gap-6">
           {[
             { href: 'https://opencode.ai', label: 'Docs', external: true },
-            { href: 'https://github.com/dzianisv/opencode-mobile', label: 'GitHub', external: true },
+            { href: 'https://github.com/chliny/opencode-mobile-zerotier', label: 'GitHub', external: true },
           ].map((link) => (
             <Link
               key={link.href}
@@ -66,7 +66,7 @@ export default function Nav() {
         <div className="md:hidden border-t px-4 py-4 space-y-3" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg)' }}>
           {[
             { href: 'https://opencode.ai', label: 'Docs', external: true },
-            { href: 'https://github.com/dzianisv/opencode-mobile', label: 'GitHub', external: true },
+            { href: 'https://github.com/chliny/opencode-mobile-zerotier', label: 'GitHub', external: true },
             { href: 'https://play.google.com/store/apps/details?id=cc.agentlabs.opencode', label: 'Download', external: true },
           ].map((link) => (
             <Link

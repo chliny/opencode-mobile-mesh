@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Deploy the static site in docs-site/ to the gh-pages branch (the live site
-# at https://dzianisv.github.io/opencode-mobile/).
+# Deploy the static site in docs-site/ to the repository's gh-pages branch.
+# The fork does not currently publish a verified public Pages URL.
 #
 # WHY THIS EXISTS: there is no auto-deploy. GitHub Pages serves the gh-pages
 # branch as-is, and gh-pages holds content that is NOT in docs-site/ and must
@@ -80,4 +80,4 @@ SRC_SHA="$(cd "$REPO_ROOT" && git rev-parse --short HEAD)"
 git commit --quiet -m "deploy: docs-site from ${SRC_SHA}"
 echo "==> Pushing to origin gh-pages"
 git push --quiet origin HEAD:gh-pages
-echo "==> Deployed. Live at https://dzianisv.github.io/opencode-mobile/"
+echo "==> Deployed to origin/gh-pages. Verify the configured Pages domain separately."

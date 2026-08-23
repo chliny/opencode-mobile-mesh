@@ -37,11 +37,9 @@ It's not a standalone AI model and not a code editor. You need a running opencod
 
 **Status**
 
-Stable on Android. MIT licensed. Available now via a self-hosted F-Droid repo or a direct signed APK. Google Play is in internal testing and not public yet.
+Stable on Android. MIT licensed. Available now via a direct signed APK.
 
-Source: https://github.com/dzianisv/opencode-mobile
-Landing page (all install options): https://dzianisv.github.io/opencode-mobile/
-F-Droid repo (add this URL in an F-Droid client): https://dzianisv.github.io/opencode-mobile/fdroid/repo
-Direct APK: https://github.com/dzianisv/opencode-mobile/releases/latest
+Source: https://github.com/chliny/opencode-mobile-zerotier
+Direct APK: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
 
 Happy to answer questions about the SSE streaming implementation, the Expo build pipeline, or the opencode API surface.

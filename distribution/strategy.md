@@ -42,7 +42,7 @@ Rejected alternatives:
 1. **Google Play identity verification** — upload governor ID (Dzianis Vashchuk). Unlocks: API access, Create app, AAB upload, CI publish.
 2. **Apple Developer Program enrollment** — $99/year, D-U-N-S 142059652 ready. iOS agent will produce runbook.
 3. **App icon + adaptive icon + feature graphic** — current `assets/*.json` are placeholders. Need real PNGs before either Play or App Store publish.
-4. **Privacy policy URL** — live & verified at https://dzianisv.github.io/opencode-mobile/privacy/ (this GitHub Pages URL is the canonical privacy URL used for store submissions; if the owner later deploys the branded `agentlabs.cc/opencode/privacy`, it can replace it — reversible). Template in `play-listing.md`.
+4. **Privacy policy URL** — publish `docs/privacy/index.html` at a URL controlled by this repository before any store submission. Template in `play-listing.md`.
 
 ### Soft blockers (we can fix without user)
 
@@ -99,7 +99,7 @@ Rejected alternatives:
    App name: OpenCode Mobile
    Package: cc.agentlabs.opencode
    License: MIT
-   GitHub release: https://github.com/dzianisv/opencode-mobile/releases
+   GitHub release: https://github.com/chliny/opencode-mobile-zerotier/releases
    APK SHA-256: <sha256>
    Description: Mobile client for the opencode AI coding agent CLI. Self-hosted backend.
    Note: NonFreeNet anti-feature applies (connects to user-self-hosted opencode server).

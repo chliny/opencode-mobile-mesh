@@ -46,17 +46,10 @@ Gates are grouped. REQUIRED gates decide the verdict; nice-to-have gates only WA
 - **A. App health** (REQUIRED, skipped with `--quick`)
   - `npm run typecheck` exits clean.
   - `npm test` passes.
-- **B. F-Droid self-hosted repo LIVE** (REQUIRED)
-  - `https://dzianisv.github.io/opencode-mobile/fdroid/repo/index-v1.json` parses and contains `cc.agentlabs.opencode`; prints served versionName.
-  - `https://github.com/dzianisv/opencode-mobile/releases/latest` returns 200/3xx.
-- **C. F-Droid MAINLINE published** (REQUIRED, headline)
-  - `https://f-droid.org/packages/cc.agentlabs.opencode/` returns 200. A 404 means not yet merged on f-droid.org → this gate FAILS. Do not confuse with the self-hosted gate (B).
-- **D. Google Play PUBLISHED** (REQUIRED, headline)
-  - `https://play.google.com/store/apps/details?id=cc.agentlabs.opencode` returns 200 with a real store page. While in-review/draft it 404s → gate FAILS.
-- **E. Web presence** (REQUIRED)
-  - landing `/`, `/guide/`, `/privacy/`, `sitemap.xml`, `robots.txt`, `og.png`, `fdroid-qr.png`, `apk-qr.png` under `https://dzianisv.github.io/opencode-mobile/` all return 200.
+- **B. GitHub Releases LIVE** (REQUIRED)
+  - `https://github.com/chliny/opencode-mobile-zerotier/releases/latest` returns 200/3xx.
 - **F. Repo discoverability** (nice-to-have, WARN only)
-  - `gh repo view dzianisv/opencode-mobile --json repositoryTopics,homepageUrl` shows topics + homepage. Skipped gracefully if `gh` is missing/unauthenticated.
+  - `gh repo view chliny/opencode-mobile-zerotier --json repositoryTopics,homepageUrl` shows topics + homepage. Skipped gracefully if `gh` is missing/unauthenticated.
 
 ## Interpreting results
 
@@ -64,13 +57,10 @@ Each gate prints one line: `[PASS] / [FAIL] / [WARN] / [UNKNOWN] <gate> — <det
 
 The summary at the bottom is the answer:
 
-- **`PRODUCTION READY ✅`** — every REQUIRED gate passed. Both stores are live, app and site healthy. Script exits `0`.
+- **`PRODUCTION READY ✅`** — every REQUIRED gate passed. The app and GitHub release channel are healthy. Script exits `0`.
 - **`NOT READY ❌`** — at least one REQUIRED gate failed; the failing gates are listed. Script exits `1`.
 
-The two headline gates are **D (Google Play)** and **C (F-Droid mainline)** because
-"published on both stores" is the definition of done. Until Play review completes and
-the F-Droid mainline MR is merged, expect those two to FAIL and the verdict to be NOT READY —
-that is correct behavior, not a script bug.
+The supported release channel for this repository is GitHub Releases with signed APKs.
 
 `UNKNOWN` means a network/tool problem prevented the check (e.g. offline). UNKNOWN on a
 REQUIRED gate is treated as not-passing, so the verdict will be NOT READY.

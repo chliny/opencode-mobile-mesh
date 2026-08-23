@@ -7,7 +7,7 @@
 <meta name="description" content="Run the OpenCode AI coding agent on Android: start opencode serve, expose it over Tailscale or a tunnel, install the app, and code from your phone." />
 <meta name="keywords" content="run AI coding agent on Android, OpenCode mobile setup, self-hosted AI coding from phone, code on your phone with AI, opencode serve, OpenCode Android client" />
 <meta name="theme-color" content="#3b82f6" />
-<link rel="canonical" href="https://dzianisv.github.io/opencode-mobile/guide/" />
+<link rel="canonical" href="https://opencode.agentlabs.cc/guide/" />
 <link rel="icon" type="image/png" href="../fdroid/repo/icons/icon.png" />
 
 <!-- Open Graph -->
@@ -15,14 +15,14 @@
 <meta property="og:site_name" content="OpenCode Mobile" />
 <meta property="og:title" content="How to Run an AI Coding Agent on Android — OpenCode Mobile Setup Guide" />
 <meta property="og:description" content="Step-by-step: run opencode serve, expose it over Tailscale or a tunnel, install OpenCode Mobile, and code from your Android phone. Free and open source." />
-<meta property="og:url" content="https://dzianisv.github.io/opencode-mobile/guide/" />
-<meta property="og:image" content="https://dzianisv.github.io/opencode-mobile/og.png" />
+<meta property="og:url" content="https://opencode.agentlabs.cc/guide/" />
+<meta property="og:image" content="https://opencode.agentlabs.cc/og.png" />
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="How to Run an AI Coding Agent on Android — OpenCode Mobile Setup Guide" />
 <meta name="twitter:description" content="Step-by-step: run opencode serve, expose it over Tailscale or a tunnel, install OpenCode Mobile, and code from your Android phone. Free and open source." />
-<meta name="twitter:image" content="https://dzianisv.github.io/opencode-mobile/og.png" />
+<meta name="twitter:image" content="https://opencode.agentlabs.cc/og.png" />
 
 <!-- Structured data: Breadcrumb -->
 <script type="application/ld+json">
@@ -34,13 +34,13 @@
       "@type": "ListItem",
       "position": 1,
       "name": "OpenCode Mobile",
-      "item": "https://dzianisv.github.io/opencode-mobile/"
+      "item": "https://opencode.agentlabs.cc/"
     },
     {
       "@type": "ListItem",
       "position": 2,
       "name": "Setup Guide",
-      "item": "https://dzianisv.github.io/opencode-mobile/guide/"
+      "item": "https://opencode.agentlabs.cc/guide/"
     }
   ]
 }
@@ -65,25 +65,25 @@
       "@type": "HowToStep",
       "name": "Run opencode serve on your machine",
       "text": "Install opencode and start it in server mode, binding to your network and setting a password.",
-      "url": "https://dzianisv.github.io/opencode-mobile/guide/#step-server"
+      "url": "https://opencode.agentlabs.cc/guide/#step-server"
     },
     {
       "@type": "HowToStep",
       "name": "Expose the server to your phone",
       "text": "Make the server reachable from your phone using Tailscale, a Cloudflare/ngrok tunnel, or your local network.",
-      "url": "https://dzianisv.github.io/opencode-mobile/guide/#step-expose"
+      "url": "https://opencode.agentlabs.cc/guide/#step-expose"
     },
     {
       "@type": "HowToStep",
       "name": "Install OpenCode Mobile",
-      "text": "Install the Android app from the F-Droid self-hosted repo or the direct signed APK.",
-      "url": "https://dzianisv.github.io/opencode-mobile/guide/#step-install"
+      "text": "Install the Android app from the latest signed APK on GitHub Releases.",
+      "url": "https://opencode.agentlabs.cc/guide/#step-install"
     },
     {
       "@type": "HowToStep",
       "name": "Connect and start a session",
       "text": "Add a connection in the app with your server URL and password, then create a session and start coding.",
-      "url": "https://dzianisv.github.io/opencode-mobile/guide/#step-connect"
+      "url": "https://opencode.agentlabs.cc/guide/#step-connect"
     }
   ]
 }
@@ -253,12 +253,12 @@ OPENCODE_SERVER_PASSWORD=yourpassword opencode serve --hostname 0.0.0.0 --port 4
       <li id="step-install">
         <h3>Install OpenCode Mobile</h3>
         <p>Two supported ways to install on Android today:</p>
-        <p><strong>F-Droid (recommended, auto-updates).</strong> Add this repository in any F-Droid client (F-Droid, Droid-ify, Neo Store), then search for "OpenCode Mobile":</p>
-        <pre><code>https://dzianisv.github.io/opencode-mobile/fdroid/repo</code></pre>
+        <p><strong>GitHub Releases (recommended).</strong> Download the latest signed APK and install it on your Android device:</p>
+        <pre><code>https://github.com/chliny/opencode-mobile-zerotier/releases/latest</code></pre>
         <p><strong>Direct APK.</strong> Download the latest signed release and install it (you may need to allow installation from unknown sources):</p>
         <div class="cta">
-          <a class="btn btn-primary" href="https://dzianisv.github.io/opencode-mobile/fdroid/repo">Get it on F-Droid</a>
-          <a class="btn" href="https://github.com/dzianisv/opencode-mobile/releases/latest">Download APK</a>
+          <a class="btn btn-primary" href="https://github.com/chliny/opencode-mobile-zerotier/releases/latest">Download signed APK</a>
+          <a class="btn" href="https://github.com/chliny/opencode-mobile-zerotier/releases/latest">Download APK</a>
         </div>
       </li>
       <li id="step-connect">
@@ -292,8 +292,8 @@ OPENCODE_SERVER_PASSWORD=yourpassword opencode serve --hostname 0.0.0.0 --port 4
     <h2>Start coding from your phone</h2>
     <p>Spin up your server, install the app, and connect — you'll be running an AI coding agent from your pocket in minutes.</p>
     <div class="cta">
-      <a class="btn btn-primary" href="https://dzianisv.github.io/opencode-mobile/fdroid/repo">Get it on F-Droid</a>
-      <a class="btn" href="https://github.com/dzianisv/opencode-mobile/releases/latest">Download APK</a>
+      <a class="btn btn-primary" href="https://github.com/chliny/opencode-mobile-zerotier/releases/latest">Download signed APK</a>
+      <a class="btn" href="https://github.com/chliny/opencode-mobile-zerotier/releases/latest">Download APK</a>
       <a class="btn" href="../">Back to home</a>
     </div>
     <p style="margin-top:20px">Also see: <a href="../vs-termux/">OpenCode Mobile vs Termux</a> — skip the terminal emulator setup and use the native Android UI instead. Or <a href="../claude-code-android/">run Claude Code on Android</a> — configure opencode with your Anthropic API key and use Claude Sonnet or Opus as your AI engine.</p>
@@ -309,10 +309,10 @@ OPENCODE_SERVER_PASSWORD=yourpassword opencode serve --hostname 0.0.0.0 --port 4
       <a href="../remote-access/">Remote access</a>
       <a href="../features/">Features</a>
       <a href="../troubleshooting/">Troubleshooting</a>
-      <a href="https://github.com/dzianisv/opencode-mobile">GitHub</a>
-      <a href="https://dzianisv.github.io/opencode-mobile/fdroid/repo">F-Droid repo</a>
+      <a href="https://github.com/chliny/opencode-mobile-zerotier">GitHub</a>
+      <a href="https://github.com/chliny/opencode-mobile-zerotier/releases/latest">GitHub Releases</a>
       <a href="../privacy/">Privacy policy</a>
-      <a href="https://github.com/dzianisv/opencode-mobile/blob/main/LICENSE">MIT License</a>
+      <a href="https://github.com/chliny/opencode-mobile-zerotier/blob/main/LICENSE">MIT License</a>
     </p>
     <p class="muted">Free and open-source. Built by VIBE TECHNOLOGIES, LLC.</p>
   </div>

@@ -14,7 +14,7 @@ OpenCode Mobile is developed and distributed by **VIBE TECHNOLOGIES, LLC**, a Wa
 
 - Address: 519 S Henderson St, Seattle, WA 98108-4522, USA
 - Contact: support@agentlabs.cc
-- Source code: https://github.com/dzianisv/opencode-mobile (MIT license)
+- Source code: https://github.com/chliny/opencode-mobile-zerotier (MIT license)
 
 ---
 
@@ -155,7 +155,7 @@ All diagnostic and analytics data — including shared support reports — is tr
 ## 10. Changes to This Policy
 
 If we make material changes to this policy, we will update the effective date and, where feasible, notify users via an in-app notice. The latest version is always available at:
-https://dzianisv.github.io/opencode-mobile/privacy/
+This policy is maintained in `docs/privacy/index.html` and must be published at a URL controlled by this repository.
 
 ---
 
