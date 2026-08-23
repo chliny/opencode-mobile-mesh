@@ -182,7 +182,7 @@ export default function SessionFileScreen() {
               const isSelected = number !== undefined && start !== null && end !== null && number >= start && number <= end
               return <DiffLineRow line={item} isDark={isDark} showLineNumbers selected={isSelected} onPress={() => select(item)} />
             }}
-            contentContainerStyle={s.codeList}
+            contentContainerStyle={s.codeContent}
             horizontal={false}
             initialNumToRender={60}
             windowSize={8}
@@ -197,6 +197,6 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" }, containerDark: { backgroundColor: "#0a0a0a" }, center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 }, error: { color: "#ef4444", textAlign: "center" },
   pathBar: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: "#f2f2ef", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#dddddd" }, pathBarDark: { backgroundColor: "#151515", borderBottomColor: "#292929" }, path: { flex: 1, fontFamily: "monospace", fontSize: 12, color: "#333333" }, textDark: { color: "#eeeeee" }, mode: { borderRadius: 5, paddingHorizontal: 6, paddingVertical: 3, backgroundColor: "#8b5cf6" }, modeText: { color: "#ffffff", fontSize: 9, fontWeight: "800" },
   navigation: { flexDirection: "row", alignItems: "center", gap: 5 }, position: { fontSize: 11, color: "#666666" },
-  codeList: { width: "100%", flex: 1, paddingVertical: 6 },
+  codeList: { width: "100%", flex: 1 }, codeContent: { width: "100%", paddingVertical: 6 },
   commentBox: { padding: 12, gap: 9, borderTopWidth: 1, borderTopColor: "#dddddd", backgroundColor: "#ffffff" }, commentBoxDark: { borderTopColor: "#292929", backgroundColor: "#111111" }, selectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, selectionText: { color: "#222222", fontSize: 12, fontWeight: "700" }, clear: { color: "#8b5cf6", fontSize: 12 }, commentInput: { minHeight: 58, maxHeight: 110, borderRadius: 10, padding: 10, backgroundColor: "#f3f3f0", color: "#111111", textAlignVertical: "top" }, commentInputDark: { backgroundColor: "#242424", color: "#ffffff" }, addComment: { height: 42, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderRadius: 10, backgroundColor: "#8b5cf6" }, disabled: { opacity: 0.45 }, addCommentText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
 })
