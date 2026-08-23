@@ -91,24 +91,6 @@ OpenCode Mobile is a React Native / Expo app that brings the power of the [openc
 
 ---
 
-## Get OpenCode Mobile
-
-Package: `cc.agentlabs.opencode` · Android only · based on upstream v0.4.15
-
-> The ZeroTier Edition in this repository is built from source and distributed through this fork's
-> GitHub Releases — see [Building from source](#contributing).
-
-| Channel | Status | How |
-|---|---|---|
-| **Direct APK** | **Available** | [github.com/chliny/opencode-mobile-zerotier/releases/latest](https://github.com/chliny/opencode-mobile-zerotier/releases/latest) |
-| Build from source | **Available** | Follow [Contributing](#contributing) |
-| Google Play / F-Droid | Not maintained by this fork | Use the direct APK or build from source |
-| Apple App Store / iOS | Not available | See [Roadmap](#roadmap) |
-
-> The supported install channels for this fork are the **direct signed APK** and **builds from source**. Google Play and F-Droid publishing are not maintained here, and there is no iOS build.
-
----
-
 ## Quick Start
 
 **Don't have a server yet?** Install the app and tap **Try a Demo** on the Sessions screen first — no setup required. It plays back a scripted bug-fix session through the app's real chat, diff, and permission-approval UI, offline, in about 30 seconds.
@@ -212,24 +194,6 @@ planet files and build requirements: [docs/embedded-zerotier.md](docs/embedded-z
 | Cloudflare / ngrok tunnel wizard | Beta |
 | iPad / tablet layout | Planned |
 | Offline session history | Planned |
-
----
-
-## Supporters and Sponsors
-
-OpenCode Mobile is built and maintained by [VIBE TECHNOLOGIES, LLC](https://agentlabs.cc/opencode). GitHub Sponsors help cover Sentry, EAS Build, and CI costs (~$60/month). The opencode Cloud hosted backend (planned, $10/mo) is the long-term revenue model.
-
-If OpenCode Mobile saves you time, consider sponsoring:
-
-**[github.com/sponsors/VibeTechnologies](https://github.com/sponsors/VibeTechnologies)**
-
-| Tier | Price | Perk |
-|---|---|---|
-| Supporter | $5/mo | Your name in `SUPPORTERS.md` |
-| Backer | $15/mo | Name + early access to opencode Cloud beta |
-| Business | $50/mo | Logo on [agentlabs.cc/opencode](https://agentlabs.cc/opencode) + quarterly support call |
-
-Questions or private support: [support@agentlabs.cc](mailto:support@agentlabs.cc)
 
 ---
 
