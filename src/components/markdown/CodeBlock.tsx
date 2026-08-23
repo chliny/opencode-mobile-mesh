@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { View, Text, TouchableOpacity, StyleSheet, useColorScheme, Platform } from "react-native"
 import * as Clipboard from "expo-clipboard"
-import { WideScroll } from "../WideScroll"
 import { ContentViewerButton } from "../chat/ContentViewerButton"
 
 interface Props {
@@ -30,11 +29,11 @@ export function CodeBlock({ code, language }: Props) {
         </TouchableOpacity>
         <ContentViewerButton title={language || "code"} content={code} language={language} isDark={isDark} />
       </View>
-      <WideScroll testID="code-block-scroll" contentContainerStyle={styles.codeScroll}>
+      <View style={styles.codeContainer}>
         <Text style={[styles.code, isDark && styles.codeDark]} selectable>
           {code}
         </Text>
-      </WideScroll>
+      </View>
     </View>
   )
 }
@@ -77,7 +76,7 @@ const styles = StyleSheet.create({
   copyBtnDark: {
     color: "#a78bfa",
   },
-  codeScroll: {
+  codeContainer: {
     padding: 12,
   },
   code: {

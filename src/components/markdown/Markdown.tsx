@@ -2,7 +2,6 @@ import { useMemo, type ReactNode } from "react"
 import { View, Text, useColorScheme, Platform, type StyleProp, type ViewStyle, type TextStyle } from "react-native"
 import { useMarkdown, Renderer } from "react-native-marked"
 import { CodeBlock } from "./CodeBlock"
-import { WideScroll } from "../WideScroll"
 
 // react-native-marked's base Renderer hardcodes `selectable` on every plain
 // text node it produces (text/strong/em/del/heading/codespan). On Android,
@@ -59,12 +58,11 @@ class CustomRenderer extends Renderer {
   table(header: ReactNode[][], rows: ReactNode[][][], tableStyle?: ViewStyle, rowStyle?: ViewStyle, cellStyle?: ViewStyle): ReactNode {
     return (
       <View key={this.getKey()} style={{ marginVertical: 8 }}>
-        <WideScroll testID="markdown-table-scroll">
-          <View style={[tableStyle, { flexDirection: "column" }]}>
+        <View style={[tableStyle, { flexDirection: "column" }]}>
             {header.map((cols, rowIdx) => (
               <View key={`h-${rowIdx}`} style={[rowStyle, { flexDirection: "row" }]}>
                 {cols.map((cell, colIdx) => (
-                  <View key={`hc-${colIdx}`} style={[cellStyle, { flexShrink: 0 }]}>
+                  <View key={`hc-${colIdx}`} style={[cellStyle, { flex: 1, minWidth: 0 }]}>
                     {cell}
                   </View>
                 ))}
@@ -73,14 +71,13 @@ class CustomRenderer extends Renderer {
             {rows.map((cols, rowIdx) => (
               <View key={`r-${rowIdx}`} style={[rowStyle, { flexDirection: "row" }]}>
                 {cols.map((cell, colIdx) => (
-                  <View key={`rc-${colIdx}`} style={[cellStyle, { flexShrink: 0 }]}>
+                  <View key={`rc-${colIdx}`} style={[cellStyle, { flex: 1, minWidth: 0 }]}>
                     {cell}
                   </View>
                 ))}
               </View>
             ))}
-          </View>
-        </WideScroll>
+        </View>
       </View>
     )
   }

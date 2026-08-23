@@ -4,7 +4,6 @@ import { Stack, useRouter } from "expo-router"
 import { Platform, ScrollView, StyleSheet, Text, useColorScheme, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { WideScroll } from "../src/components/WideScroll"
 import { getContentViewer } from "../src/lib/content-viewer"
 import { parseDiffText } from "../src/components/chat/diff-compute"
 import { DiffRenderer, type SharedDiffLine } from "../src/components/files/DiffRenderer"
@@ -35,13 +34,9 @@ export default function ContentViewerScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <FullScreenDiffReview title={viewer.title} lines={diffLines} isDark={isDark} topInset={insets.top + 8} onBack={() => router.back()} onCopy={copy} copied={copied} onNavigateHunk={(index) => scrollRef.current?.scrollTo({ y: index * 22, animated: true })} headerLabel={viewer.language || t("chat.contentViewer.output")}>
-        {isDiff ? <ScrollView ref={scrollRef} nestedScrollEnabled contentContainerStyle={s.verticalContent}>
-          <DiffRenderer lines={diffLines} isDark={isDark} wrap />
-        </ScrollView> : <WideScroll style={s.horizontal} contentContainerStyle={s.scrollContent}>
-          <ScrollView ref={scrollRef} nestedScrollEnabled contentContainerStyle={s.verticalContent}>
-            <Text selectable style={[s.code, isDark && s.codeDark]}>{viewer.content}</Text>
-          </ScrollView>
-        </WideScroll>}
+        <ScrollView ref={scrollRef} nestedScrollEnabled contentContainerStyle={s.verticalContent}>
+          {isDiff ? <DiffRenderer lines={diffLines} isDark={isDark} /> : <Text selectable style={[s.code, isDark && s.codeDark]}>{viewer.content}</Text>}
+        </ScrollView>
       </FullScreenDiffReview>
     </>
   )
@@ -49,7 +44,7 @@ export default function ContentViewerScreen() {
 
 const mono = Platform.OS === "ios" ? "Menlo" : "monospace"
 const s = StyleSheet.create({
-  horizontal: { flex: 1 }, scrollContent: { minWidth: "100%", flexGrow: 1 }, verticalContent: { padding: 14 },
+  verticalContent: { padding: 14 },
   code: { fontFamily: mono, fontSize: 13, lineHeight: 20, color: "#171717" }, codeDark: { color: "#e5e5e5" },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }, emptyDark: { backgroundColor: "#0a0a0a" }, emptyText: { color: "#111" }, textDark: { color: "#fff" },
 })
