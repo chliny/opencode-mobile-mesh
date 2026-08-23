@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { DiffLineRow, type SharedDiffLine } from "../src/components/files/DiffRenderer"
 import { FullScreenDiffReview } from "../src/components/files/FullScreenDiffReview"
-import { parseUnifiedPatch } from "../src/lib/file-review"
+import { diffHunkStarts, parseUnifiedPatch } from "../src/lib/file-review"
 import { turnDiffsFromMessages, turnSummaryRecorded } from "../src/lib/review-diffs"
 import { useConnections } from "../src/stores/connections"
 import { useSessions } from "../src/stores/sessions"
@@ -86,6 +86,16 @@ export default function SessionFileScreen() {
     request().then((result) => { if (active) setLines(result) }).catch((err) => { if (active) setError(err instanceof Error ? err.message : t("files.loadFailed")) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [api, id, path, mode, source, t])
+
+  useEffect(() => {
+    if (mode !== "diff" || lines.length === 0) return
+    const first = diffHunkStarts(lines)[0]
+    if (first === undefined) return
+    const frame = requestAnimationFrame(() => {
+      listRef.current?.scrollToIndex({ index: first, animated: false, viewPosition: 0.08 })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [lines, mode])
 
   const start = anchor === null || focus === null ? null : Math.min(anchor, focus)
   const end = anchor === null || focus === null ? null : Math.max(anchor, focus)
