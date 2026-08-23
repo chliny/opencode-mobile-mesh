@@ -23,7 +23,6 @@ import {
 } from "../../src/lib/notifications"
 import type { Category } from "../../src/lib/notifications"
 import { hasTelemetryConsent, setTelemetryConsent } from "../../src/lib/telemetry"
-import { PRIVACY_POLICY_URL } from "../../src/lib/links"
 import { CURRENT_VERSION, checkForUpdate, type AvailableUpdate } from "../../src/lib/update-check"
 import type { LocalePreference } from "../../src/lib/i18n/locale-resolve"
 
@@ -266,14 +265,6 @@ export default function SettingsScreen() {
             />
           }
         />
-        <SettingRow
-          icon="document-text"
-          label={t("settings.privacy.privacyPolicy.label")}
-          description={t("settings.privacy.privacyPolicy.description")}
-          isDark={isDark}
-          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
-          right={<Ionicons name="open-outline" size={20} color={isDark ? "#9a9a9a" : "#999999"} />}
-        />
       </SettingSection>
 
       <SettingSection title={t("settings.sections.about")} isDark={isDark}>
@@ -317,7 +308,7 @@ export default function SettingsScreen() {
           label={t("settings.about.docs.label")}
           description={t("settings.about.docs.description")}
           isDark={isDark}
-          onPress={() => Linking.openURL("https://opencode.ai/docs")}
+          onPress={() => Linking.openURL("https://github.com/chliny/opencode-mobile-zerotier#readme")}
           right={<Ionicons name="open-outline" size={20} color={isDark ? "#9a9a9a" : "#999999"} />}
         />
       </SettingSection>

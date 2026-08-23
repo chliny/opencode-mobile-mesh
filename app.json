@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "OpenCode",
+    "name": "OpenCode Mobile (ZeroTier Edition)",
     "slug": "opencode-mobile",
     "version": "0.4.15",
     "orientation": "portrait",
@@ -20,12 +20,12 @@
         "aps-environment": "production"
       },
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Use Face ID to unlock OpenCode and access your sessions securely.",
-        "NSSpeechRecognitionUsageDescription": "OpenCode uses speech recognition so you can dictate prompts to your AI coding agent hands-free.",
-        "NSMicrophoneUsageDescription": "OpenCode uses the microphone to capture your voice when using speech-to-text input.",
-        "NSPhotoLibraryUsageDescription": "OpenCode can attach images from your photo library to messages to your AI coding agent.",
-        "NSCameraUsageDescription": "OpenCode can capture images with your camera and attach them to messages to your AI coding agent.",
-        "NSLocalNetworkUsageDescription": "OpenCode uses your local network to connect to self-hosted OpenCode servers running on your LAN.",
+        "NSFaceIDUsageDescription": "Use Face ID to unlock OpenCode Mobile (ZeroTier Edition) and access your sessions securely.",
+        "NSSpeechRecognitionUsageDescription": "OpenCode Mobile (ZeroTier Edition) uses speech recognition so you can dictate prompts to your AI coding agent hands-free.",
+        "NSMicrophoneUsageDescription": "OpenCode Mobile (ZeroTier Edition) uses the microphone to capture your voice when using speech-to-text input.",
+        "NSPhotoLibraryUsageDescription": "OpenCode Mobile (ZeroTier Edition) can attach images from your photo library to messages to your AI coding agent.",
+        "NSCameraUsageDescription": "OpenCode Mobile (ZeroTier Edition) can capture images with your camera and attach them to messages to your AI coding agent.",
+        "NSLocalNetworkUsageDescription": "OpenCode Mobile (ZeroTier Edition) uses your local network to connect to self-hosted OpenCode servers running on your LAN.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSAllowsArbitraryLoadsInWebContent": false
@@ -61,16 +61,16 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "OpenCode can attach images from your photo library to messages to your AI coding agent.",
-          "cameraPermission": "OpenCode can capture images with your camera and attach them to messages to your AI coding agent.",
+          "photosPermission": "OpenCode Mobile (ZeroTier Edition) can attach images from your photo library to messages to your AI coding agent.",
+          "cameraPermission": "OpenCode Mobile (ZeroTier Edition) can capture images with your camera and attach them to messages to your AI coding agent.",
           "microphonePermission": false
         }
       ],
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "OpenCode uses the microphone to capture your voice when using speech-to-text input.",
-          "speechRecognitionPermission": "OpenCode uses speech recognition so you can dictate prompts to your AI coding agent hands-free.",
+          "microphonePermission": "OpenCode Mobile (ZeroTier Edition) uses the microphone to capture your voice when using speech-to-text input.",
+          "speechRecognitionPermission": "OpenCode Mobile (ZeroTier Edition) uses speech recognition so you can dictate prompts to your AI coding agent hands-free.",
           "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
         }
       ],

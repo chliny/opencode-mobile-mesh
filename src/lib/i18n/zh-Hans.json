@@ -42,7 +42,7 @@
     "privacy": {
       "crashReporting": {
         "label": "崩溃报告与使用分析",
-        "description": "分享匿名崩溃报告（Sentry）和使用分析（PostHog），帮助改进 OpenCode。您分享的诊断报告也会发送至我们的支持收件箱。不包含代码或提示词内容。"
+        "description": "分享匿名崩溃报告（Sentry）和使用分析（PostHog），帮助改进 OpenCode Mobile (ZeroTier Edition)。您分享的诊断报告也会发送至我们的支持收件箱。不包含代码或提示词内容。"
       },
       "privacyPolicy": {
         "label": "隐私政策",
@@ -57,7 +57,7 @@
       },
       "docs": {
         "label": "文档",
-        "description": "了解如何使用 OpenCode"
+        "description": "阅读安装与使用说明"
       }
     },
     "language": {
@@ -68,14 +68,14 @@
       "zhHans": "简体中文"
     },
     "footer": {
-      "appName": "OpenCode Mobile",
+      "appName": "OpenCode Mobile (ZeroTier Edition)",
       "tagline": "随时随地连接您的 AI 编程助手"
     },
     "alerts": {
       "privacyNotSavedTitle": "隐私设置未保存",
       "privacyNotSavedMessage": "本次会话已关闭崩溃报告，但您的选择未能保存。请重试。",
       "notificationsDisabledTitle": "通知已关闭",
-      "notificationsDisabledMessage": "请在设备设置中为 OpenCode 启用通知以接收提醒。"
+      "notificationsDisabledMessage": "请在设备设置中为 OpenCode Mobile (ZeroTier Edition) 启用通知以接收提醒。"
     }
   },
   "session": {
@@ -136,7 +136,7 @@
       "imageFailedMessage": "一张或多张图片无法处理。请尝试其他照片。",
       "speechErrorTitle": "语音输入失败",
       "speechErrorMessage": "无法使用语音输入，请重试。",
-      "speechErrorPermission": "麦克风权限被拒绝，请在系统设置中允许 OpenCode 使用麦克风后重试。",
+      "speechErrorPermission": "麦克风权限被拒绝，请在系统设置中允许 OpenCode Mobile (ZeroTier Edition) 使用麦克风后重试。",
       "speechErrorNetwork": "语音识别发生网络错误，请检查网络连接后重试。",
       "speechErrorService": "系统语音识别服务不可用，或该服务没有麦克风权限。请启用可用的语音识别服务，并允许其使用麦克风后重试。",
       "speechErrorAudio": "无法启动麦克风，请关闭其他正在使用麦克风的应用后重试。",
@@ -372,7 +372,7 @@
     "tryAgainButton": "重试"
   },
   "telemetryConsent": {
-    "title": "帮助改进 OpenCode？",
+    "title": "帮助改进 OpenCode Mobile (ZeroTier Edition)？",
     "body": "分享匿名崩溃报告和使用分析，帮助我们更快地发现并修复问题。您分享的诊断报告也会发送至我们的支持收件箱。绝不包含代码、提示词或服务器地址。",
     "bullets": {
       "deviceInfo": "设备型号、系统版本、应用版本",
@@ -389,7 +389,7 @@
     "footnote": "您可以随时在设置 → 隐私中更改此设置。"
   },
   "authGate": {
-    "title": "OpenCode 已锁定",
+    "title": "OpenCode Mobile (ZeroTier Edition) 已锁定",
     "subtitle": "请验证身份以访问您的会话",
     "unlockButton": "解锁"
   },

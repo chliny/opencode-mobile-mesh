@@ -42,7 +42,7 @@
     "privacy": {
       "crashReporting": {
         "label": "Crash Reports & Usage Analytics",
-        "description": "Share anonymous crash reports (Sentry) and usage analytics (PostHog) to help improve OpenCode. Diagnostic reports you share are also delivered to our support inbox. No code or prompts are included."
+        "description": "Share anonymous crash reports (Sentry) and usage analytics (PostHog) to help improve OpenCode Mobile (ZeroTier Edition). Diagnostic reports you share are also delivered to our support inbox. No code or prompts are included."
       },
       "privacyPolicy": {
         "label": "Privacy Policy",
@@ -57,7 +57,7 @@
       },
       "docs": {
         "label": "Documentation",
-        "description": "Learn how to use OpenCode"
+        "description": "Read setup and usage instructions"
       }
     },
     "language": {
@@ -68,14 +68,14 @@
       "zhHans": "Simplified Chinese"
     },
     "footer": {
-      "appName": "OpenCode Mobile",
+      "appName": "OpenCode Mobile (ZeroTier Edition)",
       "tagline": "Connect to your AI coding assistant from anywhere"
     },
     "alerts": {
       "privacyNotSavedTitle": "Privacy Setting Not Saved",
       "privacyNotSavedMessage": "Crash reporting is off for this session, but your choice could not be saved. Please try again.",
       "notificationsDisabledTitle": "Notifications Disabled",
-      "notificationsDisabledMessage": "Enable notifications for OpenCode in your device settings to receive alerts."
+      "notificationsDisabledMessage": "Enable notifications for OpenCode Mobile (ZeroTier Edition) in your device settings to receive alerts."
     }
   },
   "session": {
@@ -136,7 +136,7 @@
       "imageFailedMessage": "One or more images could not be processed. Please try a different photo.",
       "speechErrorTitle": "Voice input failed",
       "speechErrorMessage": "Could not use voice input. Please try again.",
-      "speechErrorPermission": "Microphone access is denied. Allow OpenCode to use the microphone in system settings and try again.",
+      "speechErrorPermission": "Microphone access is denied. Allow OpenCode Mobile (ZeroTier Edition) to use the microphone in system settings and try again.",
       "speechErrorNetwork": "Voice recognition encountered a network error. Check your connection and try again.",
       "speechErrorService": "The system speech recognition service is unavailable or does not have permission to use the microphone. Enable a speech recognition service, allow it to use the microphone, and try again.",
       "speechErrorAudio": "The microphone could not be started. Close other apps using the microphone and try again.",
@@ -372,7 +372,7 @@
     "tryAgainButton": "Try Again"
   },
   "telemetryConsent": {
-    "title": "Help improve OpenCode?",
+    "title": "Help improve OpenCode Mobile (ZeroTier Edition)?",
     "body": "Share anonymous crash reports and usage analytics to help us find and fix bugs faster. Diagnostic reports you share are also delivered to our support inbox. No code, prompts, or server addresses are ever included.",
     "bullets": {
       "deviceInfo": "Device model, OS version, app version",
@@ -389,7 +389,7 @@
     "footnote": "You can change this at any time in Settings → Privacy."
   },
   "authGate": {
-    "title": "OpenCode Locked",
+    "title": "OpenCode Mobile (ZeroTier Edition) Locked",
     "subtitle": "Authenticate to access your sessions",
     "unlockButton": "Unlock"
   },

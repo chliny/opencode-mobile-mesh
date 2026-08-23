@@ -123,7 +123,7 @@ export async function probeConnection(url: string, auth?: { username: string; pa
 
 export function formatReport(report: DiagnosticReport): string {
   const lines: string[] = []
-  lines.push("=== OpenCode Mobile — Connection Diagnostic ===")
+  lines.push("=== OpenCode Mobile (ZeroTier Edition) — Connection Diagnostic ===")
   lines.push(`Time:        ${report.timestamp}`)
   lines.push(`Result:      ${report.classification.toUpperCase()}`)
   lines.push(`Summary:     ${report.summary}`)
@@ -219,7 +219,7 @@ export async function shareReport(report: DiagnosticReport): Promise<void> {
     // clipboard optional
   }
   try {
-    await Share.share({ title: "OpenCode connection diagnostic", message: text })
+    await Share.share({ title: "OpenCode Mobile (ZeroTier Edition) connection diagnostic", message: text })
   } catch (e) {
     log.warn("diag", "share failed", String(e))
   }

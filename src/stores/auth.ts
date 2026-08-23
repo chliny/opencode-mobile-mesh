@@ -86,7 +86,7 @@ export const useAuth = create<AuthState>((set, get) => ({
 
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Authenticate to access OpenCode",
+        promptMessage: "Authenticate to access OpenCode Mobile (ZeroTier Edition)",
         fallbackLabel: "Use passcode",
         disableDeviceFallback: false,
       })
