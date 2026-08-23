@@ -1,0 +1,4 @@
+v1.0.1 - Corrected release metadata
+
+- This build correctly identifies itself as OpenCode Mobile ZeroTier Edition 1.0.1.
+- Includes the embedded ZeroTier networking, session file review, fullscreen diffs, and reliability improvements introduced for 1.0.
