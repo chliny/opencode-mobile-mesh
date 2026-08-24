@@ -931,8 +931,9 @@ export default function SessionScreen() {
 
       <KeyboardAvoidingView
         style={[s.container, isDark && s.containerDark]}
+        enabled={Platform.OS === "ios"}
         behavior="padding"
-        keyboardVerticalOffset={Platform.OS === "android" ? 48 : 90}
+        keyboardVerticalOffset={90}
       >
         {/* Session info pulldown */}
         {transcriptBound && (
