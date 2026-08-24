@@ -324,8 +324,7 @@
     },
     "empty": {
       "noConnectionTitle": "无连接",
-      "noConnectionSubtitle": "连接到运行 opencode serve 的电脑（同一网络或通过 Tailscale）以开始使用。",
-      "setupGuideLink": "如何设置服务器",
+      "noConnectionSubtitle": "连接到运行 opencode serve 的电脑，可使用同一网络、Tailscale 或内置 ZeroTier 连接。",
       "addConnectionButton": "添加连接",
       "tryDemoButton": "试用演示（无需服务器）",
       "authFailedTitle": "身份验证失败",
@@ -511,8 +510,7 @@
     "banner": "演示 — 示例对话，未连接服务器",
     "ctaTitle": "喜欢这个体验吗？",
     "ctaSubtitle": "这是一个脚本化的演示。连接您自己的 opencode 服务器即可真正体验。",
-    "connectButton": "连接您自己的服务器",
-    "setupGuideLink": "如何设置服务器"
+    "connectButton": "连接您自己的服务器"
   },
   "update": {
     "available": "有可用更新",
