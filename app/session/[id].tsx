@@ -1473,7 +1473,12 @@ const s = StyleSheet.create({
   dirText: { fontSize: 12, color: "#666666", fontWeight: "500" },
   dirTextDark: { color: "#888888" },
 
-  bannerError: { backgroundColor: "#dc2626" },
+  bannerError: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#dc2626",
+  },
   bannerErrorText: { flex: 1 },
 
   // SSE reconnect/connected banner
