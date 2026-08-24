@@ -19,7 +19,7 @@ occupy Android's single VPN slot.
 Only OpenCode requests pointed at the private relay use libzt. Other apps and
 Android system traffic are never routed by this feature. A separately enabled
 system VPN remains possible; if that VPN captures OpenCode itself, libzt's
-underlying UDP packets may also traverse it, so exclude `cc.agentlabs.opencode`
+underlying UDP packets may also traverse it, so exclude `me.chliny.opencode.zerotier`
 in that VPN when direct ZeroTier underlay traffic is desired.
 
 ## Custom planet files

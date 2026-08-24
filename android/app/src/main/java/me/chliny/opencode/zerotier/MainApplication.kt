@@ -1,4 +1,4 @@
-package cc.agentlabs.opencode
+package me.chliny.opencode.zerotier
 
 import android.app.Application
 import android.content.res.Configuration

@@ -63,7 +63,7 @@ except ImportError:
 # Constants
 # ---------------------------------------------------------------------------
 
-APP_PACKAGE = "cc.agentlabs.opencode"
+APP_PACKAGE = "me.chliny.opencode.zerotier"
 
 # Default opencode Tailscale dev server
 DEFAULT_OPENCODE_URL = "http://100.108.64.76:4096"
@@ -1527,7 +1527,7 @@ Rules for deterministic_checks:
 - file_created: checks REST API session messages for a filename.
 
 Available context:
-- App package: cc.agentlabs.opencode
+- App package: me.chliny.opencode.zerotier
 - Default server URL used in tests: {opencode_url}
 - Sessions tab is in the bottom navigation bar.
 - Long-press FAB (+) opens a modal to create a session in a custom directory.

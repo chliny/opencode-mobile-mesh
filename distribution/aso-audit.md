@@ -1,11 +1,11 @@
 # ASO Audit: OpenCode Mobile
 **Store:** Google Play
-**URL:** https://play.google.com/store/apps/details?id=cc.agentlabs.opencode
+**Current package:** `me.chliny.opencode.zerotier`
 **Audit date:** 2026-05-30
 **Brand tier:** Challenger — new app, internal testing only, zero public ratings, no brand recognition outside the opencode/sst community
 **Overall Score:** 38/100 (Grade: D)
 
-> Note: The app is not yet publicly live on Google Play (internal track only, package recently renamed to `cc.agentlabs.opencode`). Scores reflect the current draft listing from `distribution/play-listing.md`. Live data (ratings, review sentiment, install range) cannot be assessed until the app reaches open/production track. Visual asset scores reflect the confirmed placeholder state.
+> Note: The app is not yet publicly live on Google Play. Scores reflect the current draft listing from `distribution/play-listing.md`. Live data (ratings, review sentiment, install range) cannot be assessed until the app reaches open/production track. Visual asset scores reflect the confirmed placeholder state.
 
 ---
 
@@ -348,7 +348,7 @@ This is defensible, differentiating, and accurate.
 | Single language (English only) | Low | Acceptable for v1; revisit at 1,000+ DAU |
 | No LiveOps/Promotional content | Low | Not applicable until Production track |
 | Data Safety form not yet submitted | BLOCKER (for Production) | Required before Production submit |
-| Package ID recently changed (`ai.opencode.mobile` → `cc.agentlabs.opencode`) | Historical note | Current external links and package references use `cc.agentlabs.opencode` |
+| Package ID recently changed (`ai.opencode.mobile` → `cc.agentlabs.opencode` → `me.chliny.opencode.zerotier`) | Historical note | Current external links and package references use `me.chliny.opencode.zerotier` |
 
 ---
 

@@ -13,7 +13,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
-const APP_ID = "cc.agentlabs.opencode";
+const APP_ID = "me.chliny.opencode.zerotier";
 const RELEASES = "https://github.com/chliny/opencode-mobile-zerotier/releases/latest";
 const TIMEOUT_MS = 20_000;
 

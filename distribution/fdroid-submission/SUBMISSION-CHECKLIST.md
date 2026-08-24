@@ -1,7 +1,7 @@
 # F-Droid Mainline Submission Checklist
 
 This checklist covers the steps to file a Merge Request against
-https://gitlab.com/fdroid/fdroiddata to add `cc.agentlabs.opencode` to the
+https://gitlab.com/fdroid/fdroiddata to add `me.chliny.opencode.zerotier` to the
 F-Droid main repository.
 
 **Do NOT start this process until ALL prerequisites are checked.**
@@ -52,7 +52,7 @@ git clone https://gitlab.com/<YOUR_GITLAB_USERNAME>/fdroiddata.git
 cd fdroiddata
 git remote add upstream https://gitlab.com/fdroid/fdroiddata.git
 git fetch upstream
-git checkout -b add-cc.agentlabs.opencode upstream/master
+git checkout -b add-me.chliny.opencode.zerotier upstream/master
 ```
 
 ---
@@ -61,11 +61,11 @@ git checkout -b add-cc.agentlabs.opencode upstream/master
 
 ```bash
 cp /path/to/opencode-mobile/distribution/fdroid-submission/metadata.yml \
-   metadata/cc.agentlabs.opencode.yml
+   metadata/me.chliny.opencode.zerotier.yml
 ```
 
 Verify:
-- `metadata/cc.agentlabs.opencode.yml` exists
+- `metadata/me.chliny.opencode.zerotier.yml` exists
 - `AllowedAPKSigningKeys` has the correct lowercase-no-colons fingerprint
 - `commit:` points to a real tag in the GitHub repo
 - `versionCode` and `versionName` match the APK attached to the release
@@ -84,31 +84,31 @@ pip install fdroidserver
 fdroid readmeta
 
 # Attempt a build (requires Docker + significant time)
-fdroid build cc.agentlabs.opencode:<versionCode>
+fdroid build me.chliny.opencode.zerotier:<versionCode>
 ```
 
-If the build fails, fix `metadata/cc.agentlabs.opencode.yml` before filing the MR.
+If the build fails, fix `metadata/me.chliny.opencode.zerotier.yml` before filing the MR.
 
 ---
 
 ## Step 5 — File the Merge Request
 
 ```bash
-git add metadata/cc.agentlabs.opencode.yml
-git commit -m "Add cc.agentlabs.opencode (OpenCode Mobile)"
-git push origin add-cc.agentlabs.opencode
+git add metadata/me.chliny.opencode.zerotier.yml
+git commit -m "Add me.chliny.opencode.zerotier (OpenCode Mobile)"
+git push origin add-me.chliny.opencode.zerotier
 ```
 
 Go to https://gitlab.com/<YOUR_GITLAB_USERNAME>/fdroiddata → open an MR
 against `fdroid/fdroiddata:master`.
 
-MR title: `Add cc.agentlabs.opencode`
+MR title: `Add me.chliny.opencode.zerotier`
 
 MR description template:
 ```
 ## New app: OpenCode Mobile
 
-**Package:** cc.agentlabs.opencode
+**Package:** me.chliny.opencode.zerotier
 **License:** MIT
 **Category:** Development
 **Source:** https://github.com/chliny/opencode-mobile-zerotier
@@ -138,7 +138,7 @@ Build steps: npm install → expo prebuild → Gradle assembleRelease.
 ## Step 7 — After acceptance
 
 - F-Droid builds from source on their CI. First index update may take 1–2 weeks.
-- Add `cc.agentlabs.opencode` to F-Droid's inclusion notice in `docs/fdroid.md`.
+- Add `me.chliny.opencode.zerotier` to F-Droid's inclusion notice in `docs/fdroid.md`.
 - Update `distribution/strategy.md` status row for F-Droid.
 - Notify IzzyOnDroid via the inclusion issue that mainline accepted the app
   (IzzyOnDroid will then auto-delist within their next index rebuild).

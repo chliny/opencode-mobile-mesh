@@ -2,7 +2,7 @@
 
 **Effective date:** 2026-07-23
 **Operator:** VIBE TECHNOLOGIES, LLC
-**App:** OpenCode Mobile (`cc.agentlabs.opencode`)
+**App:** OpenCode Mobile (`me.chliny.opencode.zerotier`)
 
 > **Summary:** OpenCode Mobile does not collect your code, prompts, AI responses, server URLs, or any chat content. All AI traffic goes directly from the app to your own opencode server. With your consent, we use Sentry for anonymous crash diagnostics, PostHog for anonymous usage analytics, and — only when you tap "Share Report" — deliver a scrubbed copy of that diagnostic report to our support inbox.
 

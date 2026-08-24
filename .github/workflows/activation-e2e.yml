@@ -106,7 +106,7 @@ jobs:
         # shares — the cache key/restore-keys are identical): the restore-keys
         # prefix fallback can restore a generated autolinking tree from a
         # previous package id, making compileReleaseJavaWithJavac fail against
-        # the old package (ai.opencode.mobile vs cc.agentlabs.opencode). Delete
+        # the old package (ai.opencode.mobile vs me.chliny.opencode.zerotier). Delete
         # generated sources so prebuild + Gradle regenerate them.
         run: rm -rf android/app/build/generated android/build/generated android/app/build/intermediates
 

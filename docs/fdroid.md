@@ -1,6 +1,6 @@
 # F-Droid + IzzyOnDroid — opencode-mobile
 
-Operational doc for distributing `cc.agentlabs.opencode` via F-Droid (mainline)
+Operational doc for distributing `me.chliny.opencode.zerotier` via F-Droid (mainline)
 and IzzyOnDroid under VIBE TECHNOLOGIES, LLC.
 
 This is the OSS-first distribution track, complementary to Google Play.
@@ -79,7 +79,7 @@ Items 3 and 5 should be done after the first Play Store release is live.
 
 1. Complete prerequisites (see `distribution/fdroid-submission/SUBMISSION-CHECKLIST.md`).
 2. Fork fdroiddata on GitLab.
-3. Create `metadata/cc.agentlabs.opencode.yml` from `distribution/fdroid-submission/metadata.yml`.
+3. Create `metadata/me.chliny.opencode.zerotier.yml` from `distribution/fdroid-submission/metadata.yml`.
 4. File MR. Respond to reviewer feedback.
 5. Full guide: `distribution/fdroid-submission/SUBMISSION-CHECKLIST.md`.
 
@@ -135,7 +135,7 @@ distribution/
 - fdroiddata (where MR goes): https://gitlab.com/fdroid/fdroiddata
 - IzzyOnDroid policy: https://apt.izzysoft.de/fdroid/index/info
 - IzzyOnDroid issues (where inclusion request goes): https://codeberg.org/IzzyOnDroid/repodata/issues
-- App on IzzyOnDroid: add the accepted `cc.agentlabs.opencode` package URL after acceptance.
+- App on IzzyOnDroid: add the accepted `me.chliny.opencode.zerotier` package URL after acceptance.
 - Signing key fingerprints: `distribution/SIGNING-KEY-FINGERPRINTS.md`
 - Strategy + full channel overview: `distribution/strategy.md`
 - Play Store operational doc: `docs/playstore.md`

@@ -1,6 +1,6 @@
 # Play Store ASO Listing — OpenCode Mobile
 
-**Package:** cc.agentlabs.opencode
+**Package:** me.chliny.opencode.zerotier
 **Generated:** 2026-06-20
 **Based on:** app v0.4+, ASO audit findings from aso-audit.md
 

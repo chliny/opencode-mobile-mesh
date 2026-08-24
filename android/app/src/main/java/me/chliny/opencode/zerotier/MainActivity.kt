@@ -1,4 +1,4 @@
-package cc.agentlabs.opencode
+package me.chliny.opencode.zerotier
 
 import android.os.Build
 import android.os.Bundle

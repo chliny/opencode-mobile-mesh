@@ -1,6 +1,6 @@
 # Historical Data Safety Audit — Email Address (Play rejection versionCode 142)
 
-App: **OpenCode: AI Coding Agent** · package `cc.agentlabs.opencode`
+App: **OpenCode: AI Coding Agent** · package `me.chliny.opencode.zerotier`
 Rejection: Google Play rejected update **versionCode 142** for *"Invalid Data safety form"*. This document describes the historical waitlist email path; that feature and API have since been removed.
 
 ---

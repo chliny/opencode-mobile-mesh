@@ -22,7 +22,7 @@ export default function TermsPage() {
         <p className="text-sm" style={{ color: 'var(--muted)' }}>
           Effective date: 2026-05-24&nbsp;&nbsp;|&nbsp;&nbsp;
           Operator: VIBE TECHNOLOGIES, LLC&nbsp;&nbsp;|&nbsp;&nbsp;
-          App: OpenCode Mobile (<code className="text-xs px-1 rounded" style={{ background: 'var(--card)' }}>cc.agentlabs.opencode</code>)
+          App: OpenCode Mobile (<code className="text-xs px-1 rounded" style={{ background: 'var(--card)' }}>me.chliny.opencode.zerotier</code>)
         </p>
       </header>
 

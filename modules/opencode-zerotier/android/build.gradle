@@ -1,11 +1,11 @@
 apply plugin: 'com.android.library'
 apply plugin: 'expo-module-gradle-plugin'
 
-group = 'cc.agentlabs.opencode.zerotier'
+group = 'me.chliny.opencode.zerotier.module'
 version = '0.1.0'
 
 android {
-  namespace 'cc.agentlabs.opencode.zerotier'
+  namespace 'me.chliny.opencode.zerotier.module'
   ndkVersion rootProject.ext.ndkVersion
 
   defaultConfig {

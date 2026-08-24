@@ -1,4 +1,4 @@
-appId: cc.agentlabs.opencode
+appId: me.chliny.opencode.zerotier
 name: "DiffView + CodeBlock horizontal scroll - wide diff/code line reachable by swipe (closes #21)"
 ---
 # GitHub issue #21 ("QA: verify DiffView + CodeBlock horizontal-scroll

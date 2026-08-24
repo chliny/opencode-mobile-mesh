@@ -10,7 +10,7 @@ Use the text below (starting from "---") as the issue body. Replace all
 ## App submission: OpenCode Mobile
 
 **App name:** OpenCode Mobile
-**Package / App ID:** `cc.agentlabs.opencode`
+**Package / App ID:** `me.chliny.opencode.zerotier`
 **License:** MIT
 **Source code:** https://github.com/chliny/opencode-mobile-zerotier
 **GitHub releases:** https://github.com/chliny/opencode-mobile-zerotier/releases

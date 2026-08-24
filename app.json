@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "cc.agentlabs.opencode",
+      "bundleIdentifier": "me.chliny.opencode.zerotier",
       "buildNumber": "1",
       "entitlements": {
         "aps-environment": "production"
@@ -34,7 +34,7 @@
       }
     },
     "android": {
-      "package": "cc.agentlabs.opencode",
+      "package": "me.chliny.opencode.zerotier",
       "versionCode": 43,
       "usesCleartextTraffic": true,
       "adaptiveIcon": {

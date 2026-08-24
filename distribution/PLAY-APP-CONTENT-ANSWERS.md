@@ -1,4 +1,4 @@
-# Play Console — App content answers (cc.agentlabs.opencode)
+# Play Console — App content answers (me.chliny.opencode.zerotier)
 
 Draft answers based on the app's ACTUAL behavior, to make the Console "App content"
 section fast to complete. **You are legally attesting to these — review each against
@@ -65,5 +65,5 @@ App facts these answers derive from:
 2. Select countries/regions (all, unless restricting).
 3. Roll out to Production → Send for review. Google review: hours–days.
 4. Once live, the public listing appears at
-   `https://play.google.com/store/apps/details?id=cc.agentlabs.opencode` — then fire
+    `https://play.google.com/store/apps/details?id=me.chliny.opencode.zerotier` — then fire
    the launch posts in `distribution/launch/`.

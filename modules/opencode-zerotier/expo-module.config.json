@@ -1,6 +1,6 @@
 {
   "platforms": ["android"],
   "android": {
-    "modules": ["cc.agentlabs.opencode.zerotier.OpenCodeZeroTierModule"]
+    "modules": ["me.chliny.opencode.zerotier.module.OpenCodeZeroTierModule"]
   }
 }

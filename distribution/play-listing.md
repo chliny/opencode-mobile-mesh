@@ -1,10 +1,10 @@
 # Google Play Store Listing — OpenCode Mobile
 
-Copy-paste reference for the Play Console store listing for `cc.agentlabs.opencode`.
+Copy-paste reference for the Play Console store listing for `me.chliny.opencode.zerotier`.
 Paste these values directly into Play Console. Fields are validated against Play limits.
 
 > **Status: live.** The app is publicly available on the production track —
-> https://play.google.com/store/apps/details?id=cc.agentlabs.opencode (1K+ installs;
+> Legacy Play listing: https://play.google.com/store/apps/details?id=cc.agentlabs.opencode (1K+ installs;
 > see `distribution/retention-analysis.md`). The "First release strategy" and "Pending
 > before first publish" sections below are kept as a historical record of how it got
 > there — do not read them as the current state.

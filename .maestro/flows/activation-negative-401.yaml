@@ -1,4 +1,4 @@
-appId: cc.agentlabs.opencode
+appId: me.chliny.opencode.zerotier
 name: Activation - negative path (connect-time 401 must surface a visible error)
 ---
 # Negative activation flow — regression test for the GitHub issue #76 failure
