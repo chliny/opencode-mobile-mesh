@@ -24,6 +24,7 @@ import { useTranslation } from "react-i18next"
 import * as ImagePicker from "expo-image-picker"
 import * as ImageManipulator from "expo-image-manipulator"
 import * as Clipboard from "expo-clipboard"
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated"
 import type BottomSheet from "@gorhom/bottom-sheet"
 import {
   MessageBubble,
@@ -118,6 +119,10 @@ export default function SessionScreen() {
   const [mentionLoading, setMentionLoading] = useState(false)
   const [selectedMentions, setSelectedMentions] = useState<string[]>([])
   const [showInfo, setShowInfo] = useState(false)
+  const keyboard = useAnimatedKeyboard()
+  const keyboardStyle = useAnimatedStyle(() => ({
+    paddingBottom: Platform.OS === "android" ? keyboard.height.value : 0,
+  }))
 
   const currentSession = useSessions((state) => (isFocused ? state.currentSession : null))
   const messages = useSessions((state) => (isFocused ? state.messages : EMPTY_LIST))
@@ -935,7 +940,8 @@ export default function SessionScreen() {
         behavior="padding"
         keyboardVerticalOffset={90}
       >
-        {/* Session info pulldown */}
+        <Animated.View style={[s.container, keyboardStyle]}>
+          {/* Session info pulldown */}
         {transcriptBound && (
           <SessionInfo
             session={currentSession}
@@ -1219,6 +1225,7 @@ export default function SessionScreen() {
             </View>
           </View>
         )}
+        </Animated.View>
       </KeyboardAvoidingView>
 
       {/* Model picker bottom sheet */}
