@@ -5,7 +5,7 @@ import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import type { Part } from "../../lib/sdk"
 import { useSessions } from "../../stores/sessions"
-import { taskAgentLabel, taskChildSessionID, taskDescription } from "../../lib/subagent"
+import { taskAgentLabel, taskChildSessionID, taskDescription, taskToolTitle } from "../../lib/subagent"
 import { DiffLinesView, DiffView } from "./DiffView"
 import { computePatchDiff, patchTextFromInput } from "./patch-compute"
 import { ContentViewerButton } from "./ContentViewerButton"
@@ -314,6 +314,9 @@ export function ToolCallCard({ tool, isDark }: Props) {
   const error = tool.state?.error?.message
   const elapsed = duration(tool.state?.time?.start, tool.state?.time?.end)
   const hasDetail = tool.state?.input !== undefined || tool.state?.output !== undefined || error
+  // state.title is supplied by the server and remains authoritative. The
+  // local task title only makes unnamed delegated calls readable.
+  const title = tool.state?.title || taskToolTitle(tool) || tool.tool || t("chat.toolCallCard.fallbackTitle")
 
   // Subagent (task tool): once the server reports the child session ID in the
   // part's state metadata, offer a jump into that session's transcript.
@@ -347,7 +350,7 @@ export function ToolCallCard({ tool, isDark }: Props) {
         <View style={s.headerLeft}>
           <Ionicons name={icon as any} size={16} color={color} />
           <Text style={[s.name, isDark && s.nameDark]} numberOfLines={1}>
-            {tool.state?.title || tool.tool || t("chat.toolCallCard.fallbackTitle")}
+            {title}
           </Text>
           {elapsed && <Text style={[s.elapsed, isDark && s.elapsedDark]}>{elapsed}</Text>}
         </View>
