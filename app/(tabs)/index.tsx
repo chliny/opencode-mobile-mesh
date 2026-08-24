@@ -194,18 +194,29 @@ function SessionPager({
 function ProjectPager({
   page,
   pageCount,
+  projectCount,
   isDark,
   onPrevious,
   onNext,
 }: {
   page: number
   pageCount: number
+  projectCount: number
   isDark: boolean
   onPrevious: () => void
   onNext: () => void
 }) {
+  const { t } = useTranslation()
+
   return (
     <View style={[styles.projectPagination, isDark && styles.projectPaginationDark]}>
+      <View style={styles.projectPaginationTitle}>
+        <Ionicons name="albums-outline" size={15} color={isDark ? "#c4b5fd" : "#6d28d9"} />
+        <Text style={[styles.projectPaginationText, isDark && styles.projectPaginationTextDark]}>
+          {t("sessionsList.pagination.projects")}
+        </Text>
+        <Text style={[styles.projectPaginationCount, isDark && styles.metaDark]}>{projectCount}</Text>
+      </View>
       <View style={styles.projectPaginationControls}>
         <TouchableOpacity
           style={[styles.projectPageButton, isDark && styles.projectPageButtonDark, page === 0 && styles.projectPageButtonDisabled]}
@@ -661,6 +672,16 @@ export default function SessionsScreen() {
       <UpdateBanner isDark={isDark} />
 
       <View style={styles.listContainer}>
+        {projectPageCount > 1 && (
+          <ProjectPager
+            page={visibleProjectPage}
+            pageCount={projectPageCount}
+            projectCount={groupByDirectory(sessions).length}
+            isDark={isDark}
+            onPrevious={() => setProjectPage((current) => Math.max(0, current - 1))}
+            onNext={() => setProjectPage((current) => current + 1)}
+          />
+        )}
         <FlatList
           data={rows}
           keyExtractor={(row) =>
@@ -700,22 +721,8 @@ export default function SessionsScreen() {
               </View>
             )
           }
-          contentContainerStyle={[
-            sessions.length === 0 ? styles.emptyContent : undefined,
-            projectPageCount > 1 && styles.projectPagerContentInset,
-          ]}
+          contentContainerStyle={sessions.length === 0 ? styles.emptyContent : undefined}
         />
-        {projectPageCount > 1 && (
-          <View style={styles.projectPagerOverlay}>
-            <ProjectPager
-              page={visibleProjectPage}
-              pageCount={projectPageCount}
-              isDark={isDark}
-              onPrevious={() => setProjectPage((current) => Math.max(0, current - 1))}
-              onNext={() => setProjectPage((current) => current + 1)}
-            />
-          </View>
-        )}
       </View>
 
       {/* FAB to create new session */}
@@ -1109,15 +1116,6 @@ const styles = StyleSheet.create({
   listContainer: {
     flex: 1,
   },
-  projectPagerOverlay: {
-    position: "absolute",
-    top: 8,
-    right: 12,
-    zIndex: 2,
-  },
-  projectPagerContentInset: {
-    paddingTop: 58,
-  },
   pageButton: {
     width: 36,
     height: 36,
@@ -1138,25 +1136,22 @@ const styles = StyleSheet.create({
   projectPagination: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 18,
-    backgroundColor: "#ede9fe",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    elevation: 4,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e5e5",
+    backgroundColor: "#ffffff",
   },
   projectPaginationDark: {
-    backgroundColor: "#312e81",
+    borderBottomColor: "#1a1a1a",
+    backgroundColor: "#0a0a0a",
   },
   projectPaginationTitle: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginBottom: 6,
+    flex: 1,
   },
   projectPaginationText: {
     fontSize: 13,
