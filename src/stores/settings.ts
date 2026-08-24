@@ -2,7 +2,7 @@ import { create } from "zustand"
 import * as SecureStore from "expo-secure-store"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { type Category, defaultPreferences } from "../lib/notifications"
-import { clampPageSize, clampSessionPageSize, normalizeStoredSettings } from "../lib/settings-merge"
+import { clampPageSize, clampProjectPageSize, clampSessionPageSize, normalizeStoredSettings } from "../lib/settings-merge"
 import { setAppLocale } from "../lib/i18n/config"
 import { isLocalePreference, type LocalePreference } from "../lib/i18n/locale-resolve"
 import { loadMigratedSettings } from "../lib/settings-storage"
@@ -13,6 +13,7 @@ export const SETTINGS_KEY = "opencode_settings"
 interface Settings {
   pageSize: number
   sessionPageSize: number
+  projectPageSize: number
   notifications: Record<Category, boolean>
   locale: LocalePreference
 }
@@ -20,6 +21,7 @@ interface Settings {
 const DEFAULTS: Settings = {
   pageSize: 25,
   sessionPageSize: 10,
+  projectPageSize: 5,
   notifications: { ...defaultPreferences },
   locale: "system",
 }
@@ -29,6 +31,7 @@ interface SettingsState extends Settings {
   load: () => Promise<void>
   setPageSize: (size: number) => Promise<void>
   setSessionPageSize: (size: number) => Promise<void>
+  setProjectPageSize: (size: number) => Promise<void>
   setNotification: (category: Category, enabled: boolean) => Promise<void>
   setLocale: (locale: LocalePreference) => Promise<void>
 }
@@ -37,6 +40,7 @@ function snapshot(get: () => SettingsState): Settings {
   return {
     pageSize: get().pageSize,
     sessionPageSize: get().sessionPageSize,
+    projectPageSize: get().projectPageSize,
     notifications: get().notifications,
     locale: get().locale,
   }
@@ -96,6 +100,13 @@ export const useSettings = create<SettingsState>((set, get) => ({
   setSessionPageSize: async (size) => {
     await get().load()
     const next = { ...snapshot(get), sessionPageSize: clampSessionPageSize(size) }
+    set(next)
+    await enqueuePersist(next)
+  },
+
+  setProjectPageSize: async (size) => {
+    await get().load()
+    const next = { ...snapshot(get), projectPageSize: clampProjectPageSize(size) }
     set(next)
     await enqueuePersist(next)
   },

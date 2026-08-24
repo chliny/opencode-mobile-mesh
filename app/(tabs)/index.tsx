@@ -118,6 +118,7 @@ function SessionItem({
 type ListRow =
   | { type: "header"; directory: string; shortName: string; count: number; collapsed: boolean }
   | { type: "session"; session: Session }
+  | { type: "session-pager"; directory: string; page: number; pageCount: number }
 
 function GroupHeader({
   row,
@@ -145,6 +146,88 @@ function GroupHeader({
         color={isDark ? "#9a9a9a" : "#999999"}
       />
     </TouchableOpacity>
+  )
+}
+
+function SessionPager({
+  page,
+  pageCount,
+  isDark,
+  onPrevious,
+  onNext,
+}: {
+  page: number
+  pageCount: number
+  isDark: boolean
+  onPrevious: () => void
+  onNext: () => void
+}) {
+  return (
+    <View style={[styles.pagination, isDark && styles.paginationDark]}>
+      <TouchableOpacity
+        style={[styles.pageButton, page === 0 && styles.pageButtonDisabled]}
+        onPress={onPrevious}
+        disabled={page === 0}
+        testID="sessions-page-previous"
+      >
+        <Ionicons name="chevron-back" size={18} color={page === 0 ? "#9a9a9a" : isDark ? "#ffffff" : "#0a0a0a"} />
+      </TouchableOpacity>
+      <Text style={[styles.pageLabel, isDark && styles.metaDark]}>
+        {page + 1} / {pageCount}
+      </Text>
+      <TouchableOpacity
+        style={[styles.pageButton, page === pageCount - 1 && styles.pageButtonDisabled]}
+        onPress={onNext}
+        disabled={page === pageCount - 1}
+        testID="sessions-page-next"
+      >
+        <Ionicons
+          name="chevron-forward"
+          size={18}
+          color={page === pageCount - 1 ? "#9a9a9a" : isDark ? "#ffffff" : "#0a0a0a"}
+        />
+      </TouchableOpacity>
+    </View>
+  )
+}
+
+function ProjectPager({
+  page,
+  pageCount,
+  isDark,
+  onPrevious,
+  onNext,
+}: {
+  page: number
+  pageCount: number
+  isDark: boolean
+  onPrevious: () => void
+  onNext: () => void
+}) {
+  return (
+    <View style={[styles.projectPagination, isDark && styles.projectPaginationDark]}>
+      <View style={styles.projectPaginationControls}>
+        <TouchableOpacity
+          style={[styles.projectPageButton, isDark && styles.projectPageButtonDark, page === 0 && styles.projectPageButtonDisabled]}
+          onPress={onPrevious}
+          disabled={page === 0}
+          testID="projects-page-previous"
+        >
+          <Ionicons name="chevron-back" size={17} color={page === 0 ? "#9a9a9a" : isDark ? "#ffffff" : "#6d28d9"} />
+        </TouchableOpacity>
+        <Text style={[styles.projectPageLabel, isDark && styles.projectPaginationTextDark]}>
+          {page + 1} / {pageCount}
+        </Text>
+        <TouchableOpacity
+          style={[styles.projectPageButton, isDark && styles.projectPageButtonDark, page === pageCount - 1 && styles.projectPageButtonDisabled]}
+          onPress={onNext}
+          disabled={page === pageCount - 1}
+          testID="projects-page-next"
+        >
+          <Ionicons name="chevron-forward" size={17} color={page === pageCount - 1 ? "#9a9a9a" : isDark ? "#ffffff" : "#6d28d9"} />
+        </TouchableOpacity>
+      </View>
+    </View>
   )
 }
 
@@ -195,6 +278,7 @@ export default function SessionsScreen() {
   const reconnect = useEvents((s) => s.connect)
   const loadCatalog = useCatalog((s) => s.load)
   const sessionPageSize = useSettings((state) => state.sessionPageSize)
+  const projectPageSize = useSettings((state) => state.projectPageSize)
   const dirSheetRef = useRef<BottomSheet>(null)
   const browserSheetRef = useRef<BottomSheet>(null)
   const [browseStartDir, setBrowseStartDir] = useState<string | null>(null)
@@ -205,14 +289,8 @@ export default function SessionsScreen() {
   // Directories collapsed in the grouped session list. Empty by default —
   // all groups start expanded (#67).
   const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(new Set())
-  const [page, setPage] = useState(0)
-
-  const pageCount = Math.max(1, Math.ceil(sessions.length / sessionPageSize))
-  const pageSessions = useMemo(() => sessionPage(sessions, page, sessionPageSize), [sessions, page, sessionPageSize])
-
-  useEffect(() => {
-    setPage((current) => Math.min(current, pageCount - 1))
-  }, [pageCount])
+  const [pages, setPages] = useState<Record<string, number>>({})
+  const [projectPage, setProjectPage] = useState(0)
 
   const toggleGroup = useCallback((directory: string) => {
     setCollapsedDirs((prev) => {
@@ -223,16 +301,22 @@ export default function SessionsScreen() {
     })
   }, [])
 
-  // Flatten sessions into header+item rows. Skip headers entirely when
-  // everything lives in one directory — a lone header adds noise, not clarity.
+  const setSessionPage = useCallback((directory: string, page: number) => {
+    setPages((current) => ({ ...current, [directory]: page }))
+  }, [])
+
+  // Flatten the current project page into header+item rows. A separate pager
+  // controls projects, while each project keeps its own session pager.
   const rows = useMemo<ListRow[]>(() => {
-    const groups = groupByDirectory(pageSessions)
-    if (groups.length <= 1) {
-      return pageSessions.map((session) => ({ type: "session", session }))
-    }
+    const groups = groupByDirectory(sessions)
     const out: ListRow[] = []
-    for (const group of groups) {
+    const pageCount = Math.ceil(groups.length / projectPageSize)
+    const page = Math.min(projectPage, Math.max(0, pageCount - 1))
+    const visibleGroups = groups.slice(page * projectPageSize, (page + 1) * projectPageSize)
+    for (const group of visibleGroups) {
       const collapsed = collapsedDirs.has(group.directory)
+      const pageCount = Math.ceil(group.items.length / sessionPageSize)
+      const page = Math.min(pages[group.directory] || 0, pageCount - 1)
       out.push({
         type: "header",
         directory: group.directory,
@@ -241,11 +325,15 @@ export default function SessionsScreen() {
         collapsed,
       })
       if (!collapsed) {
-        for (const session of group.items) out.push({ type: "session", session })
+        for (const session of sessionPage(group.items, page, sessionPageSize)) out.push({ type: "session", session })
+        if (pageCount > 1) out.push({ type: "session-pager", directory: group.directory, page, pageCount })
       }
     }
     return out
-  }, [pageSessions, collapsedDirs])
+  }, [sessions, collapsedDirs, pages, projectPage, projectPageSize, sessionPageSize])
+
+  const projectPageCount = Math.ceil(groupByDirectory(sessions).length / projectPageSize)
+  const visibleProjectPage = Math.min(projectPage, Math.max(0, projectPageCount - 1))
 
   // Fetch server-known projects when the new session modal opens
   useEffect(() => {
@@ -259,7 +347,6 @@ export default function SessionsScreen() {
   const handleSwitchDirectory = useCallback(
     async (dir?: string) => {
       await switchDirectory(dir)
-      setPage(0)
       loadSessions()
       refreshProject()
       loadCatalog()
@@ -278,7 +365,6 @@ export default function SessionsScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    setPage(0)
     try {
       await Promise.all([loadSessions(), refreshProject()])
     } catch (err) {
@@ -574,66 +660,63 @@ export default function SessionsScreen() {
 
       <UpdateBanner isDark={isDark} />
 
-      <FlatList
-        data={rows}
-        keyExtractor={(row) => (row.type === "header" ? `dir:${row.directory}` : row.session.id)}
-        renderItem={({ item: row }) =>
-          row.type === "header" ? (
-            <GroupHeader row={row} isDark={isDark} onToggle={() => toggleGroup(row.directory)} />
-          ) : (
-            <SessionItem
-              session={row.session}
+      <View style={styles.listContainer}>
+        <FlatList
+          data={rows}
+          keyExtractor={(row) =>
+            row.type === "header" ? `dir:${row.directory}` : row.type === "session-pager" ? `pager:${row.directory}` : row.session.id
+          }
+          renderItem={({ item: row }) =>
+            row.type === "header" ? (
+              <GroupHeader row={row} isDark={isDark} onToggle={() => toggleGroup(row.directory)} />
+            ) : row.type === "session-pager" ? (
+              <SessionPager
+                page={row.page}
+                pageCount={row.pageCount}
+                isDark={isDark}
+                onPrevious={() => setSessionPage(row.directory, row.page - 1)}
+                onNext={() => setSessionPage(row.directory, row.page + 1)}
+              />
+            ) : (
+              <SessionItem
+                session={row.session}
+                isDark={isDark}
+                onRename={() => handleRename(row.session)}
+                onDelete={() => handleDelete(row.session)}
+              />
+            )
+          }
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isDark ? "#ffffff" : "#0a0a0a"} />
+          }
+          ListEmptyComponent={
+            isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={isDark ? "#ffffff" : "#0a0a0a"} />
+              </View>
+            ) : (
+              <View style={styles.emptyList}>
+                <Text style={[styles.emptyListText, isDark && styles.metaDark]}>{t("sessionsList.empty.noSessions")}</Text>
+              </View>
+            )
+          }
+          contentContainerStyle={[
+            sessions.length === 0 ? styles.emptyContent : undefined,
+            projectPageCount > 1 && styles.projectPagerContentInset,
+          ]}
+        />
+        {projectPageCount > 1 && (
+          <View style={styles.projectPagerOverlay}>
+            <ProjectPager
+              page={visibleProjectPage}
+              pageCount={projectPageCount}
               isDark={isDark}
-              onRename={() => handleRename(row.session)}
-              onDelete={() => handleDelete(row.session)}
+              onPrevious={() => setProjectPage((current) => Math.max(0, current - 1))}
+              onNext={() => setProjectPage((current) => current + 1)}
             />
-          )
-        }
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isDark ? "#ffffff" : "#0a0a0a"} />
-        }
-        ListEmptyComponent={
-          isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={isDark ? "#ffffff" : "#0a0a0a"} />
-            </View>
-          ) : (
-            <View style={styles.emptyList}>
-              <Text style={[styles.emptyListText, isDark && styles.metaDark]}>{t("sessionsList.empty.noSessions")}</Text>
-            </View>
-          )
-        }
-        ListFooterComponent={
-          sessions.length > sessionPageSize ? (
-            <View style={styles.pagination}>
-              <TouchableOpacity
-                style={[styles.pageButton, page === 0 && styles.pageButtonDisabled]}
-                onPress={() => setPage((current) => current - 1)}
-                disabled={page === 0}
-                testID="sessions-page-previous"
-              >
-                <Ionicons name="chevron-back" size={18} color={page === 0 ? "#9a9a9a" : isDark ? "#ffffff" : "#0a0a0a"} />
-              </TouchableOpacity>
-              <Text style={[styles.pageLabel, isDark && styles.metaDark]}>
-                {t("sessionsList.pagination.page", { page: page + 1, total: pageCount })}
-              </Text>
-              <TouchableOpacity
-                style={[styles.pageButton, page === pageCount - 1 && styles.pageButtonDisabled]}
-                onPress={() => setPage((current) => current + 1)}
-                disabled={page === pageCount - 1}
-                testID="sessions-page-next"
-              >
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={page === pageCount - 1 ? "#9a9a9a" : isDark ? "#ffffff" : "#0a0a0a"}
-                />
-              </TouchableOpacity>
-            </View>
-          ) : null
-        }
-        contentContainerStyle={sessions.length === 0 ? styles.emptyContent : undefined}
-      />
+          </View>
+        )}
+      </View>
 
       {/* FAB to create new session */}
       <TouchableOpacity
@@ -1015,7 +1098,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
+    marginHorizontal: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e5e5",
     paddingVertical: 16,
+  },
+  paginationDark: {
+    borderTopColor: "#1a1a1a",
+  },
+  listContainer: {
+    flex: 1,
+  },
+  projectPagerOverlay: {
+    position: "absolute",
+    top: 8,
+    right: 12,
+    zIndex: 2,
+  },
+  projectPagerContentInset: {
+    paddingTop: 58,
   },
   pageButton: {
     width: 36,
@@ -1033,6 +1134,68 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
     color: "#666666",
+  },
+  projectPagination: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 18,
+    backgroundColor: "#ede9fe",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  projectPaginationDark: {
+    backgroundColor: "#312e81",
+  },
+  projectPaginationTitle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
+  projectPaginationText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#6d28d9",
+  },
+  projectPaginationTextDark: {
+    color: "#c4b5fd",
+  },
+  projectPaginationCount: {
+    fontSize: 12,
+    color: "#7c3aed",
+  },
+  projectPaginationControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  projectPageButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ede9fe",
+  },
+  projectPageButtonDark: {
+    backgroundColor: "#312e81",
+  },
+  projectPageButtonDisabled: {
+    opacity: 0.45,
+  },
+  projectPageLabel: {
+    minWidth: 42,
+    fontSize: 12,
+    fontWeight: "600",
+    textAlign: "center",
+    color: "#6d28d9",
   },
   sessionItem: {
     flexDirection: "row",

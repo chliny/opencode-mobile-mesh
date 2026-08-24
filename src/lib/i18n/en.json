@@ -41,11 +41,10 @@
       "disabledNotice": "Notifications are disabled at the system level. Enable them in Settings to receive alerts."
     },
     "sessions": {
-      "pageSizeLabel": "Sessions per page",
-      "pageSizeDescription": "Limit the session list so projects are easier to browse.",
-      "pageSizeTitle": "Sessions per page",
-      "pageSizeOption": "{{count}} sessions",
-      "pageSizeValue": "{{count}} per page"
+      "pageSizeLabel": "Sessions per project",
+      "pageSizeDescription": "Limit each project's session list so projects are easier to browse.",
+      "projectPageSizeLabel": "Projects per page",
+      "projectPageSizeDescription": "Choose how many projects to show on each list page."
     },
     "privacy": {
       "crashReporting": {
@@ -294,10 +293,15 @@
     "preferences": {
       "title": "Preferences",
       "pageSizeLabel": "Messages per page",
-      "pageSizeHint": "How many messages to load when opening a session. Lower = faster."
+      "pageSizeHint": "How many messages to load when opening a session. Lower = faster.",
+      "sessionPageSizeLabel": "Sessions per project",
+      "sessionPageSizeHint": "How many sessions to show for each project at a time."
     }
   },
   "sessionsList": {
+    "pagination": {
+      "projects": "Projects"
+    },
     "untitledSession": "Untitled Session",
     "time": {
       "justNow": "Just now",
@@ -306,9 +310,6 @@
       "daysAgo": "{{count}}d ago"
     },
     "filesCount": "{{count}} files",
-    "pagination": {
-      "page": "Page {{page}} of {{total}}"
-    },
     "actions": {
       "rename": "Rename"
     },

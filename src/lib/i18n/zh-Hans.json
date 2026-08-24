@@ -41,11 +41,10 @@
       "disabledNotice": "通知已在系统层面关闭。请在系统设置中启用通知以接收提醒。"
     },
     "sessions": {
-      "pageSizeLabel": "每页会话数",
-      "pageSizeDescription": "限制会话列表数量，方便浏览不同项目。",
-      "pageSizeTitle": "每页会话数",
-      "pageSizeOption": "{{count}} 个会话",
-      "pageSizeValue": "每页 {{count}} 个"
+      "pageSizeLabel": "每个项目的会话数",
+      "pageSizeDescription": "限制每个项目的会话列表数量，方便浏览不同项目。",
+      "projectPageSizeLabel": "每页项目数",
+      "projectPageSizeDescription": "选择每个列表页面显示的项目数量。"
     },
     "privacy": {
       "crashReporting": {
@@ -294,10 +293,15 @@
     "preferences": {
       "title": "偏好设置",
       "pageSizeLabel": "每页消息数",
-      "pageSizeHint": "打开会话时加载的消息数量。数值越小加载越快。"
+      "pageSizeHint": "打开会话时加载的消息数量。数值越小加载越快。",
+      "sessionPageSizeLabel": "每个项目的会话数",
+      "sessionPageSizeHint": "每个项目同时显示的会话数量。"
     }
   },
   "sessionsList": {
+    "pagination": {
+      "projects": "项目"
+    },
     "untitledSession": "未命名会话",
     "time": {
       "justNow": "刚刚",
@@ -306,9 +310,6 @@
       "daysAgo": "{{count}} 天前"
     },
     "filesCount": "{{count}} 个文件",
-    "pagination": {
-      "page": "第 {{page}} / {{total}} 页"
-    },
     "actions": {
       "rename": "重命名"
     },

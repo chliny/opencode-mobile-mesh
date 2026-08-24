@@ -78,7 +78,16 @@ export default function SettingsScreen() {
   const { t } = useTranslation()
 
   const { settings, hasBiometrics, updateSettings, lock } = useAuth()
-  const { notifications, setNotification, sessionPageSize, setSessionPageSize, locale, setLocale } = useSettings()
+  const {
+    notifications,
+    setNotification,
+    sessionPageSize,
+    setSessionPageSize,
+    projectPageSize,
+    setProjectPageSize,
+    locale,
+    setLocale,
+  } = useSettings()
   const [osGranted, setOsGranted] = useState<boolean | null>(null)
   const [telemetryUpdating, setTelemetryUpdating] = useState(false)
 
@@ -176,16 +185,6 @@ export default function SettingsScreen() {
     ])
   }, [t, setLocale, localeLabels])
 
-  const handleSessionPageSizePress = useCallback(() => {
-    Alert.alert(t("settings.sessions.pageSizeTitle"), undefined, [
-      ...SESSION_PAGE_SIZE_OPTIONS.map((size) => ({
-        text: t("settings.sessions.pageSizeOption", { count: size }),
-        onPress: () => setSessionPageSize(size),
-      })),
-      { text: t("common.cancel"), style: "cancel" },
-    ])
-  }, [setSessionPageSize, t])
-
   return (
     <ScrollView style={[styles.container, isDark && styles.containerDark]} contentContainerStyle={styles.content}>
       <SettingSection title={t("settings.sections.security")} isDark={isDark}>
@@ -262,24 +261,6 @@ export default function SettingsScreen() {
         )}
       </SettingSection>
 
-      <SettingSection title={t("settings.sections.sessions")} isDark={isDark}>
-        <SettingRow
-          icon="albums-outline"
-          label={t("settings.sessions.pageSizeLabel")}
-          description={t("settings.sessions.pageSizeDescription")}
-          isDark={isDark}
-          onPress={handleSessionPageSizePress}
-          right={
-            <View style={styles.settingValue}>
-              <Text style={[styles.settingValueText, isDark && styles.metaDark]}>
-                {t("settings.sessions.pageSizeValue", { count: sessionPageSize })}
-              </Text>
-              <Ionicons name="chevron-forward" size={20} color={isDark ? "#9a9a9a" : "#999999"} />
-            </View>
-          }
-        />
-      </SettingSection>
-
       <SettingSection title={t("settings.sections.privacy")} isDark={isDark}>
         <SettingRow
           icon="shield-checkmark"
@@ -295,6 +276,79 @@ export default function SettingsScreen() {
             />
           }
         />
+      </SettingSection>
+
+      <SettingSection title={t("settings.sections.sessions")} isDark={isDark}>
+        <View style={[styles.settingRow, isDark && styles.settingRowDark]}>
+          <View style={[styles.settingIcon, isDark && styles.settingIconDark]}>
+            <Ionicons name="albums-outline" size={22} color={isDark ? "#ffffff" : "#0a0a0a"} />
+          </View>
+          <View style={styles.settingContent}>
+            <Text style={[styles.settingLabel, isDark && styles.textDark]}>{t("settings.sessions.pageSizeLabel")}</Text>
+            <Text style={[styles.settingDescription, isDark && styles.metaDark]}>
+              {t("settings.sessions.pageSizeDescription")}
+            </Text>
+            <View style={styles.pagePicker}>
+              {SESSION_PAGE_SIZE_OPTIONS.map((size) => (
+                <TouchableOpacity
+                  key={size}
+                  style={[
+                    styles.pageOption,
+                    isDark && styles.pageOptionDark,
+                    sessionPageSize === size && styles.pageOptionActive,
+                    sessionPageSize === size && isDark && styles.pageOptionActiveDark,
+                  ]}
+                  onPress={() => setSessionPageSize(size)}
+                >
+                  <Text
+                    style={[
+                      styles.pageOptionText,
+                      isDark && styles.metaDark,
+                      sessionPageSize === size && styles.pageOptionTextActive,
+                    ]}
+                  >
+                    {size}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+        <View style={[styles.settingRow, isDark && styles.settingRowDark]}>
+          <View style={[styles.settingIcon, isDark && styles.settingIconDark]}>
+            <Ionicons name="folder-outline" size={22} color={isDark ? "#ffffff" : "#0a0a0a"} />
+          </View>
+          <View style={styles.settingContent}>
+            <Text style={[styles.settingLabel, isDark && styles.textDark]}>{t("settings.sessions.projectPageSizeLabel")}</Text>
+            <Text style={[styles.settingDescription, isDark && styles.metaDark]}>
+              {t("settings.sessions.projectPageSizeDescription")}
+            </Text>
+            <View style={styles.pagePicker}>
+              {[3, 5, 10, 15, 20].map((size) => (
+                <TouchableOpacity
+                  key={size}
+                  style={[
+                    styles.pageOption,
+                    isDark && styles.pageOptionDark,
+                    projectPageSize === size && styles.pageOptionActive,
+                    projectPageSize === size && isDark && styles.pageOptionActiveDark,
+                  ]}
+                  onPress={() => setProjectPageSize(size)}
+                >
+                  <Text
+                    style={[
+                      styles.pageOptionText,
+                      isDark && styles.metaDark,
+                      projectPageSize === size && styles.pageOptionTextActive,
+                    ]}
+                  >
+                    {size}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
       </SettingSection>
 
       <SettingSection title={t("settings.sections.about")} isDark={isDark}>
@@ -412,14 +466,39 @@ const styles = StyleSheet.create({
   settingContent: {
     flex: 1,
   },
-  settingValue: {
+  pagePicker: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 10,
   },
-  settingValueText: {
-    fontSize: 14,
+  pageOption: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e5e5e5",
+    backgroundColor: "#f5f5f5",
+  },
+  pageOptionDark: {
+    borderColor: "#2a2a2a",
+    backgroundColor: "#1a1a1a",
+  },
+  pageOptionActive: {
+    backgroundColor: "#0a0a0a",
+    borderColor: "#0a0a0a",
+  },
+  pageOptionActiveDark: {
+    backgroundColor: "#3b82f6",
+    borderColor: "#3b82f6",
+  },
+  pageOptionText: {
+    fontSize: 13,
+    fontWeight: "500",
     color: "#666666",
+  },
+  pageOptionTextActive: {
+    color: "#ffffff",
   },
   settingLabel: {
     fontSize: 16,

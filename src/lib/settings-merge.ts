@@ -13,6 +13,11 @@ export function clampSessionPageSize(size: number): number {
   return Math.max(5, Math.min(30, Math.round(size)))
 }
 
+export function clampProjectPageSize(size: number): number {
+  if (!Number.isFinite(size)) return 5
+  return Math.max(3, Math.min(20, Math.round(size)))
+}
+
 /**
  * Merge stored settings over defaults. Stored values win, but any top-level field
  * or notification category missing from storage falls back to its default — so a
@@ -33,6 +38,7 @@ export function mergeStoredSettings<T extends { notifications: Record<string, bo
 export function normalizeStoredSettings<T extends {
   pageSize: number
   sessionPageSize: number
+  projectPageSize: number
   notifications: Record<string, boolean>
   locale: string
 }>(raw: string, defaults: T, isLocale: (value: unknown) => value is T["locale"]): T | null {
@@ -53,9 +59,11 @@ export function normalizeStoredSettings<T extends {
     const pageSize = typeof parsed.pageSize === "number" ? clampPageSize(parsed.pageSize) : defaults.pageSize
     const sessionPageSize =
       typeof parsed.sessionPageSize === "number" ? clampSessionPageSize(parsed.sessionPageSize) : defaults.sessionPageSize
+    const projectPageSize =
+      typeof parsed.projectPageSize === "number" ? clampProjectPageSize(parsed.projectPageSize) : defaults.projectPageSize
     const locale = isLocale(parsed.locale) ? parsed.locale : defaults.locale
 
-    return { ...defaults, pageSize, sessionPageSize, notifications, locale }
+    return { ...defaults, pageSize, sessionPageSize, projectPageSize, notifications, locale }
   } catch {
     return null
   }
