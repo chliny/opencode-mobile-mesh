@@ -42,6 +42,8 @@ interface SessionsState {
   fileContexts: Record<string, PromptFileReference[]>
   loadingMore: boolean
   hasMore: boolean
+  // Call failures belong to a specific transcript, not the sessions list.
+  sessionErrors: Record<string, string>
   error: string | null
 
   // Actions
@@ -132,6 +134,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
   fileContexts: {},
   loadingMore: false,
   hasMore: false,
+  sessionErrors: {},
   error: null,
 
   setDraft: (sessionID, text) =>
@@ -318,6 +321,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
       set((state) => ({
         sessions: state.sessions.filter((s) => s.id !== sessionID),
         drafts: Object.fromEntries(Object.entries(state.drafts).filter(([id]) => id !== sessionID)),
+        sessionErrors: Object.fromEntries(Object.entries(state.sessionErrors).filter(([id]) => id !== sessionID)),
         currentSession: state.currentSession?.id === sessionID ? null : state.currentSession,
         messages: state.currentSession?.id === sessionID ? [] : state.messages,
         parts: state.currentSession?.id === sessionID ? {} : state.parts,
@@ -337,7 +341,11 @@ export const useSessions = create<SessionsState>((set, get) => ({
     }
 
     try {
-      set((state) => ({ sending: { ...state.sending, [session.id]: true }, error: null }))
+      set((state) => {
+        const sessionErrors = { ...state.sessionErrors }
+        delete sessionErrors[session.id]
+        return { sending: { ...state.sending, [session.id]: true }, sessionErrors, error: null }
+      })
       track(AnalyticsEvent.MessageSent)
 
       // Add user message optimistically
@@ -413,7 +421,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
       console.error("[sendMessage] error:", err)
       const stillCurrent = get().currentSession?.id === session.id
       set((state) => ({
-        ...(stillCurrent ? { error: String(err) } : {}),
+        sessionErrors: { ...state.sessionErrors, [session.id]: err instanceof Error ? err.message : String(err) },
         sending: { ...state.sending, [session.id]: false },
       }))
       if (stillCurrent) get().refreshMessages()

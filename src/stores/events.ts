@@ -286,6 +286,11 @@ export const useEvents = create<EventsState>((set, get) => ({
               if (status.type === "busy") {
                 erroredSessions.delete(sessionID)
                 abortedSessions.delete(sessionID)
+                useSessions.setState((state) => {
+                  const sessionErrors = { ...state.sessionErrors }
+                  delete sessionErrors[sessionID]
+                  return { sessionErrors }
+                })
               }
 
               set((state) => ({
@@ -387,10 +392,7 @@ export const useEvents = create<EventsState>((set, get) => ({
               // Clear sending state unconditionally — SSE is truth
               useSessions.setState((state) => ({
                 sending: { ...state.sending, [sessionID]: false },
-                // Surface error only if user is viewing this session
-                ...(state.currentSession?.id === sessionID
-                  ? { error: errorText }
-                  : {}),
+                sessionErrors: { ...state.sessionErrors, [sessionID]: errorText },
               }))
               if (useSessions.getState().currentSession?.id === sessionID) {
                 useSessions.getState().refreshMessages()

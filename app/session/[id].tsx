@@ -126,6 +126,7 @@ export default function SessionScreen() {
   const loadingMore = useSessions((state) => (isFocused ? state.loadingMore : false))
   const hasMore = useSessions((state) => (isFocused ? state.hasMore : false))
   const error = useSessions((state) => (isFocused ? state.error : null))
+  const sessionError = useSessions((state) => (isFocused && id ? state.sessionErrors[id] : undefined))
   const selectSession = useSessions((state) => state.selectSession)
   const setDraft = useSessions((state) => state.setDraft)
   const clearDraft = useSessions((state) => state.clearDraft)
@@ -965,6 +966,12 @@ export default function SessionScreen() {
             <Text style={s.bannerText}>{t("session.banners.connected")}</Text>
           </View>
         )}
+        {transcriptBound && sessionError && (
+          <View style={[s.banner, s.bannerError]}>
+            <Ionicons name="alert-circle-outline" size={16} color="#ffffff" />
+            <Text style={[s.bannerText, s.bannerErrorText]}>{sessionError}</Text>
+          </View>
+        )}
 
         {/* Pending revert (from "Edit message") — offer a way back before it's
             cleaned up by the next prompt. */}
@@ -1464,6 +1471,9 @@ const s = StyleSheet.create({
   dirBadgeDark: { backgroundColor: "#1a1a1a" },
   dirText: { fontSize: 12, color: "#666666", fontWeight: "500" },
   dirTextDark: { color: "#888888" },
+
+  bannerError: { backgroundColor: "#dc2626" },
+  bannerErrorText: { flex: 1 },
 
   // SSE reconnect/connected banner
   banner: {

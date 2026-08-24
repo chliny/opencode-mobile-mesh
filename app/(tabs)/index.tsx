@@ -656,7 +656,9 @@ export default function SessionsScreen() {
 
       {error && (
         <View style={styles.errorBar}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText} numberOfLines={1} ellipsizeMode="tail">
+            {error}
+          </Text>
         </View>
       )}
 
@@ -1066,6 +1068,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#dc2626",
     fontSize: 14,
+    flexShrink: 1,
   },
   groupHeader: {
     flexDirection: "row",
