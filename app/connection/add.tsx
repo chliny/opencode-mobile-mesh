@@ -452,9 +452,8 @@ export default function AddConnectionScreen() {
         {[
           { type: "local" as const, label: t("connection.shared.types.local"), icon: "wifi" as const },
           { type: "tunnel" as const, label: t("connection.shared.types.tunnel"), icon: "globe" as const },
-          { type: "cloud" as const, label: t("connection.shared.types.cloud"), icon: "cloud" as const },
-           { type: "zerotier" as const, label: t("connection.shared.types.zerotier"), icon: "git-network" as const },
-           { type: "tailscale" as const, label: t("connection.shared.types.tailscale"), icon: "git-branch" as const },
+          { type: "zerotier" as const, label: t("connection.shared.types.zerotier"), icon: "git-network" as const },
+          { type: "tailscale" as const, label: t("connection.shared.types.tailscale"), icon: "git-branch" as const },
         ].map((opt) => (
           <TouchableOpacity
             key={opt.type}

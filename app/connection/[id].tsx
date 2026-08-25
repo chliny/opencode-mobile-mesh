@@ -36,7 +36,6 @@ const CONNECTION_TYPES: Array<{
 }> = [
   { type: "local", labelKey: "connection.shared.types.local", icon: "wifi" },
   { type: "tunnel", labelKey: "connection.shared.types.tunnel", icon: "globe" },
-  { type: "cloud", labelKey: "connection.shared.types.cloud", icon: "cloud" },
   { type: "zerotier", labelKey: "connection.shared.types.zerotier", icon: "git-network" },
   { type: "tailscale", labelKey: "connection.shared.types.tailscale", icon: "git-branch" },
 ]

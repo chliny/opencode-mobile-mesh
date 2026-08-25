@@ -175,7 +175,6 @@
       "types": {
         "local": "Local",
         "tunnel": "Tunnel",
-        "cloud": "Cloud",
         "zerotier": "ZeroTier",
         "tailscale": "Tailscale"
       },

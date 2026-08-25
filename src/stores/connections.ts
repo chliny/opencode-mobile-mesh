@@ -159,7 +159,12 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         SecureStore.getItemAsync(CONNECTIONS_KEY),
         SecureStore.getItemAsync(RECENT_DIRS_KEY),
       ])
-      const connections: ServerConnection[] = stored ? JSON.parse(stored) : []
+      const saved: Array<ServerConnection | (Omit<ServerConnection, "type"> & { type: "cloud" })> = stored
+        ? JSON.parse(stored)
+        : []
+      const connections: ServerConnection[] = saved.map((connection) => (
+        connection.type === "cloud" ? { ...connection, type: "tunnel" } : connection
+      ))
       const recentDirectories: string[] = recentRaw ? JSON.parse(recentRaw) : []
 
       // Find active connection

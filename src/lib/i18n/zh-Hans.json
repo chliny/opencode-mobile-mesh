@@ -175,7 +175,6 @@
       "types": {
         "local": "本地",
         "tunnel": "隧道",
-        "cloud": "云端",
         "zerotier": "ZeroTier",
         "tailscale": "Tailscale"
       },

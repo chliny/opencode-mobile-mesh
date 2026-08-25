@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"net/netip"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,6 +21,7 @@ import (
 
 	"tailscale.com/client/local"
 	"tailscale.com/ipn"
+	"tailscale.com/net/netmon"
 	"tailscale.com/tsnet"
 )
 
@@ -105,6 +107,14 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 		// Login URLs are read from the structured LocalAPI/IPN bus, never logs.
 		Logf:     func(string, ...any) {},
 		UserLogf: func(string, ...any) {},
+	}
+	if runtime.GOOS == "android" {
+		// Android blocks the netlink query used by Go's net.Interfaces. tsnet
+		// only needs this list for reachability bookkeeping; socket dialing is
+		// still handled by Android's normal network stack.
+		netmon.RegisterInterfaceGetter(func() ([]netmon.Interface, error) {
+			return nil, nil
+		})
 	}
 	if err := server.Start(); err != nil {
 		return setErrorLocked(err)

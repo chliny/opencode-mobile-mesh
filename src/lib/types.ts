@@ -1,5 +1,5 @@
 // Connection types for multiple server support
-export type ConnectionType = "local" | "tunnel" | "cloud" | "zerotier" | "tailscale"
+export type ConnectionType = "local" | "tunnel" | "zerotier" | "tailscale"
 
 export interface ZeroTierPlanet {
   // Content-addressed identifier of the copy in the app's private storage.
