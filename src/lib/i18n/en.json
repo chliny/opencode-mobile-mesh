@@ -176,7 +176,8 @@
         "local": "Local",
         "tunnel": "Tunnel",
         "cloud": "Cloud",
-        "zerotier": "ZeroTier"
+        "zerotier": "ZeroTier",
+        "tailscale": "Tailscale"
       },
       "name": "Name",
       "namePlaceholder": "My Server",
@@ -216,6 +217,17 @@
       "selectedPlanet": "{{name}} · SHA-256 {{hash}}…",
       "invalidTitle": "Invalid ZeroTier Configuration",
       "importFailedTitle": "Couldn't Import Planet"
+    },
+    "tailscale": {
+      "title": "Embedded Tailscale",
+      "routeHint": "This connection runs an app-local tsnet node and forwards only this OpenCode connection through it. It does not create a system VPN or use Android's VPN slot.",
+      "httpHint": "Use a Tailscale IP or MagicDNS hostname with http://. TCP traffic to the server goes through the embedded relay; HTTPS certificates cannot validate the localhost relay yet.",
+      "authKey": "Tailscale Auth Key",
+      "authKeyRequired": "Enter a tagged, reusable Tailscale auth key.",
+      "authKeyExisting": "Leave empty to keep the saved auth key",
+      "authKeyHint": "Use a tagged, reusable and preferably ephemeral auth key. It is stored only in this device's secure storage, never in the connection profile.",
+      "hostname": "Tailnet Hostname (Optional)",
+      "invalidTitle": "Invalid Tailscale Configuration"
     },
     "add": {
       "quick": {

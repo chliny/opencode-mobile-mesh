@@ -1,0 +1,53 @@
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'me.chliny.opencode.tailscale.module'
+version = '0.1.0'
+
+def repositoryRoot = rootProject.projectDir.parentFile
+
+def buildTsnetAndroid = tasks.register('buildTsnetAndroid', Exec) {
+  workingDir repositoryRoot
+  commandLine 'bash', 'scripts/build-tsnet-android.sh'
+  inputs.files(
+    fileTree('../go') {
+      include 'go.mod', 'go.sum', '**/*.go'
+    },
+    new File(repositoryRoot, 'scripts/build-tsnet-android.sh'),
+  )
+  outputs.dir(file('src/main/jniLibs'))
+}
+
+android {
+  namespace 'me.chliny.opencode.tailscale.module'
+
+  defaultConfig {
+    minSdkVersion 24
+    versionCode 1
+    versionName '0.1.0'
+
+    ndk {
+      abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+    }
+
+    externalNativeBuild {
+      cmake {
+        cppFlags ''
+      }
+    }
+  }
+
+  externalNativeBuild {
+    cmake {
+      path 'CMakeLists.txt'
+      version '3.30.5'
+    }
+  }
+
+  sourceSets {
+    main.jniLibs.srcDirs = ['src/main/jniLibs']
+  }
+}
+
+// The imported Go library must exist before CMake configures the JNI wrapper.
+tasks.named('preBuild').configure { dependsOn(buildTsnetAndroid) }

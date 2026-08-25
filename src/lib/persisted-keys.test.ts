@@ -28,6 +28,7 @@ const ALLOWED_PERSISTED_KEYS = new Map<string, string>([
   ["SETTINGS_KEY", "user's app settings (theme, notification prefs)"],
   ["CONNECTIONS_KEY", "user-entered server connections"],
   ["`${PASSWORDS_PREFIX}${id}`", "user-entered server password, per connection"],
+  ["`${TAILSCALE_AUTH_KEYS_PREFIX}${id}`", "user-entered Tailscale auth key, per connection"],
   ["RECENT_DIRS_KEY", "directories the user picked, for the recents list"],
   ["AUTH_SETTINGS_KEY", "biometric/app-lock preference"],
   ["COUNT_KEY", "store-review: launch counter"],

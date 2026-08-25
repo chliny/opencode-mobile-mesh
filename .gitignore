@@ -9,6 +9,9 @@ android/build/
 android/.kotlin/
 modules/opencode-zerotier/android/.cxx/
 modules/opencode-zerotier/android/build/
+modules/opencode-tailscale/android/.cxx/
+modules/opencode-tailscale/android/build/
+modules/opencode-tailscale/android/src/main/jniLibs/
 ios/Pods/
 *.apk
 *.aab

@@ -8,12 +8,15 @@ import { AnalyticsEvent, classifyConnectionError, track, type ConnectionTestSour
 import { buildAuth } from "../lib/auth"
 import { stripTrailingSlash } from "../lib/path-utils"
 import { embeddedZeroTier } from "@opencode-ai/zerotier"
+import { embeddedTailscale } from "@opencode-ai/tailscale"
 import { parseZeroTierTarget, relayBaseUrl } from "../lib/zerotier-routing"
+import { parseTailscaleTarget, relayBaseUrl as tailscaleRelayBaseUrl } from "../lib/tailscale-routing"
 import i18n from "../lib/i18n/config"
 import { log } from "../lib/logbuffer"
 
 const CONNECTIONS_KEY = "opencode_connections"
 const PASSWORDS_PREFIX = "opencode_password_"
+const TAILSCALE_AUTH_KEYS_PREFIX = "opencode_tailscale_auth_key_"
 const RECENT_DIRS_KEY = "opencode_recent_dirs"
 const MAX_RECENT_DIRS = 10
 // A bad IP (unreachable host, wrong port) otherwise hangs for the full 30s
@@ -45,12 +48,12 @@ interface ConnectionsState {
   recentDirectories: string[]
   isLoading: boolean
   error: string | null
-  routeStatus: "idle" | "checking" | "lan" | "zerotier" | "error"
+  routeStatus: "idle" | "checking" | "lan" | "zerotier" | "tailscale" | "error"
   routeError: string | null
 
   // Actions
   loadConnections: () => Promise<void>
-  addConnection: (connection: Omit<ServerConnection, "id">, password?: string) => Promise<void>
+  addConnection: (connection: Omit<ServerConnection, "id">, password?: string, tailscaleAuthKey?: string) => Promise<void>
   removeConnection: (id: string) => Promise<void>
   setActiveConnection: (id: string) => Promise<void>
   // `source` distinguishes the activation funnel (onboarding) from the edit
@@ -59,8 +62,9 @@ interface ConnectionsState {
     connection: ServerConnection,
     source: ConnectionTestSource,
     password?: string,
+    tailscaleAuthKey?: string,
   ) => Promise<{ ok: boolean; error?: string }>
-  updateConnection: (id: string, updates: Partial<ServerConnection>, password?: string) => Promise<void>
+  updateConnection: (id: string, updates: Partial<ServerConnection>, password?: string, tailscaleAuthKey?: string) => Promise<void>
   refreshProject: () => Promise<void>
   // Create a one-off client pointing at a specific directory (for cross-project operations).
   // Pass undefined to get a directory-less client that queries the server without project scope.
@@ -91,20 +95,40 @@ function buildClient(
 async function resolveConnectionRoute(
   connection: ServerConnection,
   forceRestart = false,
-): Promise<{ baseUrl: string; route: "lan" | "zerotier" }> {
-  if (!connection.zerotier) return { baseUrl: connection.url, route: "lan" }
+  tailscaleAuthKey?: string,
+): Promise<{ baseUrl: string; route: "lan" | "zerotier" | "tailscale" }> {
+  if (!connection.zerotier && !connection.tailscale) return { baseUrl: connection.url, route: "lan" }
 
-  const target = parseZeroTierTarget({ networkId: connection.zerotier.networkId, url: connection.url })
-  const normalizedNetworkId = connection.zerotier.networkId.trim().toLowerCase()
+  if (connection.tailscale) {
+    const target = parseTailscaleTarget(connection.url)
+    const authKey = tailscaleAuthKey || await SecureStore.getItemAsync(`${TAILSCALE_AUTH_KEYS_PREFIX}${connection.id}`)
+    if (!authKey) throw new Error("A Tailscale auth key is required for this embedded connection")
+    // Keep the pre-save test and persisted profile on the same node identity.
+    const profileId = `ts-${(connection.tailscale.hostname || target.host).replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 50)}`
+    const result = await embeddedTailscale.start({
+      profileId,
+      authKey,
+      remoteHost: target.host.replace(/^\[|\]$/g, ""),
+      remotePort: target.port,
+      hostname: connection.tailscale.hostname,
+    })
+    if (result.state !== "ready" || !result.baseUrl) {
+      throw new Error(result.error || "Embedded Tailscale did not become ready")
+    }
+    return { baseUrl: tailscaleRelayBaseUrl(result.baseUrl, target), route: "tailscale" }
+  }
+
+  const target = parseZeroTierTarget({ networkId: connection.zerotier!.networkId, url: connection.url })
+  const normalizedNetworkId = connection.zerotier!.networkId.trim().toLowerCase()
   // Stable across "test" and "save" so the node authorized during the test
   // remains the same identity after the connection receives its database ID.
-  const profileId = `zt-${normalizedNetworkId}-${connection.zerotier.planet?.id.slice(0, 16) || "default"}`
+  const profileId = `zt-${normalizedNetworkId}-${connection.zerotier!.planet?.id.slice(0, 16) || "default"}`
   const result = await embeddedZeroTier.start({
     profileId,
     networkId: normalizedNetworkId,
     remoteHost: target.host.replace(/^\[|\]$/g, ""),
     remotePort: target.port,
-    planetId: connection.zerotier.planet?.id,
+    planetId: connection.zerotier!.planet?.id,
     forceRestart,
   })
   if (result.state === "awaiting_authorization") {
@@ -153,7 +177,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
         const auth = buildAuth(active.username, password)
         // A ZeroTier profile must wait until its app-local libzt relay is ready.
-        if (!active.zerotier) {
+        if (!active.zerotier && !active.tailscale) {
           const built = buildClient(active.url, active.directory, auth)
           client = built.client
           base = built.base
@@ -187,7 +211,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     }
   },
 
-  addConnection: async (connection, password) => {
+  addConnection: async (connection, password, tailscaleAuthKey) => {
     const id = generateId()
     const newConnection: ServerConnection = {
       ...connection,
@@ -201,6 +225,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     if (password) {
       await SecureStore.setItemAsync(`${PASSWORDS_PREFIX}${id}`, password)
     }
+    if (tailscaleAuthKey) await SecureStore.setItemAsync(`${TAILSCALE_AUTH_KEYS_PREFIX}${id}`, tailscaleAuthKey)
 
     await SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(connections))
 
@@ -214,7 +239,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
 
     if (newConnection.active) {
       activeConnection = newConnection
-      if (newConnection.zerotier) {
+      if (newConnection.zerotier || newConnection.tailscale) {
         client = null
         base = null
         project = null
@@ -249,6 +274,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
 
     // Remove stored password
     await SecureStore.deleteItemAsync(`${PASSWORDS_PREFIX}${id}`)
+    await SecureStore.deleteItemAsync(`${TAILSCALE_AUTH_KEYS_PREFIX}${id}`)
     await SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(connections))
 
     // If removing active connection, clear client
@@ -261,7 +287,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         await SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(connections))
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${newActive.id}`)
         const auth = buildAuth(newActive.username, password)
-        const built = newActive.zerotier ? null : buildClient(newActive.url, newActive.directory, auth)
+        const built = newActive.zerotier || newActive.tailscale ? null : buildClient(newActive.url, newActive.directory, auth)
         set({
           connections,
           activeConnection: newActive,
@@ -274,6 +300,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       } else {
         set({ connections, activeConnection: null, client: null, clientBase: null })
         void embeddedZeroTier.stop()
+        void embeddedTailscale.stop()
       }
     } else {
       set({ connections })
@@ -297,7 +324,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     if (active) {
       const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
       const auth = buildAuth(active.username, password)
-      if (!active.zerotier) {
+      if (!active.zerotier && !active.tailscale) {
         const built = buildClient(active.url, active.directory, auth)
         client = built.client
         base = built.base
@@ -321,7 +348,10 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
 
     set({ connections, activeConnection: active, client, clientBase: base, currentProject: project, serverHome: home })
     if (active) void get().refreshActiveRoute()
-    else void embeddedZeroTier.stop()
+    else {
+      void embeddedZeroTier.stop()
+      void embeddedTailscale.stop()
+    }
     addBreadcrumb({
       category: "connection",
       message: active ? `active connection set: ${active.type}` : "active connection cleared",
@@ -329,11 +359,11 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     })
   },
 
-  testConnection: async (connection, source, password) => {
+  testConnection: async (connection, source, password, tailscaleAuthKey) => {
     track(AnalyticsEvent.ConnectionAttempted, { source })
     try {
       const auth = buildAuth(connection.username, password)
-      const resolved = await resolveConnectionRoute(connection)
+      const resolved = await resolveConnectionRoute(connection, false, tailscaleAuthKey)
       const client = createClient({
         baseUrl: resolved.baseUrl,
         directory: connection.directory,
@@ -351,6 +381,12 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           message = `${message}\n\nZeroTier: ${zeroTierStatus.error}`
         }
       }
+      if (connection.tailscale) {
+        const tailscaleStatus = await embeddedTailscale.getStatus().catch(() => null)
+        if (tailscaleStatus?.state === "error" && tailscaleStatus.error && !message.includes(tailscaleStatus.error)) {
+          message = `${message}\n\nTailscale: ${tailscaleStatus.error}`
+        }
+      }
       track(AnalyticsEvent.ConnectionFailed, { source, error_class: classifyConnectionError(message) })
       return { ok: false, error: message }
     } finally {
@@ -362,7 +398,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     }
   },
 
-  updateConnection: async (id, updates, password) => {
+  updateConnection: async (id, updates, password, tailscaleAuthKey) => {
     const connections = get().connections.map((c) => (c.id === id ? { ...c, ...updates } : c))
 
     await SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(connections))
@@ -374,13 +410,14 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     if (password) {
       await SecureStore.setItemAsync(`${PASSWORDS_PREFIX}${id}`, password)
     }
+    if (tailscaleAuthKey) await SecureStore.setItemAsync(`${TAILSCALE_AUTH_KEYS_PREFIX}${id}`, tailscaleAuthKey)
 
     // If updating active connection, recreate client
     if (get().activeConnection?.id === id) {
       const active = connections.find((c) => c.id === id)!
       const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${id}`)
       const auth = buildAuth(active.username, password)
-      if (active.zerotier) {
+      if (active.zerotier || active.tailscale) {
         set({
           connections,
           activeConnection: active,
@@ -474,6 +511,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       try {
         if (!active) {
           await embeddedZeroTier.stop()
+          await embeddedTailscale.stop()
           if (generation === routeGeneration) set({ routeStatus: "idle", routeError: null })
           return
         }
@@ -490,7 +528,8 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         const resolved = await resolveConnectionRoute(active, forceRestart)
         if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
 
-        if (resolved.route === "lan") await embeddedZeroTier.stop()
+        if (resolved.route !== "zerotier") await embeddedZeroTier.stop()
+        if (resolved.route !== "tailscale") await embeddedTailscale.stop()
         if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
 
         if (get().clientBase?.baseUrl === resolved.baseUrl) {

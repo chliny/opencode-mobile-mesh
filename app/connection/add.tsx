@@ -16,9 +16,10 @@ import { router } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useConnections } from "../../src/stores/connections"
-import type { ConnectionType, ZeroTierPlanet } from "../../src/lib/types"
+import type { ConnectionType, TailscaleConnectionConfig, ZeroTierPlanet } from "../../src/lib/types"
 import { embeddedZeroTier } from "@opencode-ai/zerotier"
 import { parseZeroTierTarget } from "../../src/lib/zerotier-routing"
+import { parseTailscaleTarget } from "../../src/lib/tailscale-routing"
 import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { parseUrl } from "../../src/lib/diagnostics-classify"
 import { buildAuth } from "../../src/lib/auth"
@@ -47,6 +48,8 @@ export default function AddConnectionScreen() {
   const [planetImportSource, setPlanetImportSource] = useState<"file" | "base64" | null>(null)
   const isImportingPlanet = planetImportSource !== null
   const [isConnecting, setIsConnecting] = useState(false)
+  const [tailscaleAuthKey, setTailscaleAuthKey] = useState("")
+  const [tailscaleHostname, setTailscaleHostname] = useState("")
 
   const buildUrl = () => {
     if (mode === "advanced") return url.trim()
@@ -146,7 +149,7 @@ export default function AddConnectionScreen() {
       Alert.alert(t("common.error"), t("connection.shared.alerts.enterUrl"))
       return
     }
-    if (type !== "zerotier" && !parseUrl(connectionUrl).valid) {
+    if (type !== "zerotier" && type !== "tailscale" && !parseUrl(connectionUrl).valid) {
       Alert.alert(t("connection.shared.alerts.invalidUrlTitle"), t("connection.shared.alerts.invalidUrlMessage"))
       return
     }
@@ -154,11 +157,26 @@ export default function AddConnectionScreen() {
     const zerotier = type === "zerotier"
       ? { networkId: zeroTierNetworkId.trim(), planet }
       : undefined
+    const tailscale: TailscaleConnectionConfig | undefined = type === "tailscale"
+      ? { hostname: tailscaleHostname.trim() || undefined }
+      : undefined
     if (zerotier) {
       try {
         parseZeroTierTarget({ networkId: zerotier.networkId, url: connectionUrl })
       } catch (error) {
         Alert.alert(t("connection.zerotier.invalidTitle"), error instanceof Error ? error.message : String(error))
+        return
+      }
+    }
+    if (tailscale) {
+      try {
+        parseTailscaleTarget(connectionUrl)
+      } catch (error) {
+        Alert.alert(t("connection.tailscale.invalidTitle"), error instanceof Error ? error.message : String(error))
+        return
+      }
+      if (!tailscaleAuthKey.trim()) {
+        Alert.alert(t("connection.tailscale.invalidTitle"), t("connection.tailscale.authKeyRequired"))
         return
       }
     }
@@ -180,9 +198,11 @@ export default function AddConnectionScreen() {
         directory: directory.trim() || undefined,
         username: username.trim() || undefined,
         zerotier,
+        tailscale,
       },
       "onboarding",
       password || undefined,
+      tailscaleAuthKey.trim() || undefined,
     )
 
     if (result.ok) {
@@ -195,8 +215,10 @@ export default function AddConnectionScreen() {
             directory: directory.trim() || undefined,
             username: username.trim() || undefined,
             zerotier,
+            tailscale,
           },
           password || undefined,
+          tailscaleAuthKey.trim() || undefined,
         )
         setIsConnecting(false)
         router.back()
@@ -213,7 +235,7 @@ export default function AddConnectionScreen() {
     // Failed: same "Connection Failed" alert as Quick Connect — run active
     // diagnostics and offer a shareable report instead of
     // silently persisting an unreachable/unauthorized connection.
-    if (type === "zerotier") {
+    if (type === "zerotier" || type === "tailscale") {
       setIsConnecting(false)
       Alert.alert(
         t("connection.shared.alerts.connectionFailedTitle"),
@@ -431,7 +453,8 @@ export default function AddConnectionScreen() {
           { type: "local" as const, label: t("connection.shared.types.local"), icon: "wifi" as const },
           { type: "tunnel" as const, label: t("connection.shared.types.tunnel"), icon: "globe" as const },
           { type: "cloud" as const, label: t("connection.shared.types.cloud"), icon: "cloud" as const },
-          { type: "zerotier" as const, label: t("connection.shared.types.zerotier"), icon: "git-network" as const },
+           { type: "zerotier" as const, label: t("connection.shared.types.zerotier"), icon: "git-network" as const },
+           { type: "tailscale" as const, label: t("connection.shared.types.tailscale"), icon: "git-branch" as const },
         ].map((opt) => (
           <TouchableOpacity
             key={opt.type}
@@ -479,8 +502,10 @@ export default function AddConnectionScreen() {
         placeholder={
           type === "local"
             ? "http://192.168.1.100:4096"
-            : type === "zerotier"
-              ? "http://10.10.0.8:4096"
+             : type === "zerotier"
+               ? "http://10.10.0.8:4096"
+               : type === "tailscale"
+                 ? "http://100.64.12.34:4096"
               : type === "tunnel"
                 ? "https://your-tunnel.trycloudflare.com"
                 : "https://api.opencode.ai"
@@ -492,9 +517,11 @@ export default function AddConnectionScreen() {
         autoCorrect={false}
         keyboardType="url"
       />
-      {type === "zerotier" ? (
+       {type === "zerotier" ? (
         <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.httpHint")}</Text>
-      ) : (
+       ) : type === "tailscale" ? (
+         <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.tailscale.httpHint")}</Text>
+       ) : (
         <>
           <Text style={[styles.hint, isDark && styles.hintDark]}>
             {t("connection.add.advanced.urlHintPrefix")}
@@ -508,7 +535,7 @@ export default function AddConnectionScreen() {
         </>
       )}
 
-      {type === "zerotier" && (
+       {type === "zerotier" && (
         <View style={[styles.zeroTierBox, isDark && styles.zeroTierBoxDark]}>
           <Text style={[styles.sectionTitle, styles.zeroTierTitle, isDark && styles.textDark]}>
             {t("connection.zerotier.title")}
@@ -537,7 +564,8 @@ export default function AddConnectionScreen() {
                 <ActivityIndicator size="small" color={isDark ? "#ffffff" : "#0a0a0a"} />
               ) : (
                 <Ionicons name="document-attach-outline" size={18} color={isDark ? "#ffffff" : "#0a0a0a"} />
-              )}
+       )}
+
               <Text style={[styles.planetButtonText, isDark && styles.textDark]}>
                 {planet ? t("connection.zerotier.replacePlanet") : t("connection.zerotier.choosePlanet")}
               </Text>
@@ -603,7 +631,36 @@ export default function AddConnectionScreen() {
         </View>
       )}
 
-      {/* Directory */}
+       {type === "tailscale" && (
+         <View style={[styles.zeroTierBox, isDark && styles.zeroTierBoxDark]}>
+           <Text style={[styles.sectionTitle, styles.zeroTierTitle, isDark && styles.textDark]}>{t("connection.tailscale.title")}</Text>
+           <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.tailscale.routeHint")}</Text>
+           <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.tailscale.authKey")}</Text>
+           <TextInput
+             style={[styles.input, isDark && styles.inputDark]}
+             placeholder="tskey-auth-..."
+             placeholderTextColor={isDark ? "#666666" : "#999999"}
+             value={tailscaleAuthKey}
+             onChangeText={setTailscaleAuthKey}
+             autoCapitalize="none"
+             autoCorrect={false}
+             secureTextEntry
+           />
+           <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.tailscale.authKeyHint")}</Text>
+           <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.tailscale.hostname")}</Text>
+           <TextInput
+             style={[styles.input, isDark && styles.inputDark]}
+             placeholder="opencode-mobile"
+             placeholderTextColor={isDark ? "#666666" : "#999999"}
+             value={tailscaleHostname}
+             onChangeText={setTailscaleHostname}
+             autoCapitalize="none"
+             autoCorrect={false}
+           />
+         </View>
+       )}
+
+       {/* Directory */}
       <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.shared.directoryOptional")}</Text>
       <TextInput
         style={[styles.input, isDark && styles.inputDark]}
