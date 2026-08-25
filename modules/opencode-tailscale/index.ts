@@ -2,21 +2,20 @@ import { requireOptionalNativeModule } from "expo-modules-core"
 
 export interface TailscaleStartOptions {
   profileId: string
-  authKey: string
   remoteHost: string
   remotePort: number
   hostname?: string
 }
 
 export interface TailscaleAuthStatus {
-  mode: "auth_key"
-  provided: boolean
-  interactiveLogin: false
+  mode: "interactive"
+  interactiveLogin: true
 }
 
 export interface TailscaleStatus {
-  state: "stopped" | "starting" | "ready" | "error"
+  state: "stopped" | "starting" | "needs_login" | "ready" | "error"
   baseUrl?: string
+  loginUrl?: string
   hostname?: string
   tailnetIPv4?: string
   tailnetIPv6?: string

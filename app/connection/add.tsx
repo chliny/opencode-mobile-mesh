@@ -13,6 +13,7 @@ import {
   Alert,
 } from "react-native"
 import { router } from "expo-router"
+import * as Linking from "expo-linking"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useConnections } from "../../src/stores/connections"
@@ -48,7 +49,6 @@ export default function AddConnectionScreen() {
   const [planetImportSource, setPlanetImportSource] = useState<"file" | "base64" | null>(null)
   const isImportingPlanet = planetImportSource !== null
   const [isConnecting, setIsConnecting] = useState(false)
-  const [tailscaleAuthKey, setTailscaleAuthKey] = useState("")
   const [tailscaleHostname, setTailscaleHostname] = useState("")
 
   const buildUrl = () => {
@@ -175,10 +175,6 @@ export default function AddConnectionScreen() {
         Alert.alert(t("connection.tailscale.invalidTitle"), error instanceof Error ? error.message : String(error))
         return
       }
-      if (!tailscaleAuthKey.trim()) {
-        Alert.alert(t("connection.tailscale.invalidTitle"), t("connection.tailscale.authKeyRequired"))
-        return
-      }
     }
 
     track(AnalyticsEvent.ConnectionFormSubmitted, { mode: "advanced" })
@@ -202,7 +198,6 @@ export default function AddConnectionScreen() {
       },
       "onboarding",
       password || undefined,
-      tailscaleAuthKey.trim() || undefined,
     )
 
     if (result.ok) {
@@ -218,7 +213,6 @@ export default function AddConnectionScreen() {
             tailscale,
           },
           password || undefined,
-          tailscaleAuthKey.trim() || undefined,
         )
         setIsConnecting(false)
         router.back()
@@ -237,6 +231,12 @@ export default function AddConnectionScreen() {
     // silently persisting an unreachable/unauthorized connection.
     if (type === "zerotier" || type === "tailscale") {
       setIsConnecting(false)
+      if (type === "tailscale" && result.loginUrl) {
+        Alert.alert(t("connection.tailscale.loginTitle"), t("connection.tailscale.loginMessage"), [
+          { text: t("common.ok"), onPress: () => void Linking.openURL(result.loginUrl!) },
+        ])
+        return
+      }
       Alert.alert(
         t("connection.shared.alerts.connectionFailedTitle"),
         result.error || t("connection.shared.alerts.unknownError"),
@@ -635,18 +635,6 @@ export default function AddConnectionScreen() {
          <View style={[styles.zeroTierBox, isDark && styles.zeroTierBoxDark]}>
            <Text style={[styles.sectionTitle, styles.zeroTierTitle, isDark && styles.textDark]}>{t("connection.tailscale.title")}</Text>
            <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.tailscale.routeHint")}</Text>
-           <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.tailscale.authKey")}</Text>
-           <TextInput
-             style={[styles.input, isDark && styles.inputDark]}
-             placeholder="tskey-auth-..."
-             placeholderTextColor={isDark ? "#666666" : "#999999"}
-             value={tailscaleAuthKey}
-             onChangeText={setTailscaleAuthKey}
-             autoCapitalize="none"
-             autoCorrect={false}
-             secureTextEntry
-           />
-           <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.tailscale.authKeyHint")}</Text>
            <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.tailscale.hostname")}</Text>
            <TextInput
              style={[styles.input, isDark && styles.inputDark]}

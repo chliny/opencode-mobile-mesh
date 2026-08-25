@@ -13,6 +13,7 @@ import {
   Alert,
 } from "react-native"
 import { router, useLocalSearchParams } from "expo-router"
+import * as Linking from "expo-linking"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useConnections } from "../../src/stores/connections"
@@ -64,7 +65,6 @@ export default function EditConnectionScreen() {
   const isImportingPlanet = planetImportSource !== null
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [tailscaleAuthKey, setTailscaleAuthKey] = useState("")
   const [tailscaleHostname, setTailscaleHostname] = useState(connection?.tailscale?.hostname || "")
 
   useEffect(() => {
@@ -122,10 +122,6 @@ export default function EditConnectionScreen() {
         Alert.alert(t("connection.tailscale.invalidTitle"), error instanceof Error ? error.message : String(error))
         return
       }
-      if (!tailscaleAuthKey.trim() && !connection.tailscale) {
-        Alert.alert(t("connection.tailscale.invalidTitle"), t("connection.tailscale.authKeyRequired"))
-        return
-      }
     }
 
     setIsTesting(true)
@@ -142,7 +138,6 @@ export default function EditConnectionScreen() {
       },
       "edit_test",
       password || undefined,
-      tailscaleAuthKey.trim() || undefined,
     )
 
     if (result.ok) {
@@ -153,6 +148,12 @@ export default function EditConnectionScreen() {
 
     if (type === "zerotier" || type === "tailscale") {
       setIsTesting(false)
+      if (type === "tailscale" && result.loginUrl) {
+        Alert.alert(t("connection.tailscale.loginTitle"), t("connection.tailscale.loginMessage"), [
+          { text: t("common.ok"), onPress: () => void Linking.openURL(result.loginUrl!) },
+        ])
+        return
+      }
       Alert.alert(
         t("connection.shared.alerts.connectionFailedTitle"),
         result.error || t("connection.shared.alerts.unknownError"),
@@ -212,10 +213,6 @@ export default function EditConnectionScreen() {
         Alert.alert(t("connection.tailscale.invalidTitle"), error instanceof Error ? error.message : String(error))
         return
       }
-      if (!tailscaleAuthKey.trim() && !connection.tailscale) {
-        Alert.alert(t("connection.tailscale.invalidTitle"), t("connection.tailscale.authKeyRequired"))
-        return
-      }
     }
 
     setIsSaving(true)
@@ -234,7 +231,6 @@ export default function EditConnectionScreen() {
         // Empty = keep existing password (the field loads blank); a typed value
         // rotates it in SecureStore.
         password || undefined,
-        tailscaleAuthKey.trim() || undefined,
       )
       // If this was the active connection, the SSE loop may have stopped
       // retrying after a prior 401 (see events.ts) — reconnect now with the
@@ -379,18 +375,6 @@ export default function EditConnectionScreen() {
          <View style={[styles.zeroTierBox, isDark && styles.zeroTierBoxDark]}>
            <Text style={[styles.sectionTitle, styles.zeroTierTitle, isDark && styles.textDark]}>{t("connection.tailscale.title")}</Text>
            <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.tailscale.routeHint")}</Text>
-           <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.tailscale.authKey")}</Text>
-           <TextInput
-             style={[styles.input, isDark && styles.inputDark]}
-             placeholder={connection.tailscale ? t("connection.tailscale.authKeyExisting") : "tskey-auth-..."}
-             placeholderTextColor={isDark ? "#666666" : "#999999"}
-             value={tailscaleAuthKey}
-             onChangeText={setTailscaleAuthKey}
-             autoCapitalize="none"
-             autoCorrect={false}
-             secureTextEntry
-           />
-           <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.tailscale.authKeyHint")}</Text>
            <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.tailscale.hostname")}</Text>
            <TextInput
              style={[styles.input, isDark && styles.inputDark]}

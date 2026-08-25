@@ -16,7 +16,6 @@ import { log } from "../lib/logbuffer"
 
 const CONNECTIONS_KEY = "opencode_connections"
 const PASSWORDS_PREFIX = "opencode_password_"
-const TAILSCALE_AUTH_KEYS_PREFIX = "opencode_tailscale_auth_key_"
 const RECENT_DIRS_KEY = "opencode_recent_dirs"
 const MAX_RECENT_DIRS = 10
 // A bad IP (unreachable host, wrong port) otherwise hangs for the full 30s
@@ -53,7 +52,7 @@ interface ConnectionsState {
 
   // Actions
   loadConnections: () => Promise<void>
-  addConnection: (connection: Omit<ServerConnection, "id">, password?: string, tailscaleAuthKey?: string) => Promise<void>
+  addConnection: (connection: Omit<ServerConnection, "id">, password?: string) => Promise<void>
   removeConnection: (id: string) => Promise<void>
   setActiveConnection: (id: string) => Promise<void>
   // `source` distinguishes the activation funnel (onboarding) from the edit
@@ -62,9 +61,8 @@ interface ConnectionsState {
     connection: ServerConnection,
     source: ConnectionTestSource,
     password?: string,
-    tailscaleAuthKey?: string,
-  ) => Promise<{ ok: boolean; error?: string }>
-  updateConnection: (id: string, updates: Partial<ServerConnection>, password?: string, tailscaleAuthKey?: string) => Promise<void>
+  ) => Promise<{ ok: boolean; error?: string; loginUrl?: string }>
+  updateConnection: (id: string, updates: Partial<ServerConnection>, password?: string) => Promise<void>
   refreshProject: () => Promise<void>
   // Create a one-off client pointing at a specific directory (for cross-project operations).
   // Pass undefined to get a directory-less client that queries the server without project scope.
@@ -95,23 +93,22 @@ function buildClient(
 async function resolveConnectionRoute(
   connection: ServerConnection,
   forceRestart = false,
-  tailscaleAuthKey?: string,
 ): Promise<{ baseUrl: string; route: "lan" | "zerotier" | "tailscale" }> {
   if (!connection.zerotier && !connection.tailscale) return { baseUrl: connection.url, route: "lan" }
 
   if (connection.tailscale) {
     const target = parseTailscaleTarget(connection.url)
-    const authKey = tailscaleAuthKey || await SecureStore.getItemAsync(`${TAILSCALE_AUTH_KEYS_PREFIX}${connection.id}`)
-    if (!authKey) throw new Error("A Tailscale auth key is required for this embedded connection")
     // Keep the pre-save test and persisted profile on the same node identity.
     const profileId = `ts-${(connection.tailscale.hostname || target.host).replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 50)}`
     const result = await embeddedTailscale.start({
       profileId,
-      authKey,
       remoteHost: target.host.replace(/^\[|\]$/g, ""),
       remotePort: target.port,
       hostname: connection.tailscale.hostname,
     })
+    if (result.state === "needs_login" && result.loginUrl) {
+      throw new Error(`Tailscale login required: ${result.loginUrl}`)
+    }
     if (result.state !== "ready" || !result.baseUrl) {
       throw new Error(result.error || "Embedded Tailscale did not become ready")
     }
@@ -211,7 +208,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     }
   },
 
-  addConnection: async (connection, password, tailscaleAuthKey) => {
+  addConnection: async (connection, password) => {
     const id = generateId()
     const newConnection: ServerConnection = {
       ...connection,
@@ -225,8 +222,6 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     if (password) {
       await SecureStore.setItemAsync(`${PASSWORDS_PREFIX}${id}`, password)
     }
-    if (tailscaleAuthKey) await SecureStore.setItemAsync(`${TAILSCALE_AUTH_KEYS_PREFIX}${id}`, tailscaleAuthKey)
-
     await SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(connections))
 
     // If this is the first/active connection, create client
@@ -272,9 +267,8 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
   removeConnection: async (id) => {
     const connections = get().connections.filter((c) => c.id !== id)
 
-    // Remove stored password
+    // Remove stored password.
     await SecureStore.deleteItemAsync(`${PASSWORDS_PREFIX}${id}`)
-    await SecureStore.deleteItemAsync(`${TAILSCALE_AUTH_KEYS_PREFIX}${id}`)
     await SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(connections))
 
     // If removing active connection, clear client
@@ -359,11 +353,11 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     })
   },
 
-  testConnection: async (connection, source, password, tailscaleAuthKey) => {
+  testConnection: async (connection, source, password) => {
     track(AnalyticsEvent.ConnectionAttempted, { source })
     try {
       const auth = buildAuth(connection.username, password)
-      const resolved = await resolveConnectionRoute(connection, false, tailscaleAuthKey)
+      const resolved = await resolveConnectionRoute(connection)
       const client = createClient({
         baseUrl: resolved.baseUrl,
         directory: connection.directory,
@@ -383,6 +377,9 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       }
       if (connection.tailscale) {
         const tailscaleStatus = await embeddedTailscale.getStatus().catch(() => null)
+        if (tailscaleStatus?.state === "needs_login" && tailscaleStatus.loginUrl) {
+          return { ok: false, error: "Tailscale login required", loginUrl: tailscaleStatus.loginUrl }
+        }
         if (tailscaleStatus?.state === "error" && tailscaleStatus.error && !message.includes(tailscaleStatus.error)) {
           message = `${message}\n\nTailscale: ${tailscaleStatus.error}`
         }
@@ -398,7 +395,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     }
   },
 
-  updateConnection: async (id, updates, password, tailscaleAuthKey) => {
+  updateConnection: async (id, updates, password) => {
     const connections = get().connections.map((c) => (c.id === id ? { ...c, ...updates } : c))
 
     await SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(connections))
@@ -410,8 +407,6 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     if (password) {
       await SecureStore.setItemAsync(`${PASSWORDS_PREFIX}${id}`, password)
     }
-    if (tailscaleAuthKey) await SecureStore.setItemAsync(`${TAILSCALE_AUTH_KEYS_PREFIX}${id}`, tailscaleAuthKey)
-
     // If updating active connection, recreate client
     if (get().activeConnection?.id === id) {
       const active = connections.find((c) => c.id === id)!

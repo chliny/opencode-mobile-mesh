@@ -17,7 +17,6 @@ private object OpenCodeTailscaleNative {
   @JvmStatic external fun startNative(
     stateDirectory: String,
     hostname: String,
-    authKey: String,
     remoteHost: String,
     remotePort: Int,
   ): String
@@ -38,7 +37,6 @@ class OpenCodeTailscaleModule : Module() {
         try {
           val profileId = requireString(options, "profileId")
           require(profileId.matches(Regex("^[A-Za-z0-9_-]{1,80}$"))) { "Invalid profile id" }
-          val authKey = requireString(options, "authKey")
           val remoteHost = requireString(options, "remoteHost")
           val remotePort = (options["remotePort"] as? Number)?.toInt() ?: 0
           require(remotePort in 1..65535) { "Invalid Tailscale server port" }
@@ -52,7 +50,6 @@ class OpenCodeTailscaleModule : Module() {
           promise.resolve(jsonToMap(OpenCodeTailscaleNative.startNative(
             stateDirectory.absolutePath,
             hostname,
-            authKey,
             remoteHost,
             remotePort,
           )))

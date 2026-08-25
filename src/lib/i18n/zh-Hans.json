@@ -222,10 +222,8 @@
       "title": "内置 Tailscale",
       "routeHint": "该连接会在 App 内运行 tsnet 节点，只将此 OpenCode 连接的流量通过其中转发。不创建系统 VPN，也不会占用 Android VPN 槽。",
       "httpHint": "请使用 Tailscale IP 或 MagicDNS 主机名，并使用 http://。到服务器的 TCP 流量会经过内置中继；当前 localhost 中继尚无法校验远端 HTTPS 证书。",
-      "authKey": "Tailscale 授权密钥",
-      "authKeyRequired": "请输入带 tag 且可复用的 Tailscale 授权密钥。",
-      "authKeyExisting": "留空可保留已保存的授权密钥",
-      "authKeyHint": "请使用带 tag、可复用且最好是 ephemeral 的授权密钥。它仅保存在此设备的安全存储中，不会写入连接配置。",
+      "loginTitle": "登录 Tailscale",
+      "loginMessage": "请在浏览器中完成登录并批准此 App 内的 Tailscale 节点，然后返回这里再次测试连接。",
       "hostname": "Tailnet 主机名（可选）",
       "invalidTitle": "Tailscale 配置无效"
     },

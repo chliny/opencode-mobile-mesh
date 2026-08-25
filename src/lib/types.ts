@@ -18,7 +18,6 @@ export interface ZeroTierConnectionConfig {
 }
 
 export interface TailscaleConnectionConfig {
-  // An ephemeral, tagged auth key is kept separately in SecureStore.
   hostname?: string
 }
 

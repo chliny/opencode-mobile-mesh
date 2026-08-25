@@ -222,10 +222,8 @@
       "title": "Embedded Tailscale",
       "routeHint": "This connection runs an app-local tsnet node and forwards only this OpenCode connection through it. It does not create a system VPN or use Android's VPN slot.",
       "httpHint": "Use a Tailscale IP or MagicDNS hostname with http://. TCP traffic to the server goes through the embedded relay; HTTPS certificates cannot validate the localhost relay yet.",
-      "authKey": "Tailscale Auth Key",
-      "authKeyRequired": "Enter a tagged, reusable Tailscale auth key.",
-      "authKeyExisting": "Leave empty to keep the saved auth key",
-      "authKeyHint": "Use a tagged, reusable and preferably ephemeral auth key. It is stored only in this device's secure storage, never in the connection profile.",
+      "loginTitle": "Sign in to Tailscale",
+      "loginMessage": "Finish signing in and approving this app-local Tailscale node in your browser. Return here and test the connection again.",
       "hostname": "Tailnet Hostname (Optional)",
       "invalidTitle": "Invalid Tailscale Configuration"
     },
