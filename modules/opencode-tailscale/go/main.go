@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"net/netip"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -109,6 +110,14 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 		UserLogf: func(string, ...any) {},
 	}
 	if runtime.GOOS == "android" {
+		// Android does not provide a usable process temp directory. Keep
+		// Tailscale's log policy state alongside its app-private node state.
+		if err := os.MkdirAll(stateDir, 0700); err != nil {
+			return setErrorLocked(err)
+		}
+		if err := os.Setenv("TS_LOGS_DIR", stateDir); err != nil {
+			return setErrorLocked(err)
+		}
 		// Android blocks the netlink query used by Go's net.Interfaces. tsnet
 		// only needs this list for reachability bookkeeping; socket dialing is
 		// still handled by Android's normal network stack.
