@@ -107,7 +107,12 @@ jobs:
 
       - name: Build APK
         working-directory: android
-        run: ./gradlew assembleRelease
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            ./gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64
+          else
+            ./gradlew assembleRelease
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
