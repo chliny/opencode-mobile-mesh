@@ -86,3 +86,7 @@ test("nameOf: root paths fall back to the trimmed input", () => {
 test("nameOf: bare segment is returned as-is", () => {
   assert.equal(nameOf("project"), "project")
 })
+
+test("nameOf: server home provides the default directory display name", () => {
+  assert.equal(nameOf("/home/user"), "user")
+})

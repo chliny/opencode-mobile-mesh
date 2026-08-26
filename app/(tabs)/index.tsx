@@ -276,7 +276,7 @@ export default function SessionsScreen() {
   const activeConnection = useConnections((state) => state.activeConnection)
   const client = useConnections((state) => state.client)
   const currentProject = useConnections((state) => state.currentProject)
-  const serverHome = useConnections((state) => state.serverHome)
+  const serverDirectory = useConnections((state) => state.serverDirectory)
   const refreshProject = useConnections((state) => state.refreshProject)
   const clientForDirectory = useConnections((state) => state.clientForDirectory)
   const switchDirectory = useConnections((state) => state.switchDirectory)
@@ -621,7 +621,9 @@ export default function SessionsScreen() {
 
   // Prefer the server-reported project; fall back to the configured
   // directory so the project name always renders beside the connection.
-  const shortPath = getShortPath(currentProject) || (activeConnection.directory ? nameOf(activeConnection.directory) : "")
+  const shortPath =
+    getShortPath(currentProject) ||
+    (activeConnection.directory ? nameOf(activeConnection.directory) : serverDirectory ? nameOf(serverDirectory) : "")
   const connectionColor = transport === "live" ? "#22c55e" : transport === "connecting" ? "#f59e0b" : "#9ca3af"
 
   return (

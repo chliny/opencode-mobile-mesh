@@ -42,6 +42,7 @@ interface ConnectionsState {
   clientBase: ClientBase | null
   currentProject: Project | null
   serverHome: string | null // Home directory on the server machine (for ~ expansion)
+  serverDirectory: string | null // Effective default directory on the server
   recentDirectories: string[]
   isLoading: boolean
   error: string | null
@@ -124,6 +125,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
   client: null,
   clientBase: null,
   serverHome: null,
+  serverDirectory: null,
   currentProject: null,
   recentDirectories: [],
   isLoading: true,
@@ -149,6 +151,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       let base: ClientBase | null = null
       let project: Project | null = null
       let home: string | null = null
+      let directory: string | null = null
       if (active) {
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
         const auth = buildAuth(active.username, password)
@@ -165,6 +168,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
             ])
             project = proj
             home = paths?.home || null
+            directory = paths?.directory || null
           } catch {
             // Server might be offline
           }
@@ -178,6 +182,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         clientBase: base,
         currentProject: project,
         serverHome: home,
+        serverDirectory: directory,
         recentDirectories,
         isLoading: false,
       })
@@ -211,6 +216,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
 
     let project = get().currentProject
     let serverHome = get().serverHome
+    let serverDirectory = get().serverDirectory
 
     if (newConnection.active) {
       activeConnection = newConnection
@@ -219,6 +225,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         base = null
         project = null
         serverHome = null
+        serverDirectory = null
       } else {
         const auth = buildAuth(newConnection.username, password)
         const built = buildClient(newConnection.url, newConnection.directory, auth)
@@ -234,13 +241,14 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           ])
           project = proj
           serverHome = paths?.home || null
+          serverDirectory = paths?.directory || null
         } catch {
           // Server might be unreachable; proceed without metadata
         }
       }
     }
 
-    set({ connections, activeConnection, client, clientBase: base, currentProject: project, serverHome })
+    set({ connections, activeConnection, client, clientBase: base, currentProject: project, serverHome, serverDirectory })
     if (newConnection.active) void get().refreshActiveRoute()
   },
 
@@ -269,10 +277,19 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           clientBase: built?.base || null,
           currentProject: null,
           serverHome: null,
+          serverDirectory: null,
         })
         void get().refreshActiveRoute()
       } else {
-        set({ connections, activeConnection: null, client: null, clientBase: null })
+        set({
+          connections,
+          activeConnection: null,
+          client: null,
+          clientBase: null,
+          currentProject: null,
+          serverHome: null,
+          serverDirectory: null,
+        })
         void embeddedZeroTier.stop()
       }
     } else {
@@ -293,6 +310,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     let base: ClientBase | null = null
     let project: Project | null = null
     let home: string | null = null
+    let directory: string | null = null
 
     if (active) {
       const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
@@ -309,6 +327,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           ])
           project = proj
           home = paths?.home || null
+          directory = paths?.directory || null
         } catch {
           // Server might be offline
         }
@@ -319,7 +338,15 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       await SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(connections))
     }
 
-    set({ connections, activeConnection: active, client, clientBase: base, currentProject: project, serverHome: home })
+    set({
+      connections,
+      activeConnection: active,
+      client,
+      clientBase: base,
+      currentProject: project,
+      serverHome: home,
+      serverDirectory: directory,
+    })
     if (active) void get().refreshActiveRoute()
     else void embeddedZeroTier.stop()
     addBreadcrumb({
@@ -388,6 +415,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           clientBase: null,
           currentProject: null,
           serverHome: null,
+          serverDirectory: null,
         })
         void get().refreshActiveRoute()
         return
@@ -405,6 +433,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           clientBase: built.base,
           currentProject: project,
           serverHome: paths?.home || null,
+          serverDirectory: paths?.directory || null,
         })
         void get().refreshActiveRoute()
       } catch {
@@ -414,6 +443,8 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           client: built.client,
           clientBase: built.base,
           currentProject: null,
+          serverHome: null,
+          serverDirectory: null,
         })
         void get().refreshActiveRoute()
       }
@@ -519,6 +550,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         set({
           currentProject: project,
           serverHome: paths?.home || null,
+          serverDirectory: paths?.directory || null,
         })
       } catch (error) {
         if (generation !== routeGeneration) return
