@@ -60,11 +60,22 @@ type instance struct {
 	done     chan struct{}
 }
 
+type androidInterface struct {
+	Name      string   `json:"name"`
+	Index     int      `json:"index"`
+	Addresses []string `json:"addresses"`
+}
+
 var state = struct {
 	sync.Mutex
 	instance *instance
 	status   status
 }{status: status{State: "stopped"}}
+
+var interfaces = struct {
+	sync.RWMutex
+	values []netmon.Interface
+}{}
 
 //export TailscaleStart
 func TailscaleStart(stateDir, hostname, remoteHost *C.char, remotePort C.int) *C.char {
@@ -108,6 +119,35 @@ func TailscaleNetworkChanged(available C.int, networkType *C.char, at C.longlong
 	state.Unlock()
 }
 
+//export TailscaleSetInterfaces
+func TailscaleSetInterfaces(value *C.char) {
+	var android []androidInterface
+	if err := json.Unmarshal([]byte(C.GoString(value)), &android); err != nil {
+		return
+	}
+	values := make([]netmon.Interface, 0, len(android))
+	for _, item := range android {
+		if item.Name == "" || item.Index < 1 {
+			continue
+		}
+		addrs := make([]net.Addr, 0, len(item.Addresses))
+		for _, value := range item.Addresses {
+			ip, network, err := net.ParseCIDR(value)
+			if err == nil {
+				network.IP = ip
+				addrs = append(addrs, network)
+			}
+		}
+		values = append(values, netmon.Interface{
+			Interface: &net.Interface{Name: item.Name, Index: item.Index, Flags: net.FlagUp},
+			AltAddrs:  addrs,
+		})
+	}
+	interfaces.Lock()
+	interfaces.values = values
+	interfaces.Unlock()
+}
+
 //export TailscaleFree
 func TailscaleFree(value *C.char) {
 	C.free(unsafe.Pointer(value))
@@ -140,11 +180,12 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 		if err := os.Setenv("TS_LOGS_DIR", stateDir); err != nil {
 			return setErrorLocked(err)
 		}
-		// Android blocks the netlink query used by Go's net.Interfaces. tsnet
-		// only needs this list for reachability bookkeeping; socket dialing is
-		// still handled by Android's normal network stack.
+		// Android blocks the netlink query used by Go's net.Interfaces. Kotlin
+		// supplies the app-visible interfaces and addresses before startup.
 		netmon.RegisterInterfaceGetter(func() ([]netmon.Interface, error) {
-			return nil, nil
+			interfaces.RLock()
+			defer interfaces.RUnlock()
+			return append([]netmon.Interface(nil), interfaces.values...), nil
 		})
 	}
 	if err := server.Start(); err != nil {
@@ -182,26 +223,31 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 }
 
 func startInteractiveLogin(client *local.Client) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), startupTimeout)
 	defer cancel()
+	// StartLoginInteractive delivers the authorization URL asynchronously via
+	// the IPN bus, not Status(). Subscribe before requesting it so a URL emitted
+	// by tsnet during startup or by the re-send below cannot be missed.
+	watcher, err := client.WatchIPNBus(ctx, ipn.NotifyInitialState)
+	if err != nil {
+		return "", err
+	}
+	defer watcher.Close()
 	if err := client.StartLoginInteractive(ctx); err != nil {
 		return "", err
 	}
-	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) {
-		result, err := client.Status(ctx)
+	for {
+		notify, err := watcher.Next()
 		if err != nil {
 			return "", err
 		}
-		if result.BackendState == ipn.Running.String() {
+		if notify.BrowseToURL != nil && *notify.BrowseToURL != "" {
+			return *notify.BrowseToURL, nil
+		}
+		if notify.State != nil && *notify.State == ipn.Running {
 			return "", nil
 		}
-		if result.AuthURL != "" {
-			return result.AuthURL, nil
-		}
-		time.Sleep(200 * time.Millisecond)
 	}
-	return "", errors.New("Tailscale authorization URL timed out")
 }
 
 func startRelayLocked(current *instance, hostname, remoteHost string, remotePort int) status {

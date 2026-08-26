@@ -10,6 +10,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.net.NetworkInterface
 import java.util.concurrent.Executors
 
 private object OpenCodeTailscaleNative {
@@ -30,6 +31,7 @@ private object OpenCodeTailscaleNative {
   @JvmStatic external fun statusNative(): String
 
   @JvmStatic external fun networkChangedNative(available: Boolean, networkType: String, at: Long)
+  @JvmStatic external fun setInterfacesNative(interfaces: String)
 }
 
 class OpenCodeTailscaleModule : Module() {
@@ -65,7 +67,19 @@ class OpenCodeTailscaleModule : Module() {
 
           val context = appContext.reactContext?.applicationContext
             ?: throw IllegalStateException("Android context is unavailable")
+          if (!hasValidatedInternet()) {
+            promise.resolve(mapOf(
+              "state" to "error",
+              "phase" to "network_unavailable",
+              "networkAvailable" to false,
+              "diagnosticCode" to "network_unavailable",
+              "diagnosticMessage" to "Android has no validated internet connection",
+              "error" to "No internet connection. Connect to Wi-Fi or mobile data, then retry Tailscale.",
+            ))
+            return@execute
+          }
           val stateDirectory = File(context.noBackupFilesDir, "tailscale/$profileId").apply { mkdirs() }
+          OpenCodeTailscaleNative.setInterfacesNative(networkInterfaces())
           promise.resolve(jsonToMap(OpenCodeTailscaleNative.startNative(
             stateDirectory.absolutePath,
             hostname,
@@ -108,6 +122,33 @@ class OpenCodeTailscaleModule : Module() {
     val at = System.currentTimeMillis()
     runCatching { OpenCodeTailscaleNative.networkChangedNative(effectiveAvailable, type, at) }
     sendEvent("networkChanged", mapOf("available" to effectiveAvailable, "type" to type, "at" to at))
+  }
+
+  private fun hasValidatedInternet(): Boolean {
+    val network = connectivityManager?.activeNetwork ?: return false
+    val capabilities = connectivityManager?.getNetworkCapabilities(network) ?: return false
+    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+      && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+  }
+
+  private fun networkInterfaces(): String {
+    val interfaces = JSONArray()
+    val values = runCatching { NetworkInterface.getNetworkInterfaces() }.getOrNull() ?: return interfaces.toString()
+    while (values.hasMoreElements()) {
+      val network = values.nextElement()
+      if (!runCatching { network.isUp && !network.isLoopback }.getOrDefault(false)) continue
+      val addresses = JSONArray()
+      network.interfaceAddresses.forEach { address ->
+        val host = address.address.hostAddress ?: return@forEach
+        addresses.put("$host/${address.networkPrefixLength}")
+      }
+      interfaces.put(JSONObject().apply {
+        put("name", network.name)
+        put("index", network.index)
+        put("addresses", addresses)
+      })
+    }
+    return interfaces.toString()
   }
 
   private fun networkType(capabilities: NetworkCapabilities): String = when {

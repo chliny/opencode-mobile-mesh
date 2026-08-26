@@ -3,6 +3,7 @@ node_modules/
 .android/
 scripts/build-android-release.sh
 scripts/start-android-emulator.sh
+scripts/android-tailscale-connection.py
 android/.gradle/
 android/app/build/
 android/build/

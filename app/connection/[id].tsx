@@ -160,8 +160,14 @@ export default function EditConnectionScreen() {
     if (type === "zerotier" || type === "tailscale") {
       setIsTesting(false)
       if (type === "tailscale" && result.loginUrl) {
+        try {
+          await Linking.openURL(result.loginUrl)
+        } catch {
+          // Keep the alert available as a manual fallback if the system cannot open the URL.
+        }
         Alert.alert(t("connection.tailscale.loginTitle"), t("connection.tailscale.loginMessage"), [
-          { text: t("common.ok"), onPress: () => void Linking.openURL(result.loginUrl!) },
+          { text: t("common.ok"), style: "cancel" },
+          { text: t("common.openBrowser"), onPress: () => void Linking.openURL(result.loginUrl!) },
         ])
         return
       }

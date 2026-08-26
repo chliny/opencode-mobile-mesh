@@ -6,6 +6,7 @@ char* TailscaleStart(const char* stateDir, const char* hostname, const char* rem
 char* TailscaleStop();
 char* TailscaleStatus();
 void TailscaleNetworkChanged(int available, const char* networkType, long long at);
+void TailscaleSetInterfaces(const char* value);
 void TailscaleFree(char* value);
 }
 
@@ -51,4 +52,12 @@ Java_me_chliny_opencode_tailscale_module_OpenCodeTailscaleNative_networkChangedN
   const char* networkTypeChars = env->GetStringUTFChars(networkType, nullptr);
   TailscaleNetworkChanged(available ? 1 : 0, networkTypeChars, at);
   env->ReleaseStringUTFChars(networkType, networkTypeChars);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_me_chliny_opencode_tailscale_module_OpenCodeTailscaleNative_setInterfacesNative(
+    JNIEnv* env, jclass, jstring value) {
+  const char* chars = env->GetStringUTFChars(value, nullptr);
+  TailscaleSetInterfaces(chars);
+  env->ReleaseStringUTFChars(value, chars);
 }

@@ -245,8 +245,14 @@ export default function AddConnectionScreen() {
     if (type === "zerotier" || type === "tailscale") {
       setIsConnecting(false)
       if (type === "tailscale" && result.loginUrl) {
+        try {
+          await Linking.openURL(result.loginUrl)
+        } catch {
+          // Keep the alert available as a manual fallback if the system cannot open the URL.
+        }
         Alert.alert(t("connection.tailscale.loginTitle"), t("connection.tailscale.loginMessage"), [
-          { text: t("common.ok"), onPress: () => void Linking.openURL(result.loginUrl!) },
+          { text: t("common.ok"), style: "cancel" },
+          { text: t("common.openBrowser"), onPress: () => void Linking.openURL(result.loginUrl!) },
         ])
         return
       }
@@ -376,7 +382,13 @@ export default function AddConnectionScreen() {
           {t("connection.add.quick.usernameHintPrefix")}
           <Text style={styles.code}>opencode</Text>
           {t("connection.add.quick.usernameHintMiddle")}
-          <Text style={styles.usernameHintLink} onPress={() => setMode("advanced")}>
+          <Text
+            style={styles.usernameHintLink}
+            onPress={() => setMode("advanced")}
+            accessibilityRole="link"
+            accessibilityLabel={t("connection.add.quick.advancedOptionsLink")}
+            testID="advanced-options-hint"
+          >
             {t("connection.add.quick.advancedOptionsLink")}
           </Text>
           {t("connection.add.quick.usernameHintSuffix")}
@@ -431,7 +443,12 @@ export default function AddConnectionScreen() {
         </View>
 
         {/* Advanced mode link */}
-        <TouchableOpacity style={styles.advancedLink} onPress={() => setMode("advanced")}>
+        <TouchableOpacity
+          style={styles.advancedLink}
+          onPress={() => setMode("advanced")}
+          accessibilityLabel="advanced-options"
+          testID="advanced-options"
+        >
           <Text style={[styles.advancedLinkText, isDark && styles.hintDark]}>
             {t("connection.add.quick.advancedLink")}
           </Text>
@@ -477,6 +494,8 @@ export default function AddConnectionScreen() {
               type === opt.type && isDark && styles.typeOptionSelectedDark,
             ]}
             onPress={() => setType(opt.type)}
+            accessibilityLabel={`connection-type-${opt.type}`}
+            testID={`connection-type-${opt.type}`}
           >
             <Ionicons
               name={opt.icon}
@@ -702,6 +721,8 @@ export default function AddConnectionScreen() {
         style={[styles.connectButton, isDark && styles.connectButtonDark, { marginTop: 32 }]}
         onPress={handleAdvancedSave}
         disabled={isConnecting}
+        accessibilityLabel="save-connection"
+        testID="save-connection"
       >
         {isConnecting ? (
           <ActivityIndicator size="small" color={isDark ? "#0a0a0a" : "#ffffff"} />

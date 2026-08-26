@@ -383,8 +383,9 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       }
       if (connection.tailscale) {
         const tailscaleStatus = await embeddedTailscale.getStatus().catch(() => null)
-        if (tailscaleStatus?.state === "needs_login" && tailscaleStatus.loginUrl) {
-          return { ok: false, error: "Tailscale login required", loginUrl: tailscaleStatus.loginUrl }
+        const loginUrl = tailscaleStatus?.loginUrl || message.match(/Tailscale login required:\s*(\S+)/)?.[1]
+        if (loginUrl && (tailscaleStatus?.state === "needs_login" || message.startsWith("Tailscale login required:"))) {
+          return { ok: false, error: "Tailscale login required", loginUrl }
         }
         if (tailscaleStatus?.state === "error" && tailscaleStatus.error && !message.includes(tailscaleStatus.error)) {
           message = `${message}\n\nTailscale: ${tailscaleStatus.error}`
@@ -397,7 +398,9 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       // Restore the persisted active profile before returning so a failed
       // Tailscale test cannot leave the healthy ZeroTier route unusable.
       if (get().activeConnection) {
-        await get().refreshActiveRoute()
+        await get().refreshActiveRoute().catch((restoreError) => {
+          log.warn("route", "active route restore failed after connection test", String(restoreError))
+        })
       }
     }
   },
@@ -583,7 +586,11 @@ function refreshEmbeddedRouteOnNetworkChange(available: boolean) {
   if (!available) return
   if (Date.now() - lastNetworkRefreshAt < 1000) return
   lastNetworkRefreshAt = Date.now()
-  void useConnections.getState().refreshActiveRoute(true)
+  // Do not force-restart an embedded node for every Android callback. Both
+  // native modules observe the same physical network and callbacks can arrive
+  // in pairs while a network is handed over. A normal refresh reuses a healthy
+  // relay and only rebuilds a failed one, preventing a restart loop.
+  void useConnections.getState().refreshActiveRoute()
 }
 
 embeddedZeroTier.addNetworkListener((event) => refreshEmbeddedRouteOnNetworkChange(event.available))
