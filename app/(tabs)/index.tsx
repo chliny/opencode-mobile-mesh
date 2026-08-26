@@ -354,13 +354,22 @@ export default function SessionsScreen() {
   }, [showNewSession, client])
 
   const handleSwitchDirectory = useCallback(
-    async (dir?: string) => {
-      await switchDirectory(dir)
-      loadSessions()
-      refreshProject()
-      loadCatalog()
+    async (dir?: string): Promise<boolean> => {
+      try {
+        await switchDirectory(dir)
+        loadSessions()
+        refreshProject()
+        loadCatalog()
+        return true
+      } catch (error) {
+        Alert.alert(
+          t("chat.directorySwitcher.switchFailedTitle"),
+          error instanceof Error ? error.message : t("chat.directorySwitcher.switchFailedMessage"),
+        )
+        return false
+      }
     },
-    [switchDirectory, loadSessions, refreshProject, loadCatalog],
+    [switchDirectory, loadSessions, refreshProject, loadCatalog, t],
   )
 
   useFocusEffect(
@@ -517,13 +526,13 @@ export default function SessionsScreen() {
   )
 
   const onBrowserSelect = useCallback(
-    (directory: string) => {
+    async (directory: string): Promise<boolean> => {
       restoreNewSessionOnDismiss.current = false
       if (browseMode === "switch") {
-        handleSwitchDirectory(directory)
-        dirSheetRef.current?.close()
+        return handleSwitchDirectory(directory)
       } else {
         onCreateInDirectory(directory)
+        return true
       }
     },
     [browseMode, handleSwitchDirectory, onCreateInDirectory],

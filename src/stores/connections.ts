@@ -482,6 +482,15 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     // duplicates + a mismatched "current directory" highlight).
     const trimmed = directory?.trim()
     const dir = trimmed ? stripTrailingSlash(trimmed) : undefined
+
+    // Validate the target before persisting it. An invalid directory must not
+    // replace the last known-good directory in the connection settings.
+    if (dir && dir !== active.directory) {
+      const client = get().clientForDirectory(dir)
+      if (!client) throw new Error("No active connection")
+      await client.path.get()
+    }
+
     await get().updateConnection(active.id, { directory: dir })
     // Record in recents if it's a real directory
     if (dir) await get().addRecentDirectory(dir)

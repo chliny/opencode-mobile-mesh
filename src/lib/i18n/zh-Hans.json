@@ -445,7 +445,9 @@
       "serverDefaultLabel": "服务器默认",
       "browseLabel": "浏览…",
       "recentProjectsLabel": "最近项目",
-      "usesServerDir": "使用服务器的工作目录"
+      "usesServerDir": "使用服务器的工作目录",
+      "switchFailedTitle": "无法切换项目",
+      "switchFailedMessage": "目录不可用，请选择其他目录。"
     },
     "directoryBrowserSheet": {
       "noActiveConnection": "没有活动连接",

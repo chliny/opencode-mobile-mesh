@@ -15,7 +15,7 @@ interface Props {
   clientForDirectory: (directory: string) => Client | null
   isDark: boolean
   // Called with the chosen absolute directory when the user taps "Use this folder".
-  onSelect: (directory: string) => void
+  onSelect: (directory: string) => Promise<boolean | void> | boolean | void
   // Called whenever the sheet fully closes (selection or cancel).
   onDismiss?: () => void
 }
@@ -158,10 +158,10 @@ export function DirectoryBrowserSheet({
     enter(dir)
   }, [jumpPath, enter])
 
-  const handleUseFolder = useCallback(() => {
+  const handleUseFolder = useCallback(async () => {
     if (!browseDir) return
-    onSelect(browseDir)
-    sheetRef.current?.close()
+    const selected = await onSelect(browseDir)
+    if (selected !== false) sheetRef.current?.close()
   }, [browseDir, onSelect, sheetRef])
 
   const canGoUp = !!browseDir && !!parentOf(browseDir)

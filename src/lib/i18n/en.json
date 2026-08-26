@@ -445,7 +445,9 @@
       "serverDefaultLabel": "Server Default",
       "browseLabel": "Browse…",
       "recentProjectsLabel": "Recent Projects",
-      "usesServerDir": "Uses server's working directory"
+      "usesServerDir": "Uses server's working directory",
+      "switchFailedTitle": "Unable to switch project",
+      "switchFailedMessage": "The directory is unavailable. Choose another directory."
     },
     "directoryBrowserSheet": {
       "noActiveConnection": "No active connection",

@@ -10,7 +10,7 @@ interface Props {
   recents: string[]
   serverHome: string | null
   isDark: boolean
-  onSwitch: (directory?: string) => void
+  onSwitch: (directory?: string) => Promise<boolean>
   // Opens a browsable folder picker rooted at the server's filesystem, as an
   // alternative to typing a path. Optional so existing callers keep working.
   onBrowse?: () => void
@@ -21,8 +21,9 @@ export function DirectorySwitcher({ sheetRef, current, recents, serverHome, isDa
   const [custom, setCustom] = useState("")
 
   const handleSelect = useCallback(
-    (dir?: string) => {
-      onSwitch(dir)
+    async (dir?: string) => {
+      const switched = await onSwitch(dir)
+      if (!switched) return
       setCustom("")
       sheetRef.current?.close()
     },
