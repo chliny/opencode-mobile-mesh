@@ -30,6 +30,7 @@ const CONNECTION_TEST_TIMEOUT_MS = 40_000
 
 let routeGeneration = 0
 let routeRefreshQueue = Promise.resolve()
+let lastNetworkRefreshAt = 0
 
 // Cached auth so we can create directory-scoped clients without async SecureStore lookups
 interface ClientBase {
@@ -392,10 +393,11 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       track(AnalyticsEvent.ConnectionFailed, { source, error_class: classifyConnectionError(message) })
       return { ok: false, error: message }
     } finally {
-      // Testing a new profile may temporarily replace libzt's singleton node.
-      // Restore the saved active profile in the background afterwards.
-      if (get().activeConnection && get().activeConnection?.id !== connection.id) {
-        void get().refreshActiveRoute()
+      // Testing any profile may temporarily replace an embedded singleton.
+      // Restore the persisted active profile before returning so a failed
+      // Tailscale test cannot leave the healthy ZeroTier route unusable.
+      if (get().activeConnection) {
+        await get().refreshActiveRoute()
       }
     }
   },
@@ -572,3 +574,17 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     return run
   },
 }))
+
+// Network changes invalidate the physical path used by both embedded relays.
+// Let the native node recover first, then rebuild only the active route.
+function refreshEmbeddedRouteOnNetworkChange(available: boolean) {
+  const active = useConnections.getState().activeConnection
+  if (!(active?.zerotier || active?.tailscale)) return
+  if (!available) return
+  if (Date.now() - lastNetworkRefreshAt < 1000) return
+  lastNetworkRefreshAt = Date.now()
+  void useConnections.getState().refreshActiveRoute(true)
+}
+
+embeddedZeroTier.addNetworkListener((event) => refreshEmbeddedRouteOnNetworkChange(event.available))
+embeddedTailscale.addNetworkListener((event) => refreshEmbeddedRouteOnNetworkChange(event.available))

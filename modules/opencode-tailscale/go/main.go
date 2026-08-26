@@ -29,16 +29,24 @@ import (
 const startupTimeout = 60 * time.Second
 
 type status struct {
-	State       string `json:"state"`
-	BaseURL     string `json:"baseUrl,omitempty"`
-	Hostname    string `json:"hostname,omitempty"`
-	TailnetIPv4 string `json:"tailnetIPv4,omitempty"`
-	TailnetIPv6 string `json:"tailnetIPv6,omitempty"`
-	RemoteHost  string `json:"remoteHost,omitempty"`
-	RemotePort  int    `json:"remotePort,omitempty"`
-	LoginURL    string `json:"loginUrl,omitempty"`
-	Auth        auth   `json:"auth,omitempty"`
-	Error       string `json:"error,omitempty"`
+	State               string `json:"state"`
+	BaseURL             string `json:"baseUrl,omitempty"`
+	Hostname            string `json:"hostname,omitempty"`
+	TailnetIPv4         string `json:"tailnetIPv4,omitempty"`
+	TailnetIPv6         string `json:"tailnetIPv6,omitempty"`
+	RemoteHost          string `json:"remoteHost,omitempty"`
+	RemotePort          int    `json:"remotePort,omitempty"`
+	LoginURL            string `json:"loginUrl,omitempty"`
+	Auth                auth   `json:"auth,omitempty"`
+	Phase               string `json:"phase,omitempty"`
+	NetworkAvailable    bool   `json:"networkAvailable"`
+	NetworkType         string `json:"networkType,omitempty"`
+	LastNetworkChangeAt int64  `json:"lastNetworkChangeAt,omitempty"`
+	ControlPlaneOnline  bool   `json:"controlPlaneOnline"`
+	TailnetOnline       bool   `json:"tailnetOnline"`
+	DiagnosticCode      string `json:"diagnosticCode,omitempty"`
+	DiagnosticMessage   string `json:"diagnosticMessage,omitempty"`
+	Error               string `json:"error,omitempty"`
 }
 
 type auth struct {
@@ -86,6 +94,20 @@ func TailscaleStatus() *C.char {
 	return resultJSON(result)
 }
 
+//export TailscaleNetworkChanged
+func TailscaleNetworkChanged(available C.int, networkType *C.char, at C.longlong) {
+	state.Lock()
+	state.status.NetworkAvailable = available != 0
+	state.status.NetworkType = C.GoString(networkType)
+	state.status.LastNetworkChangeAt = int64(at)
+	if !state.status.NetworkAvailable && state.status.State != "stopped" {
+		state.status.Phase = "network_unavailable"
+		state.status.DiagnosticCode = "network_unavailable"
+		state.status.DiagnosticMessage = "Android reports no active network"
+	}
+	state.Unlock()
+}
+
 //export TailscaleFree
 func TailscaleFree(value *C.char) {
 	C.free(unsafe.Pointer(value))
@@ -100,7 +122,7 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 	}
 
 	stopLocked()
-	state.status = status{State: "starting", Hostname: hostname, RemoteHost: remoteHost, RemotePort: remotePort, Auth: auth{Mode: "interactive", InteractiveLogin: true}}
+	state.status = status{State: "starting", Phase: "starting", Hostname: hostname, RemoteHost: remoteHost, RemotePort: remotePort, Auth: auth{Mode: "interactive", InteractiveLogin: true}}
 
 	server := &tsnet.Server{
 		Dir:      stateDir,
@@ -126,31 +148,34 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 		})
 	}
 	if err := server.Start(); err != nil {
-		return setErrorLocked(err)
+		return setDiagnosticErrorLocked("control_plane_start_failed", "Tailscale control plane could not start", err)
 	}
 
 	client, err := server.LocalClient()
 	if err != nil {
 		_ = server.Close()
-		return setErrorLocked(err)
+		return setDiagnosticErrorLocked("control_plane_client_failed", "Tailscale control plane client unavailable", err)
 	}
 	current := &instance{server: server, done: make(chan struct{})}
 	state.instance = current
 	currentStatus, err := client.Status(context.Background())
 	if err != nil {
 		stopLocked()
-		return setErrorLocked(err)
+		return setDiagnosticErrorLocked("control_plane_status_failed", "Unable to read Tailscale control plane status", err)
 	}
 	if currentStatus.BackendState == ipn.Running.String() {
+		state.status.ControlPlaneOnline = true
+		state.status.TailnetOnline = len(currentStatus.TailscaleIPs) > 0
 		return startRelayLocked(current, hostname, remoteHost, remotePort)
 	}
+	state.status.Phase = "control_plane"
 	loginURL, err := startInteractiveLogin(client)
 	if err != nil {
 		stopLocked()
-		return setErrorLocked(err)
+		return setDiagnosticErrorLocked("control_plane_login_failed", "Tailscale control plane login failed", err)
 	}
 	if loginURL != "" {
-		state.status = status{State: "needs_login", Hostname: hostname, RemoteHost: remoteHost, RemotePort: remotePort, LoginURL: loginURL, Auth: auth{Mode: "interactive", InteractiveLogin: true}}
+		state.status = status{State: "needs_login", Phase: "waiting_auth", Hostname: hostname, RemoteHost: remoteHost, RemotePort: remotePort, LoginURL: loginURL, Auth: auth{Mode: "interactive", InteractiveLogin: true}, DiagnosticCode: "auth_required", DiagnosticMessage: "Tailscale authorization is required"}
 		return state.status
 	}
 	return startRelayLocked(current, hostname, remoteHost, remotePort)
@@ -159,31 +184,24 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 func startInteractiveLogin(client *local.Client) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	watcher, err := client.WatchIPNBus(ctx, ipn.NotifyInitialState)
-	if err != nil {
-		return "", err
-	}
-	defer watcher.Close()
 	if err := client.StartLoginInteractive(ctx); err != nil {
 		return "", err
 	}
-	for {
-		notify, err := watcher.Next()
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		result, err := client.Status(ctx)
 		if err != nil {
-			break
+			return "", err
 		}
-		if notify.BrowseToURL != nil && *notify.BrowseToURL != "" {
-			return *notify.BrowseToURL, nil
-		}
-		if notify.State != nil && *notify.State == ipn.Running {
+		if result.BackendState == ipn.Running.String() {
 			return "", nil
 		}
+		if result.AuthURL != "" {
+			return result.AuthURL, nil
+		}
+		time.Sleep(200 * time.Millisecond)
 	}
-	result, err := client.Status(context.Background())
-	if err != nil {
-		return "", err
-	}
-	return result.AuthURL, nil
+	return "", errors.New("Tailscale authorization URL timed out")
 }
 
 func startRelayLocked(current *instance, hostname, remoteHost string, remotePort int) status {
@@ -196,14 +214,17 @@ func startRelayLocked(current *instance, hostname, remoteHost string, remotePort
 	go serve(current, remoteHost, remotePort)
 	ip4, ip6 := current.server.TailscaleIPs()
 	state.status = status{
-		State:       "ready",
-		BaseURL:     "http://" + listener.Addr().String(),
-		Hostname:    hostname,
-		TailnetIPv4: addrString(ip4),
-		TailnetIPv6: addrString(ip6),
-		RemoteHost:  remoteHost,
-		RemotePort:  remotePort,
-		Auth:        auth{Mode: "interactive", InteractiveLogin: true},
+		State:              "ready",
+		Phase:              "relay",
+		BaseURL:            "http://" + listener.Addr().String(),
+		Hostname:           hostname,
+		TailnetIPv4:        addrString(ip4),
+		TailnetIPv6:        addrString(ip6),
+		RemoteHost:         remoteHost,
+		RemotePort:         remotePort,
+		Auth:               auth{Mode: "interactive", InteractiveLogin: true},
+		ControlPlaneOnline: true,
+		TailnetOnline:      true,
 	}
 	return state.status
 }
@@ -225,6 +246,15 @@ func proxy(server *tsnet.Server, local net.Conn, remote string) {
 	remoteConn, err := server.Dial(ctx, "tcp", remote)
 	cancel()
 	if err != nil {
+		state.Lock()
+		if state.instance != nil && state.instance.server == server {
+			state.status.State = "error"
+			state.status.Phase = "relay"
+			state.status.DiagnosticCode = dialDiagnosticCode(err)
+			state.status.DiagnosticMessage = dialDiagnosticMessage(err)
+			state.status.Error = sanitizeError(err.Error())
+		}
+		state.Unlock()
 		return
 	}
 	defer remoteConn.Close()
@@ -238,6 +268,27 @@ func proxy(server *tsnet.Server, local net.Conn, remote string) {
 	_, _ = io.Copy(local, remoteConn)
 	_ = local.Close()
 	<-done
+}
+
+func dialDiagnosticCode(err error) string {
+	if errors.Is(err, context.DeadlineExceeded) || strings.Contains(strings.ToLower(err.Error()), "timeout") {
+		return "relay_dial_timeout"
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "no such host") || strings.Contains(strings.ToLower(err.Error()), "name resolution") {
+		return "peer_dns_resolution_failed"
+	}
+	return "relay_dial_failed"
+}
+
+func dialDiagnosticMessage(err error) string {
+	switch dialDiagnosticCode(err) {
+	case "relay_dial_timeout":
+		return "Tailscale relay timed out while reaching the OpenCode server"
+	case "peer_dns_resolution_failed":
+		return "Tailscale could not resolve the OpenCode peer name"
+	default:
+		return "Tailscale relay could not reach the OpenCode server"
+	}
 }
 
 func stopLocked() {
@@ -254,11 +305,15 @@ func stopLocked() {
 }
 
 func setErrorLocked(err error, secret ...string) status {
+	return setDiagnosticErrorLocked("native_error", "Tailscale native error", err, secret...)
+}
+
+func setDiagnosticErrorLocked(code, diagnostic string, err error, secret ...string) status {
 	message := err.Error()
 	for _, value := range secret {
 		message = strings.ReplaceAll(message, value, "[redacted]")
 	}
-	state.status = status{State: "error", Error: sanitizeError(message)}
+	state.status = status{State: "error", DiagnosticCode: code, DiagnosticMessage: diagnostic, Error: sanitizeError(message)}
 	return state.status
 }
 

@@ -3,6 +3,9 @@ package me.chliny.opencode.zerotier.module
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.util.Base64
 import com.zerotier.sockets.ZeroTierNative
@@ -52,9 +55,22 @@ class OpenCodeZeroTierModule : Module() {
   @Volatile private var currentKey: String? = null
   @Volatile private var status: Map<String, Any?> = mapOf("state" to "stopped")
   private var pendingPlanetPickerPromise: Promise? = null
+  private var connectivityManager: ConnectivityManager? = null
+  private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
   override fun definition() = ModuleDefinition {
     Name("OpenCodeZeroTier")
+    Events("networkChanged")
+
+    OnCreate {
+      val context = appContext.reactContext?.applicationContext ?: return@OnCreate
+      connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+      networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) = publishNetworkState(network, true)
+        override fun onLost(network: Network) = publishNetworkState(network, false)
+      }
+      runCatching { connectivityManager?.registerDefaultNetworkCallback(networkCallback!!) }
+    }
 
     AsyncFunction("start") { options: Map<String, Any?>, promise: Promise ->
       controlExecutor.execute {
@@ -66,8 +82,15 @@ class OpenCodeZeroTierModule : Module() {
             append(error.message ?: error.javaClass.simpleName)
             if (nodeId != null) append(" (ZeroTier node ID: $nodeId)")
           }
+          val diagnostic = status
           stopInternal()
-          status = mapOf("state" to "error", "error" to message, "nodeId" to nodeId)
+          status = diagnostic.toMutableMap().apply {
+            this["state"] = "error"
+            this["error"] = message
+            this["nodeId"] = nodeId
+            this["diagnosticCode"] = diagnostic["diagnosticCode"] ?: startDiagnosticCode(error)
+            this["diagnosticMessage"] = diagnostic["diagnosticMessage"] ?: message
+          }
           promise.reject("ERR_ZEROTIER_START", message, error)
         }
       }
@@ -158,11 +181,51 @@ class OpenCodeZeroTierModule : Module() {
     }
 
     OnDestroy {
+      runCatching { networkCallback?.let { connectivityManager?.unregisterNetworkCallback(it) } }
       stopInternal()
       controlExecutor.shutdownNow()
       relayExecutor.shutdownNow()
     }
   }
+
+  private fun publishNetworkState(network: Network, available: Boolean) {
+    val activeNetwork = connectivityManager?.activeNetwork
+    val effectiveAvailable = available || activeNetwork != null
+    val typeNetwork = if (available) network else activeNetwork ?: network
+    val type = connectivityManager?.getNetworkCapabilities(typeNetwork)?.let(::networkType) ?: "unknown"
+    val at = System.currentTimeMillis()
+    status = status + mapOf(
+      "networkAvailable" to effectiveAvailable,
+      "networkType" to type,
+      "lastNetworkChangeAt" to at,
+      "diagnosticCode" to if (effectiveAvailable) "network_available" else "network_unavailable",
+      "diagnosticMessage" to if (effectiveAvailable) "Android reports an active network" else "Android reports no active network",
+    )
+    sendEvent("networkChanged", mapOf("available" to effectiveAvailable, "type" to type, "at" to at))
+  }
+
+  private fun networkType(capabilities: NetworkCapabilities): String = when {
+    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+    else -> "other"
+  }
+
+  private fun startDiagnosticCode(error: Throwable): String = when {
+    error.message?.contains("come online", ignoreCase = true) == true -> "control_plane_timeout"
+    error.message?.contains("network", ignoreCase = true) == true -> "network_join_failed"
+    else -> "native_error"
+  }
+
+  private fun relayDiagnosticCode(error: IOException): String =
+    if (error.message?.contains("timeout", ignoreCase = true) == true) "relay_dial_timeout" else "relay_dial_failed"
+
+  private fun relayDiagnosticMessage(error: IOException): String =
+    if (relayDiagnosticCode(error) == "relay_dial_timeout") {
+      "ZeroTier relay timed out while reaching the OpenCode server"
+    } else {
+      "ZeroTier relay could not reach the OpenCode server"
+    }
 
   private fun startInternal(options: Map<String, Any?>): Map<String, Any?> = synchronized(lock) {
     val profileId = requireString(options, "profileId")
@@ -280,10 +343,37 @@ class OpenCodeZeroTierModule : Module() {
     // Resolve hostnames with Android's normal resolver, then pass only numeric
     // addresses into libzt. The resulting TCP socket still belongs entirely to
     // libzt and does not use Android's system socket/VPN path.
-    val remoteAddresses = InetAddress.getAllByName(remoteHost)
-      .mapNotNull { it.hostAddress }
-      .distinct()
-    if (remoteAddresses.isEmpty()) throw IOException("ZeroTier server hostname did not resolve")
+    val remoteAddresses = try {
+      InetAddress.getAllByName(remoteHost)
+        .mapNotNull { it.hostAddress }
+        .distinct()
+    } catch (error: IOException) {
+      status = mapOf(
+        "state" to "error",
+        "nodeId" to nodeId,
+        "assignedAddress" to assignedAddress,
+        "networkStatus" to networkStatusName(networkStatus),
+        "remoteHost" to remoteHost,
+        "diagnosticCode" to "dns_resolution_failed",
+        "diagnosticMessage" to "ZeroTier server hostname could not be resolved",
+        "error" to error.message,
+      )
+      throw error
+    }
+    if (remoteAddresses.isEmpty()) {
+      throw IOException("ZeroTier server hostname did not resolve").also {
+        status = mapOf(
+          "state" to "error",
+          "nodeId" to nodeId,
+          "assignedAddress" to assignedAddress,
+          "networkStatus" to networkStatusName(networkStatus),
+          "remoteHost" to remoteHost,
+          "diagnosticCode" to "dns_resolution_failed",
+          "diagnosticMessage" to "ZeroTier server hostname could not be resolved",
+          "error" to it.message,
+        )
+      }
+    }
 
     lateinit var nextRelay: AppLocalRelay
     nextRelay = AppLocalRelay(remoteHost, remoteAddresses, remotePort, relayExecutor) { error ->
@@ -295,6 +385,8 @@ class OpenCodeZeroTierModule : Module() {
           "networkStatus" to networkStatusName(networkStatus),
           "remoteHost" to remoteHost,
           "resolvedAddresses" to remoteAddresses,
+          "diagnosticCode" to relayDiagnosticCode(error),
+          "diagnosticMessage" to relayDiagnosticMessage(error),
           "error" to error.message,
         )
       }
@@ -308,6 +400,8 @@ class OpenCodeZeroTierModule : Module() {
       "networkStatus" to networkStatusName(networkStatus),
       "remoteHost" to remoteHost,
       "resolvedAddresses" to remoteAddresses,
+      "diagnosticCode" to "ready",
+      "diagnosticMessage" to "ZeroTier relay is ready",
     )
     return status
   }

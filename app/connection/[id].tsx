@@ -25,6 +25,7 @@ import { parseTailscaleTarget } from "../../src/lib/tailscale-routing"
 import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { parseUrl } from "../../src/lib/diagnostics-classify"
 import { buildAuth } from "../../src/lib/auth"
+import { clearConnectionDraft, getConnectionDraft, setConnectionDraft } from "../../src/lib/connection-drafts"
 
 // labelKey (not literal text): this is a module-level constant evaluated
 // before i18next is guaranteed ready, so the label is resolved with t() at
@@ -49,38 +50,49 @@ export default function EditConnectionScreen() {
   const { connections, updateConnection, removeConnection, testConnection } = useConnections()
 
   const connection = connections.find((c) => c.id === id)
+  const draft = id ? getConnectionDraft(id) : undefined
 
-  const [type, setType] = useState<ConnectionType>(connection?.type || "local")
-  const [name, setName] = useState(connection?.name || "")
-  const [url, setUrl] = useState(connection?.url || "")
-  const [directory, setDirectory] = useState(connection?.directory || "")
-  const [username, setUsername] = useState(connection?.username || "")
-  const [password, setPassword] = useState("")
-  const [zeroTierNetworkId, setZeroTierNetworkId] = useState(connection?.zerotier?.networkId || "")
-  const [planet, setPlanet] = useState<ZeroTierPlanet | undefined>(connection?.zerotier?.planet)
-  const [planetBase64, setPlanetBase64] = useState(connection?.zerotier?.planet?.base64 || "")
-  const [showPlanetBase64, setShowPlanetBase64] = useState(Boolean(connection?.zerotier?.planet?.base64))
+  const [type, setType] = useState<ConnectionType>(draft?.type || connection?.type || "local")
+  const [name, setName] = useState(draft?.name || connection?.name || "")
+  const [url, setUrl] = useState(draft?.url || connection?.url || "")
+  const [directory, setDirectory] = useState(draft?.directory || connection?.directory || "")
+  const [username, setUsername] = useState(draft?.username || connection?.username || "")
+  const [password, setPassword] = useState(draft?.password || "")
+  const [zeroTierNetworkId, setZeroTierNetworkId] = useState(draft?.zeroTierNetworkId || connection?.zerotier?.networkId || "")
+  const [planet, setPlanet] = useState<ZeroTierPlanet | undefined>((draft?.planet as ZeroTierPlanet | undefined) || connection?.zerotier?.planet)
+  const [planetBase64, setPlanetBase64] = useState(draft?.planetBase64 || connection?.zerotier?.planet?.base64 || "")
+  const [showPlanetBase64, setShowPlanetBase64] = useState(draft?.showPlanetBase64 ?? Boolean(connection?.zerotier?.planet?.base64))
   const [planetImportSource, setPlanetImportSource] = useState<"file" | "base64" | null>(null)
   const isImportingPlanet = planetImportSource !== null
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [tailscaleHostname, setTailscaleHostname] = useState(connection?.tailscale?.hostname || "")
+  const [tailscaleHostname, setTailscaleHostname] = useState(draft?.tailscaleHostname || connection?.tailscale?.hostname || "")
 
   useEffect(() => {
     if (connection) {
-      setType(connection.type)
-      setName(connection.name)
-      setUrl(connection.url)
-      setDirectory(connection.directory || "")
-      setUsername(connection.username || "")
-      setZeroTierNetworkId(connection.zerotier?.networkId || "")
-      setPlanet(connection.zerotier?.planet)
-      const savedBase64 = connection.zerotier?.planet?.base64 || ""
+      const saved = getConnectionDraft(connection.id)
+      setType(saved?.type || connection.type)
+      setName(saved?.name ?? connection.name)
+      setUrl(saved?.url ?? connection.url)
+      setDirectory(saved?.directory ?? connection.directory ?? "")
+      setUsername(saved?.username ?? connection.username ?? "")
+      setPassword(saved?.password ?? "")
+      setZeroTierNetworkId(saved?.zeroTierNetworkId ?? connection.zerotier?.networkId ?? "")
+      setPlanet((saved?.planet as ZeroTierPlanet | undefined) || connection.zerotier?.planet)
+      const savedBase64 = saved?.planetBase64 ?? connection.zerotier?.planet?.base64 ?? ""
       setPlanetBase64(savedBase64)
-      setShowPlanetBase64(Boolean(savedBase64))
-      setTailscaleHostname(connection.tailscale?.hostname || "")
+      setShowPlanetBase64(saved?.showPlanetBase64 ?? Boolean(savedBase64))
+      setTailscaleHostname(saved?.tailscaleHostname ?? connection.tailscale?.hostname ?? "")
     }
-  }, [connection])
+  }, [connection?.id])
+
+  useEffect(() => {
+    if (!connection) return
+    setConnectionDraft(connection.id, {
+      type, name, url, directory, username, password, zeroTierNetworkId,
+      planet, planetBase64, showPlanetBase64, tailscaleHostname,
+    })
+  }, [connection?.id, type, name, url, directory, username, password, zeroTierNetworkId, planet, planetBase64, showPlanetBase64, tailscaleHostname])
 
   if (!connection) {
     return (
@@ -238,6 +250,7 @@ export default function EditConnectionScreen() {
       if (useConnections.getState().activeConnection?.id === connection.id) {
         useEvents.getState().connect()
       }
+      clearConnectionDraft(connection.id)
       setIsSaving(false)
       router.back()
     } catch {

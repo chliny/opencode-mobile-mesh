@@ -1,5 +1,9 @@
 package me.chliny.opencode.tailscale.module
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -24,13 +28,28 @@ private object OpenCodeTailscaleNative {
   @JvmStatic external fun stopNative(): String
 
   @JvmStatic external fun statusNative(): String
+
+  @JvmStatic external fun networkChangedNative(available: Boolean, networkType: String, at: Long)
 }
 
 class OpenCodeTailscaleModule : Module() {
   private val executor = Executors.newSingleThreadExecutor()
+  private var connectivityManager: ConnectivityManager? = null
+  private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
   override fun definition() = ModuleDefinition {
     Name("OpenCodeTailscale")
+    Events("networkChanged")
+
+    OnCreate {
+      val context = appContext.reactContext?.applicationContext ?: return@OnCreate
+      connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+      networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) = publishNetworkState(network, true)
+        override fun onLost(network: Network) = publishNetworkState(network, false)
+      }
+      runCatching { connectivityManager?.registerDefaultNetworkCallback(networkCallback!!) }
+    }
 
     AsyncFunction("start") { options: Map<String, Any?>, promise: Promise ->
       executor.execute {
@@ -75,9 +94,27 @@ class OpenCodeTailscaleModule : Module() {
     }
 
     OnDestroy {
+      runCatching { networkCallback?.let { connectivityManager?.unregisterNetworkCallback(it) } }
       OpenCodeTailscaleNative.stopNative()
       executor.shutdownNow()
     }
+  }
+
+  private fun publishNetworkState(network: Network, available: Boolean) {
+    val activeNetwork = connectivityManager?.activeNetwork
+    val effectiveAvailable = available || activeNetwork != null
+    val typeNetwork = if (available) network else activeNetwork ?: network
+    val type = connectivityManager?.getNetworkCapabilities(typeNetwork)?.let(::networkType) ?: "unknown"
+    val at = System.currentTimeMillis()
+    runCatching { OpenCodeTailscaleNative.networkChangedNative(effectiveAvailable, type, at) }
+    sendEvent("networkChanged", mapOf("available" to effectiveAvailable, "type" to type, "at" to at))
+  }
+
+  private fun networkType(capabilities: NetworkCapabilities): String = when {
+    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+    else -> "other"
   }
 
   private fun requireString(options: Map<String, Any?>, key: String): String =

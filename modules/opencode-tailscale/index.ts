@@ -1,4 +1,4 @@
-import { requireOptionalNativeModule } from "expo-modules-core"
+import { requireOptionalNativeModule, type EventSubscription } from "expo-modules-core"
 
 export interface TailscaleStartOptions {
   profileId: string
@@ -14,6 +14,7 @@ export interface TailscaleAuthStatus {
 
 export interface TailscaleStatus {
   state: "stopped" | "starting" | "needs_login" | "ready" | "error"
+  phase?: "starting" | "control_plane" | "waiting_auth" | "tailnet" | "relay" | "network_unavailable"
   baseUrl?: string
   loginUrl?: string
   hostname?: string
@@ -22,6 +23,13 @@ export interface TailscaleStatus {
   remoteHost?: string
   remotePort?: number
   auth?: TailscaleAuthStatus
+  networkAvailable?: boolean
+  networkType?: string
+  lastNetworkChangeAt?: number
+  controlPlaneOnline?: boolean
+  tailnetOnline?: boolean
+  diagnosticCode?: string
+  diagnosticMessage?: string
   error?: string
 }
 
@@ -29,6 +37,13 @@ interface NativeTailscaleModule {
   start(options: TailscaleStartOptions): Promise<TailscaleStatus>
   stop(): Promise<void>
   getStatus(): Promise<TailscaleStatus>
+  addListener(event: "networkChanged", listener: (event: NetworkChangedEvent) => void): EventSubscription
+}
+
+export interface NetworkChangedEvent {
+  available: boolean
+  type: string
+  at: number
 }
 
 const native = requireOptionalNativeModule<NativeTailscaleModule>("OpenCodeTailscale")
@@ -46,4 +61,6 @@ export const embeddedTailscale = {
     native
       ? native.getStatus()
       : Promise.resolve<TailscaleStatus>({ state: "stopped" }),
+  addNetworkListener: (listener: (event: NetworkChangedEvent) => void) =>
+    native?.addListener("networkChanged", listener) || { remove: () => {} },
 }

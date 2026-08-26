@@ -5,6 +5,7 @@ char* TailscaleStart(const char* stateDir, const char* hostname, const char* rem
                      int remotePort);
 char* TailscaleStop();
 char* TailscaleStatus();
+void TailscaleNetworkChanged(int available, const char* networkType, long long at);
 void TailscaleFree(char* value);
 }
 
@@ -42,4 +43,12 @@ Java_me_chliny_opencode_tailscale_module_OpenCodeTailscaleNative_stopNative(JNIE
 extern "C" JNIEXPORT jstring JNICALL
 Java_me_chliny_opencode_tailscale_module_OpenCodeTailscaleNative_statusNative(JNIEnv* env, jclass) {
   return toJString(env, TailscaleStatus());
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_me_chliny_opencode_tailscale_module_OpenCodeTailscaleNative_networkChangedNative(
+    JNIEnv* env, jclass, jboolean available, jstring networkType, jlong at) {
+  const char* networkTypeChars = env->GetStringUTFChars(networkType, nullptr);
+  TailscaleNetworkChanged(available ? 1 : 0, networkTypeChars, at);
+  env->ReleaseStringUTFChars(networkType, networkTypeChars);
 }

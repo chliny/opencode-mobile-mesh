@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   View,
   Text,
@@ -25,6 +25,9 @@ import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { parseUrl } from "../../src/lib/diagnostics-classify"
 import { buildAuth } from "../../src/lib/auth"
 import { AnalyticsEvent, track } from "../../src/lib/analytics"
+import { clearConnectionDraft, getConnectionDraft, setConnectionDraft } from "../../src/lib/connection-drafts"
+
+const ADD_DRAFT_KEY = "new"
 
 export default function AddConnectionScreen() {
   const colorScheme = useColorScheme()
@@ -33,23 +36,31 @@ export default function AddConnectionScreen() {
 
   const { addConnection, testConnection } = useConnections()
 
-  const [mode, setMode] = useState<"quick" | "advanced">("quick")
-  const [type, setType] = useState<ConnectionType>("local")
-  const [name, setName] = useState("")
-  const [ip, setIp] = useState("")
-  const [port, setPort] = useState("4096")
-  const [url, setUrl] = useState("")
-  const [directory, setDirectory] = useState("")
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [zeroTierNetworkId, setZeroTierNetworkId] = useState("")
-  const [planet, setPlanet] = useState<ZeroTierPlanet | undefined>()
-  const [planetBase64, setPlanetBase64] = useState("")
-  const [showPlanetBase64, setShowPlanetBase64] = useState(false)
+  const draft = getConnectionDraft(ADD_DRAFT_KEY)
+  const [mode, setMode] = useState<"quick" | "advanced">(draft?.mode || "quick")
+  const [type, setType] = useState<ConnectionType>(draft?.type || "local")
+  const [name, setName] = useState(draft?.name || "")
+  const [ip, setIp] = useState(draft?.ip || "")
+  const [port, setPort] = useState(draft?.port || "4096")
+  const [url, setUrl] = useState(draft?.url || "")
+  const [directory, setDirectory] = useState(draft?.directory || "")
+  const [username, setUsername] = useState(draft?.username || "")
+  const [password, setPassword] = useState(draft?.password || "")
+  const [zeroTierNetworkId, setZeroTierNetworkId] = useState(draft?.zeroTierNetworkId || "")
+  const [planet, setPlanet] = useState<ZeroTierPlanet | undefined>(draft?.planet as ZeroTierPlanet | undefined)
+  const [planetBase64, setPlanetBase64] = useState(draft?.planetBase64 || "")
+  const [showPlanetBase64, setShowPlanetBase64] = useState(draft?.showPlanetBase64 || false)
   const [planetImportSource, setPlanetImportSource] = useState<"file" | "base64" | null>(null)
   const isImportingPlanet = planetImportSource !== null
   const [isConnecting, setIsConnecting] = useState(false)
-  const [tailscaleHostname, setTailscaleHostname] = useState("")
+  const [tailscaleHostname, setTailscaleHostname] = useState(draft?.tailscaleHostname || "")
+
+  useEffect(() => {
+    setConnectionDraft(ADD_DRAFT_KEY, {
+      mode, type, name, ip, port, url, directory, username, password,
+      zeroTierNetworkId, planet, planetBase64, showPlanetBase64, tailscaleHostname,
+    })
+  }, [mode, type, name, ip, port, url, directory, username, password, zeroTierNetworkId, planet, planetBase64, showPlanetBase64, tailscaleHostname])
 
   const buildUrl = () => {
     if (mode === "advanced") return url.trim()
@@ -111,6 +122,7 @@ export default function AddConnectionScreen() {
           },
           password || undefined,
         )
+        clearConnectionDraft(ADD_DRAFT_KEY)
         setIsConnecting(false)
         router.back()
       } catch {
@@ -214,6 +226,7 @@ export default function AddConnectionScreen() {
           },
           password || undefined,
         )
+        clearConnectionDraft(ADD_DRAFT_KEY)
         setIsConnecting(false)
         router.back()
       } catch {
