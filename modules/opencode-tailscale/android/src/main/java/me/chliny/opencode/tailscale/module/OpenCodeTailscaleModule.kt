@@ -12,11 +12,12 @@ import org.json.JSONObject
 import java.io.File
 import java.net.NetworkInterface
 import java.util.concurrent.Executors
+import android.util.Log
 
 private object OpenCodeTailscaleNative {
   init {
-    System.loadLibrary("opencode_tsnet")
     System.loadLibrary("opencode_tsnet_jni")
+    System.loadLibrary("opencode_tsnet")
   }
 
   @JvmStatic external fun startNative(
@@ -32,6 +33,8 @@ private object OpenCodeTailscaleNative {
 
   @JvmStatic external fun networkChangedNative(available: Boolean, networkType: String, at: Long)
   @JvmStatic external fun setInterfacesNative(interfaces: String)
+  @JvmStatic external fun setDefaultRouteNative(interfaceName: String, gateway: String)
+  @JvmStatic external fun setNetworkNative(network: Network?)
 }
 
 class OpenCodeTailscaleModule : Module() {
@@ -51,6 +54,7 @@ class OpenCodeTailscaleModule : Module() {
         override fun onLost(network: Network) = publishNetworkState(network, false)
       }
       runCatching { connectivityManager?.registerDefaultNetworkCallback(networkCallback!!) }
+      connectivityManager?.activeNetwork?.let { publishNetworkState(it, true) }
     }
 
     AsyncFunction("start") { options: Map<String, Any?>, promise: Promise ->
@@ -95,6 +99,7 @@ class OpenCodeTailscaleModule : Module() {
     AsyncFunction("stop") { promise: Promise ->
       executor.execute {
         try {
+          Log.i("OpenCodeTsnet", "JS stopNative requested")
           jsonToMap(OpenCodeTailscaleNative.stopNative())
           promise.resolve(null)
         } catch (error: Throwable) {
@@ -108,6 +113,7 @@ class OpenCodeTailscaleModule : Module() {
     }
 
     OnDestroy {
+      Log.i("OpenCodeTsnet", "module OnDestroy stopping native")
       runCatching { networkCallback?.let { connectivityManager?.unregisterNetworkCallback(it) } }
       OpenCodeTailscaleNative.stopNative()
       executor.shutdownNow()
@@ -119,7 +125,14 @@ class OpenCodeTailscaleModule : Module() {
     val effectiveAvailable = available || activeNetwork != null
     val typeNetwork = if (available) network else activeNetwork ?: network
     val type = connectivityManager?.getNetworkCapabilities(typeNetwork)?.let(::networkType) ?: "unknown"
+    val properties = connectivityManager?.getLinkProperties(typeNetwork)
+    val interfaceName = properties?.interfaceName.orEmpty()
+    val gateway = properties?.routes?.firstOrNull { it.isDefaultRoute }?.gateway?.hostAddress.orEmpty()
     val at = System.currentTimeMillis()
+    if (available) {
+      runCatching { OpenCodeTailscaleNative.setDefaultRouteNative(interfaceName, gateway) }
+      runCatching { OpenCodeTailscaleNative.setNetworkNative(typeNetwork) }
+    }
     runCatching { OpenCodeTailscaleNative.networkChangedNative(effectiveAvailable, type, at) }
     sendEvent("networkChanged", mapOf("available" to effectiveAvailable, "type" to type, "at" to at))
   }

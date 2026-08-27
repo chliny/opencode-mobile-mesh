@@ -2,6 +2,15 @@ package main
 
 /*
 #include <stdlib.h>
+#ifdef __ANDROID__
+#include <android/log.h>
+
+static void logToAndroid(const char* message) {
+	__android_log_write(ANDROID_LOG_INFO, "OpenCodeTsnet", message);
+}
+#else
+static void logToAndroid(const char* message) {}
+#endif
 */
 import "C"
 
@@ -9,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/netip"
@@ -22,11 +32,15 @@ import (
 
 	"tailscale.com/client/local"
 	"tailscale.com/ipn"
+	"tailscale.com/ipn/ipnstate"
 	"tailscale.com/net/netmon"
 	"tailscale.com/tsnet"
 )
 
-const startupTimeout = 60 * time.Second
+const (
+	startupTimeout      = 60 * time.Second
+	controlPlaneTimeout = 15 * time.Second
+)
 
 type status struct {
 	State               string `json:"state"`
@@ -58,6 +72,9 @@ type instance struct {
 	server   *tsnet.Server
 	listener net.Listener
 	done     chan struct{}
+	stateDir string
+	hostname string
+	cancel   context.CancelFunc
 }
 
 type androidInterface struct {
@@ -100,6 +117,18 @@ func TailscaleStop() *C.char {
 //export TailscaleStatus
 func TailscaleStatus() *C.char {
 	state.Lock()
+	if state.instance != nil && state.status.State == "needs_login" {
+		client, err := state.instance.server.LocalClient()
+		if err == nil {
+			result, statusErr := statusWithTimeout(client)
+			logStatus("status", result, statusErr)
+			if statusErr == nil && result.BackendState == ipn.Running.String() {
+				startRelayLocked(state.instance, state.instance.hostname, state.status.RemoteHost, state.status.RemotePort)
+			}
+		} else {
+			logMessage("status: local client error: %v", err)
+		}
+	}
 	result := state.status
 	state.Unlock()
 	return resultJSON(result)
@@ -107,6 +136,7 @@ func TailscaleStatus() *C.char {
 
 //export TailscaleNetworkChanged
 func TailscaleNetworkChanged(available C.int, networkType *C.char, at C.longlong) {
+	logMessage("network: available=%t type=%s", available != 0, C.GoString(networkType))
 	state.Lock()
 	state.status.NetworkAvailable = available != 0
 	state.status.NetworkType = C.GoString(networkType)
@@ -148,6 +178,12 @@ func TailscaleSetInterfaces(value *C.char) {
 	interfaces.Unlock()
 }
 
+//export TailscaleSetDefaultRoute
+func TailscaleSetDefaultRoute(interfaceName, gateway *C.char) {
+	logMessage("network: default route interface=%q gateway=%q", C.GoString(interfaceName), C.GoString(gateway))
+	setDefaultRoute(C.GoString(interfaceName), C.GoString(gateway))
+}
+
 //export TailscaleFree
 func TailscaleFree(value *C.char) {
 	C.free(unsafe.Pointer(value))
@@ -160,6 +196,20 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 	if stateDir == "" || hostname == "" || remoteHost == "" || remotePort < 1 || remotePort > 65535 {
 		return setErrorLocked(errors.New("invalid Tailscale proxy configuration"))
 	}
+	if state.instance != nil && state.instance.stateDir == stateDir && state.instance.hostname == hostname {
+		client, err := state.instance.server.LocalClient()
+		if err == nil {
+			result, statusErr := statusWithTimeout(client)
+			if statusErr == nil && result.BackendState == ipn.Running.String() {
+				return startRelayLocked(state.instance, hostname, remoteHost, remotePort)
+			}
+			if state.status.State == "needs_login" && state.status.LoginURL != "" {
+				state.status.RemoteHost = remoteHost
+				state.status.RemotePort = remotePort
+				return state.status
+			}
+		}
+	}
 
 	stopLocked()
 	state.status = status{State: "starting", Phase: "starting", Hostname: hostname, RemoteHost: remoteHost, RemotePort: remotePort, Auth: auth{Mode: "interactive", InteractiveLogin: true}}
@@ -168,8 +218,12 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 		Dir:      stateDir,
 		Hostname: hostname,
 		// Login URLs are read from the structured LocalAPI/IPN bus, never logs.
-		Logf:     func(string, ...any) {},
-		UserLogf: func(string, ...any) {},
+		Logf: func(format string, args ...any) {
+			logMessage("ts: "+format, args...)
+		},
+		UserLogf: func(format string, args ...any) {
+			logMessage("ts-user: "+format, args...)
+		},
 	}
 	if runtime.GOOS == "android" {
 		// Android does not provide a usable process temp directory. Keep
@@ -187,6 +241,7 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 			defer interfaces.RUnlock()
 			return append([]netmon.Interface(nil), interfaces.values...), nil
 		})
+		registerAndroidSocketBinder()
 	}
 	if err := server.Start(); err != nil {
 		return setDiagnosticErrorLocked("control_plane_start_failed", "Tailscale control plane could not start", err)
@@ -197,9 +252,10 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 		_ = server.Close()
 		return setDiagnosticErrorLocked("control_plane_client_failed", "Tailscale control plane client unavailable", err)
 	}
-	current := &instance{server: server, done: make(chan struct{})}
+	current := &instance{server: server, done: make(chan struct{}), stateDir: stateDir, hostname: hostname}
 	state.instance = current
-	currentStatus, err := client.Status(context.Background())
+	currentStatus, err := statusWithTimeout(client)
+	logStatus("start", currentStatus, err)
 	if err != nil {
 		stopLocked()
 		return setDiagnosticErrorLocked("control_plane_status_failed", "Unable to read Tailscale control plane status", err)
@@ -217,46 +273,129 @@ func start(stateDir, hostname, remoteHost string, remotePort int) status {
 	}
 	if loginURL != "" {
 		state.status = status{State: "needs_login", Phase: "waiting_auth", Hostname: hostname, RemoteHost: remoteHost, RemotePort: remotePort, LoginURL: loginURL, Auth: auth{Mode: "interactive", InteractiveLogin: true}, DiagnosticCode: "auth_required", DiagnosticMessage: "Tailscale authorization is required"}
+		// The browser does not call back into the app. Keep observing the local
+		// control plane so getStatus reflects authorization as soon as tsnet does.
+		go watchForRunning(current, hostname, remoteHost, remotePort)
 		return state.status
 	}
 	return startRelayLocked(current, hostname, remoteHost, remotePort)
 }
 
-func startInteractiveLogin(client *local.Client) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), startupTimeout)
+func statusWithTimeout(client *local.Client) (*ipnstate.Status, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), controlPlaneTimeout)
 	defer cancel()
-	// StartLoginInteractive delivers the authorization URL asynchronously via
-	// the IPN bus, not Status(). Subscribe before requesting it so a URL emitted
-	// by tsnet during startup or by the re-send below cannot be missed.
-	watcher, err := client.WatchIPNBus(ctx, ipn.NotifyInitialState)
-	if err != nil {
-		return "", err
+	return client.Status(ctx)
+}
+
+// Tailscale confirms browser authorization before its local control plane has
+// necessarily reached Running. Reuse the pending instance while that final
+// transition completes; restarting here creates another device identity.
+func waitForRunningLocked(client *local.Client, current *instance, hostname, remoteHost string, remotePort int) status {
+	deadline := time.Now().Add(startupTimeout)
+	for time.Now().Before(deadline) {
+		result, err := statusWithTimeout(client)
+		logStatus("wait", result, err)
+		if err == nil && result.BackendState == ipn.Running.String() {
+			return startRelayLocked(current, hostname, remoteHost, remotePort)
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
-	defer watcher.Close()
-	if err := client.StartLoginInteractive(ctx); err != nil {
+	state.status.Phase = "waiting_auth"
+	return state.status
+}
+
+func watchForRunning(current *instance, hostname, remoteHost string, remotePort int) {
+	ctx, cancel := context.WithCancel(context.Background())
+	state.Lock()
+	if state.instance != current {
+		state.Unlock()
+		cancel()
+		return
+	}
+	current.cancel = cancel
+	state.Unlock()
+	defer cancel()
+	deadline := time.Now().Add(3 * time.Minute)
+	for time.Now().Before(deadline) {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		client, err := current.server.LocalClient()
+		if err != nil {
+			logMessage("watch: local client error: %v", err)
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+		result, err := statusWithTimeout(client)
+		logStatus("watch", result, err)
+		if err != nil || result.BackendState != ipn.Running.String() {
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+		state.Lock()
+		if state.instance == current && state.status.State == "needs_login" {
+			startRelayLocked(current, hostname, remoteHost, remotePort)
+		}
+		state.Unlock()
+		return
+	}
+}
+
+func startInteractiveLogin(client *local.Client) (string, error) {
+	watchCtx, watchCancel := context.WithTimeout(context.Background(), startupTimeout)
+	// tsnet.Server.Start already starts the interactive login when the backend
+	// needs authentication. Subscribe here only to receive its URL; requesting
+	// login a second time races the first flow and can leave the backend stuck in
+	// Starting after browser authorization.
+	watcher, err := client.WatchIPNBus(watchCtx, ipn.NotifyInitialState)
+	if err != nil {
+		watchCancel()
 		return "", err
 	}
 	for {
 		notify, err := watcher.Next()
 		if err != nil {
+			logMessage("login: watcher error: %v", err)
+			_ = watcher.Close()
+			watchCancel()
 			return "", err
 		}
+		logMessage("login: notification state=%s browse=%t", notifyState(notify), notify.BrowseToURL != nil && *notify.BrowseToURL != "")
 		if notify.BrowseToURL != nil && *notify.BrowseToURL != "" {
+			logMessage("login: authorization URL received")
+			_ = watcher.Close()
+			watchCancel()
 			return *notify.BrowseToURL, nil
 		}
 		if notify.State != nil && *notify.State == ipn.Running {
+			logMessage("login: backend is running")
+			_ = watcher.Close()
+			watchCancel()
 			return "", nil
 		}
 	}
 }
 
+func notifyState(notify ipn.Notify) string {
+	if notify.State == nil {
+		return "none"
+	}
+	return notify.State.String()
+}
+
 func startRelayLocked(current *instance, hostname, remoteHost string, remotePort int) status {
+	if current.listener != nil && state.status.State == "ready" {
+		return state.status
+	}
 	listener, err := net.Listen("tcp4", "127.0.0.1:0")
 	if err != nil {
 		stopLocked()
 		return setErrorLocked(err)
 	}
 	current.listener = listener
+	logMessage("relay: listening for %s:%d", remoteHost, remotePort)
 	go serve(current, remoteHost, remotePort)
 	ip4, ip6 := current.server.TailscaleIPs()
 	state.status = status{
@@ -275,23 +414,41 @@ func startRelayLocked(current *instance, hostname, remoteHost string, remotePort
 	return state.status
 }
 
+func logStatus(source string, result *ipnstate.Status, err error) {
+	if err != nil {
+		logMessage("%s: status error: %v", source, err)
+		return
+	}
+	logMessage("%s: backend=%s tailnetIPs=%d", source, result.BackendState, len(result.TailscaleIPs))
+}
+
+func logMessage(format string, values ...any) {
+	message := C.CString("opencode-tsnet " + fmt.Sprintf(format, values...))
+	defer C.free(unsafe.Pointer(message))
+	C.logToAndroid(message)
+}
+
 func serve(current *instance, remoteHost string, remotePort int) {
 	defer close(current.done)
 	for {
 		local, err := current.listener.Accept()
 		if err != nil {
+			logMessage("relay: accept error: %v", err)
 			return
 		}
+		logMessage("relay: accepted local connection")
 		go proxy(current.server, local, net.JoinHostPort(remoteHost, stringPort(remotePort)))
 	}
 }
 
 func proxy(server *tsnet.Server, local net.Conn, remote string) {
 	defer local.Close()
+	logMessage("relay: dialing %s", remote)
 	ctx, cancel := context.WithTimeout(context.Background(), startupTimeout)
 	remoteConn, err := server.Dial(ctx, "tcp", remote)
 	cancel()
 	if err != nil {
+		logMessage("relay: dial failed remote=%s error=%s", remote, sanitizeError(err.Error()))
 		state.Lock()
 		if state.instance != nil && state.instance.server == server {
 			state.status.State = "error"
@@ -303,6 +460,7 @@ func proxy(server *tsnet.Server, local net.Conn, remote string) {
 		state.Unlock()
 		return
 	}
+	logMessage("relay: dial connected %s", remote)
 	defer remoteConn.Close()
 
 	done := make(chan struct{})
@@ -340,6 +498,10 @@ func dialDiagnosticMessage(err error) string {
 func stopLocked() {
 	current := state.instance
 	if current != nil {
+		logMessage("stop: state=%s listener=%t", state.status.State, current.listener != nil)
+		if current.cancel != nil {
+			current.cancel()
+		}
 		if current.listener != nil {
 			_ = current.listener.Close()
 			<-current.done

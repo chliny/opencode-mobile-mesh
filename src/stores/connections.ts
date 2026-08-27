@@ -361,6 +361,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
 
   testConnection: async (connection, source, password) => {
     track(AnalyticsEvent.ConnectionAttempted, { source })
+    let pendingTailscaleLogin = false
     try {
       const auth = buildAuth(connection.username, password)
       const resolved = await resolveConnectionRoute(connection)
@@ -385,6 +386,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         const tailscaleStatus = await embeddedTailscale.getStatus().catch(() => null)
         const loginUrl = tailscaleStatus?.loginUrl || message.match(/Tailscale login required:\s*(\S+)/)?.[1]
         if (loginUrl && (tailscaleStatus?.state === "needs_login" || message.startsWith("Tailscale login required:"))) {
+          pendingTailscaleLogin = true
           return { ok: false, error: "Tailscale login required", loginUrl }
         }
         if (tailscaleStatus?.state === "error" && tailscaleStatus.error && !message.includes(tailscaleStatus.error)) {
@@ -397,7 +399,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       // Testing any profile may temporarily replace an embedded singleton.
       // Restore the persisted active profile before returning so a failed
       // Tailscale test cannot leave the healthy ZeroTier route unusable.
-      if (get().activeConnection) {
+      if (get().activeConnection && !pendingTailscaleLogin) {
         await get().refreshActiveRoute().catch((restoreError) => {
           log.warn("route", "active route restore failed after connection test", String(restoreError))
         })
@@ -515,8 +517,6 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       const active = get().activeConnection
       try {
         if (!active) {
-          await embeddedZeroTier.stop()
-          await embeddedTailscale.stop()
           if (generation === routeGeneration) set({ routeStatus: "idle", routeError: null })
           return
         }

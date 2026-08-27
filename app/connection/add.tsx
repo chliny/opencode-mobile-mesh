@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   View,
   Text,
@@ -11,14 +11,16 @@ import {
   useColorScheme,
   ActivityIndicator,
   Alert,
+  Modal,
 } from "react-native"
 import { router } from "expo-router"
-import * as Linking from "expo-linking"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
+import { WebView } from "react-native-webview"
 import { useConnections } from "../../src/stores/connections"
 import type { ConnectionType, TailscaleConnectionConfig, ZeroTierPlanet } from "../../src/lib/types"
 import { embeddedZeroTier } from "@opencode-ai/zerotier"
+import { embeddedTailscale } from "@opencode-ai/tailscale"
 import { parseZeroTierTarget } from "../../src/lib/zerotier-routing"
 import { parseTailscaleTarget } from "../../src/lib/tailscale-routing"
 import { probeConnection, shareReport } from "../../src/lib/diagnostics"
@@ -53,6 +55,10 @@ export default function AddConnectionScreen() {
   const [planetImportSource, setPlanetImportSource] = useState<"file" | "base64" | null>(null)
   const isImportingPlanet = planetImportSource !== null
   const [isConnecting, setIsConnecting] = useState(false)
+  const awaitingTailscaleLogin = useRef(false)
+  const completedTailscaleLogin = useRef(false)
+  const tailscaleWebView = useRef<WebView>(null)
+  const [tailscaleLoginUrl, setTailscaleLoginUrl] = useState<string | null>(null)
   const [tailscaleHostname, setTailscaleHostname] = useState(draft?.tailscaleHostname || "")
 
   useEffect(() => {
@@ -245,17 +251,17 @@ export default function AddConnectionScreen() {
     if (type === "zerotier" || type === "tailscale") {
       setIsConnecting(false)
       if (type === "tailscale" && result.loginUrl) {
-        try {
-          await Linking.openURL(result.loginUrl)
-        } catch {
-          // Keep the alert available as a manual fallback if the system cannot open the URL.
+        if (awaitingTailscaleLogin.current) {
+          setIsConnecting(false)
+          Alert.alert(t("connection.tailscale.loginTitle"), t("connection.tailscale.loginMessage"))
+          return
         }
-        Alert.alert(t("connection.tailscale.loginTitle"), t("connection.tailscale.loginMessage"), [
-          { text: t("common.ok"), style: "cancel" },
-          { text: t("common.openBrowser"), onPress: () => void Linking.openURL(result.loginUrl!) },
-        ])
+        awaitingTailscaleLogin.current = true
+        completedTailscaleLogin.current = false
+        setTailscaleLoginUrl(result.loginUrl)
         return
       }
+      awaitingTailscaleLogin.current = false
       Alert.alert(
         t("connection.shared.alerts.connectionFailedTitle"),
         result.error || t("connection.shared.alerts.unknownError"),
@@ -277,6 +283,21 @@ export default function AddConnectionScreen() {
       ],
     )
   }
+
+  useEffect(() => {
+    if (!tailscaleLoginUrl) return
+    const interval = setInterval(() => {
+      void embeddedTailscale.getStatus().then((status) => {
+        if (status.state !== "ready") return
+        if (completedTailscaleLogin.current) return
+        completedTailscaleLogin.current = true
+        setTailscaleLoginUrl(null)
+        awaitingTailscaleLogin.current = false
+        void handleAdvancedSave()
+      })
+    }, 1_000)
+    return () => clearInterval(interval)
+  }, [tailscaleLoginUrl])
 
   const handleImportPlanet = async () => {
     setPlanetImportSource("file")
@@ -733,6 +754,51 @@ export default function AddConnectionScreen() {
         )}
       </TouchableOpacity>
     </ScrollView>
+    <Modal
+      visible={Boolean(tailscaleLoginUrl)}
+      animationType="slide"
+      onRequestClose={() => setTailscaleLoginUrl(null)}
+    >
+      <View style={[styles.webViewHeader, isDark && styles.webViewHeaderDark]}>
+        <Text style={[styles.webViewTitle, isDark && styles.textDark]}>{t("connection.tailscale.loginTitle")}</Text>
+        <TouchableOpacity onPress={() => setTailscaleLoginUrl(null)} accessibilityLabel="close-tailscale-login">
+          <Ionicons name="close" size={28} color={isDark ? "#ffffff" : "#0a0a0a"} />
+        </TouchableOpacity>
+      </View>
+      {tailscaleLoginUrl ? (
+        <WebView
+          ref={tailscaleWebView}
+          source={{ uri: tailscaleLoginUrl }}
+          injectedJavaScript={`
+            const reportAuthorization = () => {
+              if (!/^https:\/\/([a-z0-9-]+\.)?tailscale\.com\/admin\/machines/.test(location.href)) return;
+              window.ReactNativeWebView.postMessage("tailscale-authorized");
+            };
+            setInterval(reportAuthorization, 500);
+            true;
+          `}
+          onMessage={({ nativeEvent }) => {
+            if (nativeEvent.data === "tailscale-authorized") return
+          }}
+          onLoadEnd={({ nativeEvent }) => {
+            if (nativeEvent.title.includes("Machines")) {
+              return
+            }
+            tailscaleWebView.current?.injectJavaScript(`
+              if (/^https:\/\/([a-z0-9-]+\.)?tailscale\.com\/admin\/machines/.test(location.href)) {
+                window.ReactNativeWebView.postMessage("tailscale-authorized");
+              }
+              true;
+            `)
+          }}
+          onNavigationStateChange={({ url }) => {
+            // The login flow has several redirects before authorization. The
+            // machines page is only reached after Tailscale accepts the node.
+            if (!/^https:\/\/([a-z0-9-]+\.)?tailscale\.com\/admin\/machines/.test(url)) return
+          }}
+        />
+      ) : null}
+    </Modal>
     </KeyboardAvoidingView>
   )
 }
@@ -748,6 +814,22 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 32,
+  },
+  webViewHeader: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 16,
+    paddingTop: 52,
+  },
+  webViewHeaderDark: {
+    backgroundColor: "#0a0a0a",
+  },
+  webViewTitle: {
+    color: "#0a0a0a",
+    fontSize: 18,
+    fontWeight: "600",
   },
   // Quick connect styles
   quickHeader: {
