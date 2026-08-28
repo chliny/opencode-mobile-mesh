@@ -249,10 +249,8 @@ export default function AddConnectionScreen() {
     // diagnostics and offer a shareable report instead of
     // silently persisting an unreachable/unauthorized connection.
     if (type === "zerotier" || type === "tailscale") {
-      setIsConnecting(false)
       if (type === "tailscale" && result.loginUrl) {
         if (awaitingTailscaleLogin.current) {
-          setIsConnecting(false)
           Alert.alert(t("connection.tailscale.loginTitle"), t("connection.tailscale.loginMessage"))
           return
         }
@@ -261,6 +259,7 @@ export default function AddConnectionScreen() {
         setTailscaleLoginUrl(result.loginUrl)
         return
       }
+      setIsConnecting(false)
       awaitingTailscaleLogin.current = false
       Alert.alert(
         t("connection.shared.alerts.connectionFailedTitle"),
@@ -293,11 +292,20 @@ export default function AddConnectionScreen() {
         completedTailscaleLogin.current = true
         setTailscaleLoginUrl(null)
         awaitingTailscaleLogin.current = false
+        // Keep the original save operation active while the authorized relay
+        // becomes usable, then finish the same flow without another tap.
         void handleAdvancedSave()
       })
     }, 1_000)
     return () => clearInterval(interval)
   }, [tailscaleLoginUrl])
+
+  const closeTailscaleLogin = () => {
+    setTailscaleLoginUrl(null)
+    awaitingTailscaleLogin.current = false
+    completedTailscaleLogin.current = false
+    setIsConnecting(false)
+  }
 
   const handleImportPlanet = async () => {
     setPlanetImportSource("file")
@@ -757,11 +765,11 @@ export default function AddConnectionScreen() {
     <Modal
       visible={Boolean(tailscaleLoginUrl)}
       animationType="slide"
-      onRequestClose={() => setTailscaleLoginUrl(null)}
+      onRequestClose={closeTailscaleLogin}
     >
       <View style={[styles.webViewHeader, isDark && styles.webViewHeaderDark]}>
         <Text style={[styles.webViewTitle, isDark && styles.textDark]}>{t("connection.tailscale.loginTitle")}</Text>
-        <TouchableOpacity onPress={() => setTailscaleLoginUrl(null)} accessibilityLabel="close-tailscale-login">
+        <TouchableOpacity onPress={closeTailscaleLogin} accessibilityLabel="close-tailscale-login">
           <Ionicons name="close" size={28} color={isDark ? "#ffffff" : "#0a0a0a"} />
         </TouchableOpacity>
       </View>

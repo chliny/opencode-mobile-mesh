@@ -40,6 +40,8 @@ import (
 const (
 	startupTimeout      = 60 * time.Second
 	controlPlaneTimeout = 15 * time.Second
+	relayDialTimeout    = 8 * time.Second
+	relayDialAttempts   = 4
 )
 
 type status struct {
@@ -443,10 +445,7 @@ func serve(current *instance, remoteHost string, remotePort int) {
 
 func proxy(server *tsnet.Server, local net.Conn, remote string) {
 	defer local.Close()
-	logMessage("relay: dialing %s", remote)
-	ctx, cancel := context.WithTimeout(context.Background(), startupTimeout)
-	remoteConn, err := server.Dial(ctx, "tcp", remote)
-	cancel()
+	remoteConn, err := dialRelay(server, remote)
 	if err != nil {
 		logMessage("relay: dial failed remote=%s error=%s", remote, sanitizeError(err.Error()))
 		state.Lock()
@@ -472,6 +471,26 @@ func proxy(server *tsnet.Server, local net.Conn, remote string) {
 	_, _ = io.Copy(local, remoteConn)
 	_ = local.Close()
 	<-done
+}
+
+func dialRelay(server *tsnet.Server, remote string) (net.Conn, error) {
+	var last error
+	for attempt := 1; attempt <= relayDialAttempts; attempt++ {
+		logMessage("relay: dialing %s attempt=%d/%d", remote, attempt, relayDialAttempts)
+		ctx, cancel := context.WithTimeout(context.Background(), relayDialTimeout)
+		conn, err := server.Dial(ctx, "tcp", remote)
+		cancel()
+		if err == nil {
+			logMessage("relay: dial connected %s attempt=%d", remote, attempt)
+			return conn, nil
+		}
+		last = err
+		logMessage("relay: dial attempt failed remote=%s attempt=%d error=%s", remote, attempt, sanitizeError(err.Error()))
+		if attempt < relayDialAttempts {
+			time.Sleep(250 * time.Millisecond)
+		}
+	}
+	return nil, last
 }
 
 func dialDiagnosticCode(err error) string {
