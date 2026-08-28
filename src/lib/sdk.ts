@@ -509,6 +509,24 @@ export function createClient(config: ClientConfig) {
           body: JSON.stringify(params),
         }),
 
+      fork: (sessionID: string, messageID?: string) =>
+        request<Session>(config, `/session/${sessionID}/fork`, {
+          method: "POST",
+          body: JSON.stringify(messageID ? { messageID } : {}),
+        }),
+
+      share: (sessionID: string) =>
+        request<Session>(config, `/session/${sessionID}/share`, { method: "POST" }),
+
+      unshare: (sessionID: string) =>
+        request<Session>(config, `/session/${sessionID}/share`, { method: "DELETE" }),
+
+      summarize: (sessionID: string, params: { providerID: string; modelID: string }) =>
+        request<boolean>(config, `/session/${sessionID}/summarize`, {
+          method: "POST",
+          body: JSON.stringify(params),
+        }),
+
       messages: (sessionID: string, params?: { limit?: number }, timeoutMs = SESSION_MESSAGES_TIMEOUT_MS) => {
         const query = new URLSearchParams()
         if (params?.limit) query.set("limit", String(params.limit))

@@ -39,6 +39,7 @@ import {
   SelectableTextModal,
   FileMentionPopover,
   FileContextChips,
+  ForkMessageSheet,
   type SlashCommand,
   type Attachment,
 } from "../../src/components/chat"
@@ -55,7 +56,8 @@ import { extractCopyText, hasCopyableText } from "../../src/lib/message-copy-tex
 import { modelNameFor } from "../../src/lib/model-display"
 import { activeMention, insertMention } from "../../src/lib/file-review"
 import { childSessionTitle } from "../../src/lib/subagent"
-import type { PromptFileReference } from "../../src/lib/sdk"
+import { extractPromptFromParts } from "../../src/lib/prompt-from-parts"
+import type { Message, PromptFileReference } from "../../src/lib/sdk"
 import { cacheDiffs, cacheVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../../src/lib/session-file-cache"
 import { turnDiffsFromMessages, turnSummaryRecorded } from "../../src/lib/review-diffs"
 
@@ -82,6 +84,12 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
     icon: "person-outline",
     type: "builtin",
   },
+  { trigger: "fork", title: "", icon: "git-branch-outline", type: "builtin" },
+  { trigger: "undo", title: "", icon: "arrow-undo-outline", type: "builtin" },
+  { trigger: "redo", title: "", icon: "arrow-redo-outline", type: "builtin" },
+  { trigger: "compact", title: "", icon: "contract-outline", type: "builtin" },
+  { trigger: "share", title: "", icon: "share-outline", type: "builtin" },
+  { trigger: "unshare", title: "", icon: "eye-off-outline", type: "builtin" },
 ]
 
 const EMPTY_PROMPT_REFERENCES: PromptFileReference[] = []
@@ -138,9 +146,11 @@ export default function SessionScreen() {
   const removeFileContext = useSessions((state) => state.removeFileContext)
   const clearFileContexts = useSessions((state) => state.clearFileContexts)
   const sendMessage = useSessions((state) => state.sendMessage)
+  const createSession = useSessions((state) => state.createSession)
   const abortSession = useSessions((state) => state.abortSession)
   const loadOlderMessages = useSessions((state) => state.loadOlderMessages)
   const revertToMessage = useSessions((state) => state.revertToMessage)
+  const redoRevert = useSessions((state) => state.redoRevert)
   const unrevertSession = useSessions((state) => state.unrevertSession)
 
   const bindingAttempt = useRef(0)
@@ -275,6 +285,7 @@ export default function SessionScreen() {
   // Selectable text modal — keeps assistant text out of the nested FlatList
   // where RN Android selectable conflicts with virtualized scrolling.
   const [selectableText, setSelectableText] = useState<string | null>(null)
+  const [forkOpen, setForkOpen] = useState(false)
 
   // Voice input — transcript appends to the text input on completion
   const speech = useSpeech(
@@ -338,8 +349,13 @@ export default function SessionScreen() {
       icon: "code-slash-outline",
       type: "custom",
     }))
-    return [...custom, ...BUILTIN_COMMANDS]
-  }, [serverCommands])
+    const builtin = BUILTIN_COMMANDS.map((cmd) => ({
+      ...cmd,
+      title: t(`session.commands.${cmd.trigger}.title`),
+      description: t(`session.commands.${cmd.trigger}.description`),
+    }))
+    return [...custom, ...builtin]
+  }, [serverCommands, t])
 
   // While a revert is pending, the reverted message and everything after it
   // still exist server-side (cleanup only runs on the next prompt/unrevert)
@@ -401,6 +417,76 @@ export default function SessionScreen() {
         .map((f) => ({ uri: f.url, mime: f.mime, filename: f.filename })),
     )
   }, [t])
+
+  const forkSession = useCallback(async () => {
+    if (!sessionClient || !currentSession) return
+    const candidates = messages
+      .filter((message) => message.role === "user")
+      .slice()
+      .reverse()
+    if (candidates.length === 0) {
+      Alert.alert(t("session.alerts.forkTitle"), t("session.alerts.forkEmptyMessage"))
+      return
+    }
+
+    setForkOpen(true)
+  }, [currentSession, messages, parts, router, sessionClient, t])
+
+  const selectForkMessage = useCallback((message: Message) => {
+    if (!sessionClient || !currentSession) return
+    setForkOpen(false)
+    sessionClient.session.fork(currentSession.id, message.id)
+      .then((forked) => router.push({ pathname: "/session/[id]", params: { id: forked.id, ...(forked.directory ? { directory: forked.directory } : {}) } }))
+      .catch((error) => Alert.alert(t("session.alerts.forkTitle"), error instanceof Error ? error.message : t("session.alerts.commandFailedMessage")))
+  }, [currentSession, router, sessionClient, t])
+
+  const undoSession = useCallback(async () => {
+    const visible = messages.filter((message) => message.role === "user")
+    const boundary = currentSession?.revert?.messageID
+    const index = boundary ? visible.findIndex((message) => message.id === boundary) : visible.length
+    const target = visible[index - 1]
+    if (!target) return
+    const result = await revertToMessage(target.id)
+    applyRevertResult(result)
+  }, [applyRevertResult, currentSession?.revert?.messageID, messages, revertToMessage])
+
+  const redoSession = useCallback(async () => {
+    if (!currentSession?.revert?.messageID) return
+    await redoRevert()
+  }, [currentSession?.revert?.messageID, redoRevert])
+
+  const compactSession = useCallback(async () => {
+    if (!sessionClient || !currentSession || !model) return
+    try {
+      await sessionClient.session.summarize(currentSession.id, model)
+    } catch (error) {
+      Alert.alert(t("session.alerts.compactTitle"), error instanceof Error ? error.message : t("session.alerts.commandFailedMessage"))
+    }
+  }, [currentSession, model, sessionClient, t])
+
+  const shareSession = useCallback(async () => {
+    if (!sessionClient || !currentSession) return
+    try {
+      const session = currentSession.share?.url ? currentSession : await sessionClient.session.share(currentSession.id)
+      if (!session.share?.url) throw new Error(t("session.alerts.shareFailedMessage"))
+      await Clipboard.setStringAsync(session.share.url)
+      Alert.alert(t("session.alerts.shareTitle"), t("session.alerts.shareCopiedMessage"))
+      useSessions.setState((state) => ({ currentSession: state.currentSession?.id === session.id ? session : state.currentSession }))
+    } catch (error) {
+      Alert.alert(t("session.alerts.shareTitle"), error instanceof Error ? error.message : t("session.alerts.shareFailedMessage"))
+    }
+  }, [currentSession, sessionClient, t])
+
+  const unshareSession = useCallback(async () => {
+    if (!sessionClient || !currentSession?.share?.url) return
+    try {
+      const session = await sessionClient.session.unshare(currentSession.id)
+      useSessions.setState((state) => ({ currentSession: state.currentSession?.id === session.id ? session : state.currentSession }))
+      Alert.alert(t("session.alerts.unshareTitle"), t("session.alerts.unshareSuccessMessage"))
+    } catch (error) {
+      Alert.alert(t("session.alerts.unshareTitle"), error instanceof Error ? error.message : t("session.alerts.commandFailedMessage"))
+    }
+  }, [currentSession, sessionClient, t])
 
   // Stable across renders (reads fresh state via getState() rather than
   // closing over props) so MessageBubble's custom memo comparator can bail
@@ -566,11 +652,18 @@ export default function SessionScreen() {
 
   // Slash command handler
   const handleSlashSelect = useCallback(
-    (cmd: SlashCommand) => {
+    async (cmd: SlashCommand) => {
       if (cmd.type === "builtin") {
         switch (cmd.trigger) {
           case "new":
-            router.back()
+            {
+              const created = await createSession()
+              if (!created) {
+                Alert.alert(t("session.alerts.commandFailedTitle"), t("session.alerts.newSessionFailedMessage"))
+                return
+              }
+              router.push({ pathname: "/session/[id]", params: { id: created.id, ...(created.directory ? { directory: created.directory } : {}) } })
+            }
             return
           case "model":
             setInput("")
@@ -580,11 +673,35 @@ export default function SessionScreen() {
             setInput("")
             cycleAgent()
             return
+          case "fork":
+            setInput("")
+            await forkSession()
+            return
+          case "undo":
+            setInput("")
+            await undoSession()
+            return
+          case "redo":
+            setInput("")
+            await redoSession()
+            return
+          case "compact":
+            setInput("")
+            await compactSession()
+            return
+          case "share":
+            setInput("")
+            await shareSession()
+            return
+          case "unshare":
+            setInput("")
+            await unshareSession()
+            return
         }
       }
       setInput(`/${cmd.trigger} `)
     },
-    [router, cycleAgent],
+    [compactSession, createSession, cycleAgent, forkSession, redoSession, router, setInput, shareSession, t, undoSession, unshareSession],
   )
 
   const handleMentionSelect = useCallback((path: string) => {
@@ -1244,6 +1361,15 @@ export default function SessionScreen() {
         selected={variant}
         isDark={isDark}
         onSelect={setVariant}
+      />
+
+      <ForkMessageSheet
+        visible={forkOpen}
+        messages={messages.filter((message) => message.role === "user")}
+        textFor={(messageID) => extractPromptFromParts(parts[messageID]).text.replace(/\s+/g, " ").slice(0, 200)}
+        isDark={isDark}
+        onSelect={selectForkMessage}
+        onClose={() => setForkOpen(false)}
       />
 
       {/* Selectable text modal for assistant copy */}

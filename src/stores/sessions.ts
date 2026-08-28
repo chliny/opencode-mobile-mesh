@@ -70,6 +70,7 @@ interface SessionsState {
 
   // Revert (edit sent message) / unrevert (undo the pending revert)
   revertToMessage: (messageID: string) => Promise<RevertResult>
+  redoRevert: () => Promise<void>
   unrevertSession: () => Promise<void>
 
   // Event handling
@@ -531,6 +532,35 @@ export const useSessions = create<SessionsState>((set, get) => ({
       }))
     } catch (err) {
       console.error("Failed to unrevert session:", err)
+      set({ error: "Failed to restore reverted messages" })
+    }
+  },
+
+  redoRevert: async () => {
+    const client = clientFor(get().currentSession?.directory)
+    const session = get().currentSession
+    if (!client || !session?.revert?.messageID) return
+
+    const messages = get().messages.filter((message) => message.role === "user")
+    const boundary = messages.findIndex((message) => message.id === session.revert?.messageID)
+    const next = messages[boundary + 1]
+    try {
+      if (!next) {
+        await client.session.unrevert(session.id)
+        set((state) => ({
+          currentSession: state.currentSession?.id === session.id ? { ...session, revert: undefined } : state.currentSession,
+          transcriptRevision: state.currentSession?.id === session.id ? nextTranscriptRevision(state, session.id) : state.transcriptRevision,
+        }))
+        return
+      }
+
+      const updated = await client.session.revert(session.id, next.id)
+      set((state) => ({
+        currentSession: state.currentSession?.id === session.id ? updated : state.currentSession,
+        transcriptRevision: state.currentSession?.id === session.id ? nextTranscriptRevision(state, session.id) : state.transcriptRevision,
+      }))
+    } catch (error) {
+      console.error("Failed to redo revert:", error)
       set({ error: "Failed to restore reverted messages" })
     }
   },

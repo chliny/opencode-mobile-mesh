@@ -91,6 +91,14 @@
     "toolbar": {
       "auto": "Auto"
     },
+    "commands": {
+      "fork": { "title": "Fork Session", "description": "Create a new session from a message" },
+      "undo": { "title": "Undo", "description": "Revert the last message" },
+      "redo": { "title": "Redo", "description": "Restore the last reverted message" },
+      "compact": { "title": "Compact Session", "description": "Summarize the session to reduce context size" },
+      "share": { "title": "Share Session", "description": "Create and copy a share URL" },
+      "unshare": { "title": "Unshare Session", "description": "Make this session private again" }
+    },
     "banners": {
       "reconnecting": "Reconnecting… (attempt {{attempt}})",
       "connected": "Connected ✓",
@@ -149,7 +157,19 @@
       "speechErrorService": "The system speech recognition service is unavailable or does not have permission to use the microphone. Enable a speech recognition service, allow it to use the microphone, and try again.",
       "speechErrorAudio": "The microphone could not be started. Close other apps using the microphone and try again.",
       "speechErrorBusy": "Voice recognition is already in use. Stop the current recognition session and try again.",
-      "speechErrorClient": "The speech recognition service could not be started. Restart the app and try again."
+      "speechErrorClient": "The speech recognition service could not be started. Restart the app and try again.",
+      "commandFailedTitle": "Command failed",
+      "commandFailedMessage": "Could not complete this command. Please try again.",
+      "newSessionFailedMessage": "Could not create a new session. Please check your connection and try again.",
+      "forkTitle": "Fork session",
+      "forkMessage": "Choose a user message to start the new session from.",
+      "forkEmptyMessage": "There are no user messages to fork from.",
+      "compactTitle": "Compact session",
+      "shareTitle": "Share session",
+      "shareCopiedMessage": "The share URL was copied to the clipboard.",
+      "shareFailedMessage": "Could not create a share URL.",
+      "unshareTitle": "Unshare session",
+      "unshareSuccessMessage": "The session is private again."
     }
   },
   "files": {

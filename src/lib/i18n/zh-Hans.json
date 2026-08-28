@@ -91,6 +91,14 @@
     "toolbar": {
       "auto": "自动"
     },
+    "commands": {
+      "fork": { "title": "分叉会话", "description": "从一条消息创建新会话" },
+      "undo": { "title": "撤销", "description": "撤回上一条消息" },
+      "redo": { "title": "重做", "description": "恢复最近撤回的消息" },
+      "compact": { "title": "压缩会话", "description": "总结会话以减少上下文大小" },
+      "share": { "title": "分享会话", "description": "创建并复制分享链接" },
+      "unshare": { "title": "取消分享会话", "description": "将此会话恢复为私有" }
+    },
     "banners": {
       "reconnecting": "正在重新连接…（第 {{attempt}} 次尝试）",
       "connected": "已连接 ✓",
@@ -149,7 +157,19 @@
       "speechErrorService": "系统语音识别服务不可用，或该服务没有麦克风权限。请启用可用的语音识别服务，并允许其使用麦克风后重试。",
       "speechErrorAudio": "无法启动麦克风，请关闭其他正在使用麦克风的应用后重试。",
       "speechErrorBusy": "语音识别正在使用中，请先停止当前识别后重试。",
-      "speechErrorClient": "语音识别服务启动失败，请重启应用后重试。"
+      "speechErrorClient": "语音识别服务启动失败，请重启应用后重试。",
+      "commandFailedTitle": "命令执行失败",
+      "commandFailedMessage": "无法完成此命令，请重试。",
+      "newSessionFailedMessage": "无法创建新会话，请检查连接后重试。",
+      "forkTitle": "分叉会话",
+      "forkMessage": "选择新会话的起始用户消息。",
+      "forkEmptyMessage": "没有可用于分叉的用户消息。",
+      "compactTitle": "压缩会话",
+      "shareTitle": "分享会话",
+      "shareCopiedMessage": "分享链接已复制到剪贴板。",
+      "shareFailedMessage": "无法创建分享链接。",
+      "unshareTitle": "取消分享会话",
+      "unshareSuccessMessage": "会话已恢复为私有。"
     }
   },
   "files": {

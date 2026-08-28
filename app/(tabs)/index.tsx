@@ -276,6 +276,7 @@ export default function SessionsScreen() {
   const activeConnection = useConnections((state) => state.activeConnection)
   const client = useConnections((state) => state.client)
   const currentProject = useConnections((state) => state.currentProject)
+  const serverHome = useConnections((state) => state.serverHome)
   const serverDirectory = useConnections((state) => state.serverDirectory)
   const refreshProject = useConnections((state) => state.refreshProject)
   const clientForDirectory = useConnections((state) => state.clientForDirectory)
