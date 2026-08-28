@@ -1,5 +1,5 @@
 // Connection types for multiple server support
-export type ConnectionType = "local" | "tunnel" | "cloud" | "zerotier"
+export type ConnectionType = "local" | "tunnel" | "zerotier" | "tailscale"
 
 export interface ZeroTierPlanet {
   // Content-addressed identifier of the copy in the app's private storage.
@@ -17,6 +17,10 @@ export interface ZeroTierConnectionConfig {
   planet?: ZeroTierPlanet
 }
 
+export interface TailscaleConnectionConfig {
+  hostname?: string
+}
+
 export interface ServerConnection {
   id: string
   name: string
@@ -26,6 +30,8 @@ export interface ServerConnection {
   url: string
   // When present, all app traffic uses the embedded userspace ZeroTier relay.
   zerotier?: ZeroTierConnectionConfig
+  // When present, all app traffic uses the embedded tsnet userspace relay.
+  tailscale?: TailscaleConnectionConfig
   // For auth
   username?: string
   // Password stored separately in SecureStore

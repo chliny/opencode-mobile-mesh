@@ -31,7 +31,7 @@ function ConnectionItem({
         ? "globe"
         : connection.type === "zerotier"
           ? "git-network"
-          : "cloud"
+          : "git-branch"
 
   const handleLongPress = () => {
     Alert.alert(connection.name, t("connectionsList.actionsAlert.message"), [

@@ -3,12 +3,16 @@ node_modules/
 .android/
 scripts/build-android-release.sh
 scripts/start-android-emulator.sh
+scripts/android-tailscale-connection.py
 android/.gradle/
 android/app/build/
 android/build/
 android/.kotlin/
 modules/opencode-zerotier/android/.cxx/
 modules/opencode-zerotier/android/build/
+modules/opencode-tailscale/android/.cxx/
+modules/opencode-tailscale/android/build/
+modules/opencode-tailscale/android/src/main/jniLibs/
 ios/Pods/
 *.apk
 *.aab
@@ -17,6 +21,7 @@ ios/Pods/
 .env
 .env.*
 AGENTS.local.md
+opencode.json
 keystores/
 __pycache__/
 *.pyc

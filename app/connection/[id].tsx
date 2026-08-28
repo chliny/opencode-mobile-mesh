@@ -13,16 +13,19 @@ import {
   Alert,
 } from "react-native"
 import { router, useLocalSearchParams } from "expo-router"
+import * as Linking from "expo-linking"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useConnections } from "../../src/stores/connections"
 import { useEvents } from "../../src/stores/events"
-import type { ConnectionType, ZeroTierPlanet } from "../../src/lib/types"
+import type { ConnectionType, TailscaleConnectionConfig, ZeroTierPlanet } from "../../src/lib/types"
 import { embeddedZeroTier } from "@opencode-ai/zerotier"
 import { parseZeroTierTarget } from "../../src/lib/zerotier-routing"
+import { parseTailscaleTarget } from "../../src/lib/tailscale-routing"
 import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { parseUrl } from "../../src/lib/diagnostics-classify"
 import { buildAuth } from "../../src/lib/auth"
+import { clearConnectionDraft, getConnectionDraft, setConnectionDraft } from "../../src/lib/connection-drafts"
 
 // labelKey (not literal text): this is a module-level constant evaluated
 // before i18next is guaranteed ready, so the label is resolved with t() at
@@ -34,8 +37,8 @@ const CONNECTION_TYPES: Array<{
 }> = [
   { type: "local", labelKey: "connection.shared.types.local", icon: "wifi" },
   { type: "tunnel", labelKey: "connection.shared.types.tunnel", icon: "globe" },
-  { type: "cloud", labelKey: "connection.shared.types.cloud", icon: "cloud" },
   { type: "zerotier", labelKey: "connection.shared.types.zerotier", icon: "git-network" },
+  { type: "tailscale", labelKey: "connection.shared.types.tailscale", icon: "git-branch" },
 ]
 
 export default function EditConnectionScreen() {
@@ -47,36 +50,49 @@ export default function EditConnectionScreen() {
   const { connections, updateConnection, removeConnection, testConnection } = useConnections()
 
   const connection = connections.find((c) => c.id === id)
+  const draft = id ? getConnectionDraft(id) : undefined
 
-  const [type, setType] = useState<ConnectionType>(connection?.type || "local")
-  const [name, setName] = useState(connection?.name || "")
-  const [url, setUrl] = useState(connection?.url || "")
-  const [directory, setDirectory] = useState(connection?.directory || "")
-  const [username, setUsername] = useState(connection?.username || "")
-  const [password, setPassword] = useState("")
-  const [zeroTierNetworkId, setZeroTierNetworkId] = useState(connection?.zerotier?.networkId || "")
-  const [planet, setPlanet] = useState<ZeroTierPlanet | undefined>(connection?.zerotier?.planet)
-  const [planetBase64, setPlanetBase64] = useState(connection?.zerotier?.planet?.base64 || "")
-  const [showPlanetBase64, setShowPlanetBase64] = useState(Boolean(connection?.zerotier?.planet?.base64))
+  const [type, setType] = useState<ConnectionType>(draft?.type || connection?.type || "local")
+  const [name, setName] = useState(draft?.name || connection?.name || "")
+  const [url, setUrl] = useState(draft?.url || connection?.url || "")
+  const [directory, setDirectory] = useState(draft?.directory || connection?.directory || "")
+  const [username, setUsername] = useState(draft?.username || connection?.username || "")
+  const [password, setPassword] = useState(draft?.password || "")
+  const [zeroTierNetworkId, setZeroTierNetworkId] = useState(draft?.zeroTierNetworkId || connection?.zerotier?.networkId || "")
+  const [planet, setPlanet] = useState<ZeroTierPlanet | undefined>((draft?.planet as ZeroTierPlanet | undefined) || connection?.zerotier?.planet)
+  const [planetBase64, setPlanetBase64] = useState(draft?.planetBase64 || connection?.zerotier?.planet?.base64 || "")
+  const [showPlanetBase64, setShowPlanetBase64] = useState(draft?.showPlanetBase64 ?? Boolean(connection?.zerotier?.planet?.base64))
   const [planetImportSource, setPlanetImportSource] = useState<"file" | "base64" | null>(null)
   const isImportingPlanet = planetImportSource !== null
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [tailscaleHostname, setTailscaleHostname] = useState(draft?.tailscaleHostname || connection?.tailscale?.hostname || "")
 
   useEffect(() => {
     if (connection) {
-      setType(connection.type)
-      setName(connection.name)
-      setUrl(connection.url)
-      setDirectory(connection.directory || "")
-      setUsername(connection.username || "")
-      setZeroTierNetworkId(connection.zerotier?.networkId || "")
-      setPlanet(connection.zerotier?.planet)
-      const savedBase64 = connection.zerotier?.planet?.base64 || ""
+      const saved = getConnectionDraft(connection.id)
+      setType(saved?.type || connection.type)
+      setName(saved?.name ?? connection.name)
+      setUrl(saved?.url ?? connection.url)
+      setDirectory(saved?.directory ?? connection.directory ?? "")
+      setUsername(saved?.username ?? connection.username ?? "")
+      setPassword(saved?.password ?? "")
+      setZeroTierNetworkId(saved?.zeroTierNetworkId ?? connection.zerotier?.networkId ?? "")
+      setPlanet((saved?.planet as ZeroTierPlanet | undefined) || connection.zerotier?.planet)
+      const savedBase64 = saved?.planetBase64 ?? connection.zerotier?.planet?.base64 ?? ""
       setPlanetBase64(savedBase64)
-      setShowPlanetBase64(Boolean(savedBase64))
+      setShowPlanetBase64(saved?.showPlanetBase64 ?? Boolean(savedBase64))
+      setTailscaleHostname(saved?.tailscaleHostname ?? connection.tailscale?.hostname ?? "")
     }
-  }, [connection])
+  }, [connection?.id])
+
+  useEffect(() => {
+    if (!connection) return
+    setConnectionDraft(connection.id, {
+      type, name, url, directory, username, password, zeroTierNetworkId,
+      planet, planetBase64, showPlanetBase64, tailscaleHostname,
+    })
+  }, [connection?.id, type, name, url, directory, username, password, zeroTierNetworkId, planet, planetBase64, showPlanetBase64, tailscaleHostname])
 
   if (!connection) {
     return (
@@ -92,18 +108,29 @@ export default function EditConnectionScreen() {
       Alert.alert(t("common.error"), t("connection.shared.alerts.enterUrl"))
       return
     }
-    if (type !== "zerotier" && !parseUrl(connectionUrl).valid) {
+    if (type !== "zerotier" && type !== "tailscale" && !parseUrl(connectionUrl).valid) {
       Alert.alert(t("connection.shared.alerts.invalidUrlTitle"), t("connection.shared.alerts.invalidUrlMessage"))
       return
     }
     const zerotier = type === "zerotier"
       ? { networkId: zeroTierNetworkId.trim(), planet }
       : undefined
+    const tailscale: TailscaleConnectionConfig | undefined = type === "tailscale"
+      ? { hostname: tailscaleHostname.trim() || undefined }
+      : undefined
     if (zerotier) {
       try {
         parseZeroTierTarget({ networkId: zerotier.networkId, url: connectionUrl })
       } catch (error) {
         Alert.alert(t("connection.zerotier.invalidTitle"), error instanceof Error ? error.message : String(error))
+        return
+      }
+    }
+    if (tailscale) {
+      try {
+        parseTailscaleTarget(connectionUrl)
+      } catch (error) {
+        Alert.alert(t("connection.tailscale.invalidTitle"), error instanceof Error ? error.message : String(error))
         return
       }
     }
@@ -118,6 +145,7 @@ export default function EditConnectionScreen() {
         directory: directory.trim() || undefined,
         username: username.trim() || undefined,
         zerotier,
+        tailscale,
       },
       "edit_test",
       password || undefined,
@@ -129,8 +157,20 @@ export default function EditConnectionScreen() {
       return
     }
 
-    if (type === "zerotier") {
+    if (type === "zerotier" || type === "tailscale") {
       setIsTesting(false)
+      if (type === "tailscale" && result.loginUrl) {
+        try {
+          await Linking.openURL(result.loginUrl)
+        } catch {
+          // Keep the alert available as a manual fallback if the system cannot open the URL.
+        }
+        Alert.alert(t("connection.tailscale.loginTitle"), t("connection.tailscale.loginMessage"), [
+          { text: t("common.ok"), style: "cancel" },
+          { text: t("common.openBrowser"), onPress: () => void Linking.openURL(result.loginUrl!) },
+        ])
+        return
+      }
       Alert.alert(
         t("connection.shared.alerts.connectionFailedTitle"),
         result.error || t("connection.shared.alerts.unknownError"),
@@ -165,18 +205,29 @@ export default function EditConnectionScreen() {
       Alert.alert(t("common.error"), t("connection.shared.alerts.enterUrl"))
       return
     }
-    if (type !== "zerotier" && !parseUrl(connectionUrl).valid) {
+    if (type !== "zerotier" && type !== "tailscale" && !parseUrl(connectionUrl).valid) {
       Alert.alert(t("connection.shared.alerts.invalidUrlTitle"), t("connection.shared.alerts.invalidUrlMessage"))
       return
     }
     const zerotier = type === "zerotier"
       ? { networkId: zeroTierNetworkId.trim(), planet }
       : undefined
+    const tailscale: TailscaleConnectionConfig | undefined = type === "tailscale"
+      ? { hostname: tailscaleHostname.trim() || undefined }
+      : undefined
     if (zerotier) {
       try {
         parseZeroTierTarget({ networkId: zerotier.networkId, url: connectionUrl })
       } catch (error) {
         Alert.alert(t("connection.zerotier.invalidTitle"), error instanceof Error ? error.message : String(error))
+        return
+      }
+    }
+    if (tailscale) {
+      try {
+        parseTailscaleTarget(connectionUrl)
+      } catch (error) {
+        Alert.alert(t("connection.tailscale.invalidTitle"), error instanceof Error ? error.message : String(error))
         return
       }
     }
@@ -192,6 +243,7 @@ export default function EditConnectionScreen() {
           directory: directory.trim() || undefined,
           username: username.trim() || undefined,
           zerotier,
+          tailscale,
         },
         // Empty = keep existing password (the field loads blank); a typed value
         // rotates it in SecureStore.
@@ -204,6 +256,7 @@ export default function EditConnectionScreen() {
       if (useConnections.getState().activeConnection?.id === connection.id) {
         useEvents.getState().connect()
       }
+      clearConnectionDraft(connection.id)
       setIsSaving(false)
       router.back()
     } catch {
@@ -321,7 +374,7 @@ export default function EditConnectionScreen() {
       <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.shared.serverUrl")}</Text>
       <TextInput
         style={[styles.input, isDark && styles.inputDark]}
-        placeholder={type === "zerotier" ? "http://10.10.0.8:4096" : "http://192.168.1.100:4096"}
+        placeholder={type === "zerotier" ? "http://10.10.0.8:4096" : type === "tailscale" ? "http://100.64.12.34:4096" : "http://192.168.1.100:4096"}
         placeholderTextColor={isDark ? "#666666" : "#999999"}
         value={url}
         onChangeText={setUrl}
@@ -329,9 +382,29 @@ export default function EditConnectionScreen() {
         autoCorrect={false}
         keyboardType="url"
       />
-      {type === "zerotier" && (
-        <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.httpHint")}</Text>
-      )}
+       {type === "zerotier" && (
+         <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.httpHint")}</Text>
+        )}
+       {type === "tailscale" && (
+         <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.tailscale.httpHint")}</Text>
+       )}
+
+       {type === "tailscale" && (
+         <View style={[styles.zeroTierBox, isDark && styles.zeroTierBoxDark]}>
+           <Text style={[styles.sectionTitle, styles.zeroTierTitle, isDark && styles.textDark]}>{t("connection.tailscale.title")}</Text>
+           <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.tailscale.routeHint")}</Text>
+           <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.tailscale.hostname")}</Text>
+           <TextInput
+             style={[styles.input, isDark && styles.inputDark]}
+             placeholder="opencode-mobile"
+             placeholderTextColor={isDark ? "#666666" : "#999999"}
+             value={tailscaleHostname}
+             onChangeText={setTailscaleHostname}
+             autoCapitalize="none"
+             autoCorrect={false}
+           />
+         </View>
+       )}
 
       {type === "zerotier" && (
         <View style={[styles.zeroTierBox, isDark && styles.zeroTierBoxDark]}>

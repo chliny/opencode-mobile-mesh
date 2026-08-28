@@ -1,4 +1,4 @@
-import { requireOptionalNativeModule } from "expo-modules-core"
+import { requireOptionalNativeModule, type EventSubscription } from "expo-modules-core"
 
 export interface ZeroTierStartOptions {
   profileId: string
@@ -19,7 +19,18 @@ export interface ZeroTierStatus {
   networkStatus?: string
   remoteHost?: string
   resolvedAddresses?: string[]
+  networkAvailable?: boolean
+  networkType?: string
+  lastNetworkChangeAt?: number
+  diagnosticCode?: string
+  diagnosticMessage?: string
   error?: string
+}
+
+export interface NetworkChangedEvent {
+  available: boolean
+  type: string
+  at: number
 }
 
 export interface InstalledPlanet {
@@ -33,6 +44,7 @@ interface NativeZeroTierModule {
   start(options: ZeroTierStartOptions): Promise<ZeroTierStatus>
   stop(): Promise<void>
   getStatus(): Promise<ZeroTierStatus>
+  addListener(event: "networkChanged", listener: (event: NetworkChangedEvent) => void): EventSubscription
   pickPlanetFile(): Promise<InstalledPlanet | null>
   installPlanetBase64(encoded: string): Promise<InstalledPlanet>
   installPlanet(uri: string, name?: string): Promise<InstalledPlanet>
@@ -58,4 +70,6 @@ export const embeddedZeroTier = {
   installPlanetBase64: (encoded: string) => requireAndroidModule().installPlanetBase64(encoded),
   installPlanet: (uri: string, name?: string) => requireAndroidModule().installPlanet(uri, name),
   removePlanet: (id: string) => (native ? native.removePlanet(id) : Promise.resolve()),
+  addNetworkListener: (listener: (event: NetworkChangedEvent) => void) =>
+    native?.addListener("networkChanged", listener) || { remove: () => {} },
 }

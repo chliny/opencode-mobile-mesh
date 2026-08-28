@@ -5,6 +5,7 @@
     "error": "错误",
     "delete": "删除",
     "retry": "重试",
+    "openBrowser": "打开浏览器",
     "save": "保存",
     "shareReport": "分享报告",
     "back": "返回",
@@ -175,8 +176,8 @@
       "types": {
         "local": "本地",
         "tunnel": "隧道",
-        "cloud": "云端",
-        "zerotier": "ZeroTier"
+        "zerotier": "ZeroTier",
+        "tailscale": "Tailscale"
       },
       "name": "名称",
       "namePlaceholder": "我的服务器",
@@ -216,6 +217,15 @@
       "selectedPlanet": "{{name}} · SHA-256 {{hash}}…",
       "invalidTitle": "ZeroTier 配置无效",
       "importFailedTitle": "无法导入 Planet"
+    },
+    "tailscale": {
+      "title": "内置 Tailscale",
+      "routeHint": "该连接会在 App 内运行 tsnet 节点，只将此 OpenCode 连接的流量通过其中转发。不创建系统 VPN，也不会占用 Android VPN 槽。",
+      "httpHint": "请使用 Tailscale IP 或 MagicDNS 主机名，并使用 http://。到服务器的 TCP 流量会经过内置中继；当前 localhost 中继尚无法校验远端 HTTPS 证书。",
+      "loginTitle": "登录 Tailscale",
+      "loginMessage": "请在浏览器中完成登录并批准此 App 内的 Tailscale 节点，然后返回这里再次测试连接。",
+      "hostname": "Tailnet 主机名（可选）",
+      "invalidTitle": "Tailscale 配置无效"
     },
     "add": {
       "quick": {

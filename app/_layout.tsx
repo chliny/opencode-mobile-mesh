@@ -11,6 +11,7 @@ import { useAuth } from "../src/stores/auth"
 import { useConnections } from "../src/stores/connections"
 import { useEvents } from "../src/stores/events"
 import { useCatalog } from "../src/stores/catalog"
+import { useSessions } from "../src/stores/sessions"
 import { useSettings } from "../src/stores/settings"
 import { AuthGate } from "../src/components/AuthGate"
 import { ErrorBoundary } from "../src/components/ErrorBoundary"
@@ -125,6 +126,10 @@ function RootLayout() {
       sseStarted.current = true
       useEvents.getState().connect()
       useCatalog.getState().load()
+      // App-local relays become ready after the session tab's initial focus
+      // load. Refresh here once the client exists so that early empty request
+      // cannot leave a newly connected ZeroTier profile with a blank list.
+      void useSessions.getState().loadSessions()
       // Request OS notification permission once we have a live connection —
       // the in-context moment the user will start running agent tasks they'll
       // want to be pinged about. Previously this was only ever requested when
