@@ -21,6 +21,7 @@ ios/Pods/
 .env
 .env.*
 AGENTS.local.md
+opencode.json
 keystores/
 __pycache__/
 *.pyc
