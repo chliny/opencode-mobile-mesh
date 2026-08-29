@@ -251,6 +251,22 @@ export interface HealthResponse {
   version: string
 }
 
+export interface PtyInfo {
+  id: string
+  title: string
+  command: string
+  args: string[]
+  cwd: string
+  status: "running" | "exited"
+  pid: number
+  exitCode?: number
+}
+
+export interface PtyConnectToken {
+  ticket: string
+  api: boolean
+}
+
 const REQUEST_TIMEOUT_MS = 30_000
 const VCS_DIFF_TIMEOUT_MS = 120_000
 const SESSION_MESSAGES_TIMEOUT_MS = 60_000
@@ -333,6 +349,28 @@ export function createClient(config: ClientConfig) {
   // reconstructs a clean URL, reports "works now"). A bare URL with no
   // trailing slash is untouched.
   config = { ...config, baseUrl: config.baseUrl.replace(/\/+$/, "") }
+  const locationQuery = () => {
+    const query = new URLSearchParams()
+    if (config.directory) query.set("location[directory]", config.directory)
+    return query.toString()
+  }
+  const legacyQuery = () => (config.directory ? `?directory=${encodeURIComponent(config.directory)}` : "")
+  const unwrapPty = <T>(value: T | { data?: T }): T => {
+    if (typeof value === "object" && value !== null && "data" in value && value.data !== undefined) return value.data as T
+    return value as T
+  }
+  const ptyRequest = async <T>(path: string, legacyPath: string, options: RequestInit = {}) => {
+    try {
+      return unwrapPty(await request<T | { data?: T }>(config, `/api${path}`, options))
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 404) throw error
+      return unwrapPty(await request<T | { data?: T }>(config, legacyPath, options))
+    }
+  }
+  const ptyPath = (path: string) => {
+    const query = locationQuery()
+    return `${path}${query ? `?${query}` : ""}`
+  }
   return {
     global: {
       // `timeoutMs` overrides the default REQUEST_TIMEOUT_MS — used by the
@@ -462,6 +500,70 @@ export function createClient(config: ClientConfig) {
     path: {
       get: () =>
         request<{ home: string; state: string; config: string; worktree: string; directory: string }>(config, "/path"),
+    },
+
+    pty: {
+      list: async () => {
+        try {
+          return unwrapPty(await request<PtyInfo[] | { data?: PtyInfo[] }>(config, "/api/pty" + (locationQuery() ? `?${locationQuery()}` : "")))
+        } catch (error) {
+          if (!(error instanceof ApiError) || error.status !== 404) throw error
+          return unwrapPty(await request<PtyInfo[] | { data?: PtyInfo[] }>(config, `/pty${legacyQuery()}`))
+        }
+      },
+      create: async (params: { title?: string; cwd?: string; command?: string; args?: string[] } = {}) =>
+        ptyRequest<PtyInfo>(ptyPath("/pty"), `/pty${legacyQuery()}`, {
+          method: "POST",
+          body: JSON.stringify(params),
+        }),
+      remove: (ptyID: string) =>
+        ptyRequest<boolean>(ptyPath(`/pty/${encodeURIComponent(ptyID)}`), `/pty/${encodeURIComponent(ptyID)}${legacyQuery()}`, {
+          method: "DELETE",
+        }),
+      update: (ptyID: string, params: { title?: string; size?: { rows: number; cols: number } }) =>
+        ptyRequest<PtyInfo>(ptyPath(`/pty/${encodeURIComponent(ptyID)}`), `/pty/${encodeURIComponent(ptyID)}${legacyQuery()}`, {
+          method: "PUT",
+          body: JSON.stringify(params),
+        }),
+      connectToken: async (ptyID: string) => {
+        const headers = { ...createHeaders(config), "x-opencode-ticket": "1" }
+        try {
+          const result = await request<{ ticket: string } | { data?: { ticket: string } }>(
+            config,
+            `/api/pty/${encodeURIComponent(ptyID)}/connect-token${locationQuery() ? `?${locationQuery()}` : ""}`,
+            { method: "POST", headers },
+          )
+          return { ...unwrapPty(result), api: true }
+        } catch (error) {
+          if (!(error instanceof ApiError) || error.status !== 404) throw error
+          try {
+            const result = await request<{ ticket: string } | { data?: { ticket: string } }>(
+              config,
+              `/pty/${encodeURIComponent(ptyID)}/connect-token${legacyQuery()}`,
+              { method: "POST", headers },
+            )
+            return { ...unwrapPty(result), api: false }
+          } catch (legacyError) {
+            if (legacyError instanceof ApiError && legacyError.status === 404) return undefined
+            throw legacyError
+          }
+        }
+      },
+      websocketUrl: (ptyID: string, cursor = 0, token?: PtyConnectToken) => {
+        const path = token?.api ? `/api/pty/${encodeURIComponent(ptyID)}/connect` : `/pty/${encodeURIComponent(ptyID)}/connect`
+        const query = new URLSearchParams()
+        if (config.directory) query.set(token?.api ? "location[directory]" : "directory", config.directory)
+        query.set("cursor", String(cursor))
+        if (token?.ticket) query.set("ticket", token.ticket)
+        else if (config.auth) {
+          const credentials = btoa(unescape(encodeURIComponent(`${config.auth.username}:${config.auth.password}`)))
+          query.set("auth_token", credentials)
+        }
+        const url = new URL(`${config.baseUrl}${path}`)
+        url.search = query.toString()
+        url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
+        return url.toString()
+      },
     },
 
     session: {

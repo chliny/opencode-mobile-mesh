@@ -306,8 +306,17 @@
     "sessionsTab": "Sessions",
     "connectionsTab": "Connections",
     "settingsTab": "Settings",
+    "terminalTab": "Terminal",
     "addConnectionTitle": "Add Connection",
     "editConnectionTitle": "Edit Connection"
+  },
+  "terminal": {
+    "new": "New terminal",
+    "empty": "Create a terminal to start using the shell.",
+    "noConnection": "Connect to an OpenCode server to use the terminal.",
+    "inputPlaceholder": "Type a command or input",
+    "deleteTitle": "Close terminal",
+    "deleteMessage": "Close this terminal session?"
   },
   "connectionsList": {
     "activeBadge": "Active",

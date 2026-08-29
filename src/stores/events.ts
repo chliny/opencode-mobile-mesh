@@ -19,6 +19,7 @@ import { log } from "../lib/logbuffer"
 import { RECONNECT_DELAYS_MS, type TransportState } from "../lib/sse-liveness"
 import { messageErrorText } from "../lib/model-error"
 import type { Client, Part, Session, Message } from "../lib/sdk"
+import { useTerminal } from "./terminal"
 
 // Session status from the server
 type SessionStatus = { type: "idle" } | { type: "busy" } | { type: "retry"; attempt: number; message: string }
@@ -271,6 +272,11 @@ export const useEvents = create<EventsState>((set, get) => ({
           const payload = (event as any).payload || event
           const type = payload.type as string
           const props = payload.properties || {}
+
+          if (type.startsWith("pty.")) {
+            void useTerminal.getState().load()
+            continue
+          }
 
           switch (type) {
             case "session.status": {

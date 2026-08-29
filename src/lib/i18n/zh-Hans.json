@@ -306,8 +306,17 @@
     "sessionsTab": "会话",
     "connectionsTab": "连接",
     "settingsTab": "设置",
+    "terminalTab": "终端",
     "addConnectionTitle": "添加连接",
     "editConnectionTitle": "编辑连接"
+  },
+  "terminal": {
+    "new": "新建终端",
+    "empty": "创建一个终端开始使用 Shell。",
+    "noConnection": "请先连接 OpenCode 服务器以使用终端。",
+    "inputPlaceholder": "输入命令或终端内容",
+    "deleteTitle": "关闭终端",
+    "deleteMessage": "确定关闭此终端会话吗？"
   },
   "connectionsList": {
     "activeBadge": "当前使用",
