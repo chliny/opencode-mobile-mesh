@@ -323,15 +323,25 @@ class OpenCodeZeroTierModule : Module() {
 
     if (assignedAddress == null) {
       val networkStatusLabel = networkStatusName(networkStatus)
-      val message = when (networkStatus) {
-        0 -> "ZeroTier node ${nodeId ?: "unknown"} is still requesting network configuration; retry the connection"
-        1 -> "ZeroTier node ${nodeId ?: "unknown"} is authorized but has no managed IP address; assign an IP in the network controller, then retry"
-        2 -> "Authorize ZeroTier node ${nodeId ?: "unknown"} in the network controller, then retry the connection"
-        else -> "ZeroTier node ${nodeId ?: "unknown"} has no assigned address (network status: $networkStatusLabel); retry the connection"
-      }
-      status = mapOf(
-        "state" to "awaiting_authorization",
-        "phase" to "waiting_authorization",
+       val message = when (networkStatus) {
+         0 -> "ZeroTier node ${nodeId ?: "unknown"} has not received network configuration yet; the controller may be unreachable, the network ID may be incorrect, or the node may still be pending authorization"
+         1 -> "ZeroTier node ${nodeId ?: "unknown"} is authorized but has no managed IP address; assign an IP in the network controller, then retry"
+         2 -> "ZeroTier node ${nodeId ?: "unknown"} was denied access to the network; authorize it in the network controller, then retry the connection"
+         else -> "ZeroTier node ${nodeId ?: "unknown"} has no assigned address (network status: $networkStatusLabel); check the network controller and retry the connection"
+       }
+       val state = when (networkStatus) {
+         0 -> "waiting_for_configuration"
+         1 -> "configuration_incomplete"
+         2 -> "awaiting_authorization"
+         else -> "error"
+       }
+       val phase = when (networkStatus) {
+         2 -> "waiting_authorization"
+         else -> "waiting_configuration"
+       }
+       status = mapOf(
+         "state" to state,
+         "phase" to phase,
         "nodeId" to nodeId,
         "networkStatus" to networkStatusLabel,
         "error" to message,
@@ -443,14 +453,18 @@ class OpenCodeZeroTierModule : Module() {
   }
 
   private fun installPlanetBase64(encoded: String): Map<String, Any> {
-    val input = encoded.trim()
+    val input = encoded.filterNot(Char::isWhitespace)
     require(input.isNotEmpty()) { "Planet Base64 cannot be empty" }
     require(input.length <= MAX_PLANET_BASE64_CHARS) { "Planet Base64 is too large" }
+    require(input.length % 4 == 0 && input.matches(Regex("^[A-Za-z0-9+/]*={0,2}$"))) {
+      "Planet Base64 is invalid"
+    }
     val bytes = try {
-      Base64.decode(input, Base64.DEFAULT)
+      Base64.decode(input, Base64.NO_WRAP)
     } catch (error: IllegalArgumentException) {
       throw IllegalArgumentException("Planet Base64 is invalid", error)
     }
+    require(Base64.encodeToString(bytes, Base64.NO_WRAP) == input) { "Planet Base64 is invalid" }
     return installPlanetBytes(bytes)
   }
 

@@ -4,6 +4,7 @@ node_modules/
 scripts/build-android-release.sh
 scripts/start-android-emulator.sh
 scripts/android-tailscale-connection.py
+scripts/android-zerotier-connection.py
 android/.gradle/
 android/app/build/
 android/build/

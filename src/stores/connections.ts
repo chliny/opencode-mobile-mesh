@@ -130,9 +130,28 @@ async function resolveConnectionRoute(
     planetId: connection.zerotier!.planet?.id,
     forceRestart,
   })
+  if (result.state === "waiting_for_configuration") {
+    throw new Error(
+      i18n.t("connection.zerotier.configurationPending", {
+        nodeId: result.nodeId || "unknown",
+        networkId: normalizedNetworkId,
+      }),
+    )
+  }
+  if (result.state === "configuration_incomplete") {
+    throw new Error(
+      i18n.t("connection.zerotier.configurationIncomplete", {
+        nodeId: result.nodeId || "unknown",
+        networkId: normalizedNetworkId,
+      }),
+    )
+  }
   if (result.state === "awaiting_authorization") {
     throw new Error(
-      result.error || i18n.t("connection.zerotier.authorizationRequired", { nodeId: result.nodeId || "unknown" }),
+      i18n.t("connection.zerotier.authorizationRequired", {
+        nodeId: result.nodeId || "unknown",
+        networkId: normalizedNetworkId,
+      }),
     )
   }
   if (result.state !== "ready" || !result.baseUrl) {

@@ -11,8 +11,8 @@ export interface ZeroTierStartOptions {
 }
 
 export interface ZeroTierStatus {
-  state: "stopped" | "starting" | "awaiting_authorization" | "ready" | "error"
-  phase?: "starting_node" | "joining_network" | "waiting_authorization"
+  state: "stopped" | "starting" | "waiting_for_configuration" | "configuration_incomplete" | "awaiting_authorization" | "ready" | "error"
+  phase?: "starting_node" | "joining_network" | "waiting_configuration" | "waiting_authorization"
   baseUrl?: string
   nodeId?: string
   assignedAddress?: string
