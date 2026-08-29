@@ -3,7 +3,7 @@
 #include "ZeroTierSockets.h"
 
 extern "C" JNIEXPORT jint JNICALL
-Java_cc_agentlabs_opencode_zerotier_OpenCodeZeroTierNative_safeNodeStop(
+Java_me_chliny_opencode_zerotier_module_OpenCodeZeroTierNative_safeNodeStop(
     JNIEnv*,
     jclass)
 {

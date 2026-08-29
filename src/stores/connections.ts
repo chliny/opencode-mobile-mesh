@@ -584,6 +584,12 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         log.info("route", "refresh start", `force=${forceRestart}`)
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
         const auth = buildAuth(active.username, password)
+        // The embedded relays are process-wide native singletons. Tear down
+        // the other relay before starting this route so switching between
+        // ZeroTier and Tailscale cannot leave both native services alive.
+        if (active.zerotier) await embeddedTailscale.stop()
+        if (active.tailscale) await embeddedZeroTier.stop()
+        if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
         // Do not restart a live ZeroTier relay because a one-shot health probe
         // timed out. The probe uses a separate short-lived socket and can fail
         // while the long-lived SSE transport is healthy; restarting here would

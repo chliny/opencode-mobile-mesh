@@ -433,7 +433,7 @@ class OpenCodeZeroTierModule : Module() {
   private fun waitForNodeStopped(currentNode: ZeroTierNode) {
     val deadline = System.currentTimeMillis() + NODE_STOP_TIMEOUT_MS
     while (System.currentTimeMillis() < deadline) {
-      if (!runCatching { currentNode.isOnline() }.getOrDefault(false)) return
+      if (!runCatching { currentNode.isOnline() }.getOrDefault(false)) break
       Thread.sleep(50)
     }
     // The service thread clears libzt's global service pointer shortly after
