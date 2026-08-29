@@ -64,7 +64,7 @@ async function post(
 
 async function createContact(fetchFn: typeof fetch, cfg: ChatwootConfig): Promise<string> {
   const { status, json } = await post(fetchFn, `${cfg.baseUrl}/public/api/v1/inboxes/${cfg.inboxIdentifier}/contacts`, {
-    name: "OpenCode Mobile (ZeroTier Edition) user",
+    name: "OpenCode Mobile (Mesh Edition) user",
   })
   const sourceId = json?.source_id
   if (status >= 400 || typeof sourceId !== "string" || !sourceId) {

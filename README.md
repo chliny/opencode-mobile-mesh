@@ -1,4 +1,4 @@
-# OpenCode Mobile (ZeroTier Edition)
+# OpenCode Mobile (Mesh Edition)
 
 **The open-source Android client for the [opencode](https://github.com/sst/opencode) AI coding agent.**
 AI-assisted coding from your phone — Android, via a direct APK or a build from source.
@@ -173,7 +173,7 @@ planet files and build requirements: [docs/embedded-zerotier.md](docs/embedded-z
 
 ## Project Status
 
-**Current version: v0.4.15 (ZeroTier Edition)**
+**Current version: v0.4.15 (Mesh Edition)**
 
 | Feature | Status |
 |---|---|
@@ -200,7 +200,7 @@ planet files and build requirements: [docs/embedded-zerotier.md](docs/embedded-z
 
 We welcome bug reports, feature requests, and pull requests. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up a dev environment and the contribution process.
 
-**Building from source** (required for the ZeroTier Edition): the app compiles `libzt` from source via a
+**Building from source** (required for the Mesh Edition): the app compiles `libzt` from source via a
 pinned git submodule, so clone recursively first:
 
 ```sh
