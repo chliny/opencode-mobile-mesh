@@ -230,7 +230,7 @@
       "decodePlanetBase64": "Decode and use planet",
       "planetBase64Hint": "The Base64 text is stored locally with this connection so it remains visible and editable next time.",
       "planetBase64Empty": "Paste the planet Base64 text first.",
-      "authorizationRequired": "Authorize ZeroTier node {{nodeId}} in the network controller, then retry the connection or connection test.",
+      "planetBase64Invalid": "The planet text is not valid standard Base64. Use the output of: base64 -w 0 planet",
       "planetRenameHint": "Any filename and file type is supported. The app stores the imported file as planet in private storage.",
       "useDefaultPlanet": "Use default ZeroTier planet",
       "defaultPlanet": "Using the default ZeroTier planet.",

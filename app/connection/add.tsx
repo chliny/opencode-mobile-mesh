@@ -22,6 +22,7 @@ import type { ConnectionType, TailscaleConnectionConfig, ZeroTierPlanet } from "
 import { embeddedZeroTier } from "@opencode-ai/zerotier"
 import { embeddedTailscale } from "@opencode-ai/tailscale"
 import { parseZeroTierTarget } from "../../src/lib/zerotier-routing"
+import { isStandardBase64 } from "../../src/lib/base64"
 import { parseTailscaleTarget } from "../../src/lib/tailscale-routing"
 import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { parseUrl } from "../../src/lib/diagnostics-classify"
@@ -327,6 +328,10 @@ export default function AddConnectionScreen() {
     const encoded = planetBase64.trim()
     if (!encoded) {
       Alert.alert(t("connection.zerotier.importFailedTitle"), t("connection.zerotier.planetBase64Empty"))
+      return
+    }
+    if (!isStandardBase64(encoded)) {
+      Alert.alert(t("connection.zerotier.importFailedTitle"), t("connection.zerotier.planetBase64Invalid"))
       return
     }
     setPlanetImportSource("base64")

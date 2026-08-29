@@ -230,7 +230,7 @@
       "decodePlanetBase64": "解码并使用 planet",
       "planetBase64Hint": "Base64 文本会随此连接配置保存在本机，下次编辑时仍可查看和更新。",
       "planetBase64Empty": "请先粘贴 planet 的 Base64 文本。",
-      "authorizationRequired": "请先在 ZeroTier 网络控制器中授权节点 {{nodeId}}，然后重新连接或再次测试连接。",
+      "planetBase64Invalid": "planet 文本不是合法的标准 Base64。请使用 base64 -w 0 planet 的输出。",
       "planetRenameHint": "支持任意文件名和文件类型；导入后 App 会在私有存储中统一保存为 planet。",
       "useDefaultPlanet": "使用默认 ZeroTier planet",
       "defaultPlanet": "正在使用 ZeroTier 默认 planet。",
