@@ -1,0 +1,45 @@
+import assert from "node:assert/strict"
+import test from "node:test"
+import { PtyOutputDecoder } from "./pty-output.ts"
+
+function frame(text: string): ArrayBuffer {
+  return new TextEncoder().encode(text).buffer
+}
+
+test("decodes raw PTY output bytes", () => {
+  const decoder = new PtyOutputDecoder()
+  assert.equal(decoder.decode(frame("hello")), "hello")
+})
+
+test("preserves UTF-8 characters split across websocket frames", () => {
+  const decoder = new PtyOutputDecoder()
+  const bytes = new TextEncoder().encode("终端")
+  const first = new Uint8Array([bytes[0], bytes[1]])
+  const second = bytes.slice(2)
+  assert.equal(decoder.decode(first.buffer), "")
+  assert.equal(decoder.decode(second.buffer), "终端")
+  assert.equal(decoder.flush(), "")
+})
+
+test("ignores non-output PTY frames", () => {
+  const decoder = new PtyOutputDecoder()
+  const metadata = new TextEncoder().encode('{"cursor":12}')
+  assert.equal(decoder.decode(new Uint8Array([0, ...metadata]).buffer), "")
+})
+
+test("removes ANSI and OSC control sequences while preserving terminal text", () => {
+  const decoder = new PtyOutputDecoder()
+  const text = "\u001b[1m➜\u001b[0m ~/project\u001b]2;title\u0007\n"
+  assert.equal(decoder.decode(new TextEncoder().encode(text).buffer), "➜ ~/project\n")
+})
+
+test("removes ANSI sequences split across frames", () => {
+  const decoder = new PtyOutputDecoder()
+  assert.equal(decoder.decode(new TextEncoder().encode("hello\u001b[").buffer), "hello")
+  assert.equal(decoder.decode(new TextEncoder().encode("31mworld\u001b[0m").buffer), "world")
+})
+
+test("cleans text websocket frames", () => {
+  const decoder = new PtyOutputDecoder()
+  assert.equal(decoder.decodeText("\u001b[32m中文\u001b[0m\n"), "中文\n")
+})

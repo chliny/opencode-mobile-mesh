@@ -84,6 +84,13 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
     icon: "person-outline",
     type: "builtin",
   },
+  {
+    trigger: "terminal",
+    title: "Open Terminal",
+    description: "Open the standalone terminal",
+    icon: "terminal-outline",
+    type: "builtin",
+  },
   { trigger: "fork", title: "", icon: "git-branch-outline", type: "builtin" },
   { trigger: "undo", title: "", icon: "arrow-undo-outline", type: "builtin" },
   { trigger: "redo", title: "", icon: "arrow-redo-outline", type: "builtin" },
@@ -672,6 +679,10 @@ export default function SessionScreen() {
           case "agent":
             setInput("")
             cycleAgent()
+            return
+          case "terminal":
+            setInput("")
+            router.push("/(tabs)/terminal")
             return
           case "fork":
             setInput("")
