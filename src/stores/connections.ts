@@ -582,13 +582,19 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
 
         set({ routeStatus: "checking", routeError: null })
         log.info("route", "refresh start", `force=${forceRestart}`)
-        const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
-        const auth = buildAuth(active.username, password)
         // The embedded relays are process-wide native singletons. Tear down
-        // the other relay before starting this route so switching between
-        // ZeroTier and Tailscale cannot leave both native services alive.
-        if (active.zerotier) await embeddedTailscale.stop()
-        if (active.tailscale) await embeddedZeroTier.stop()
+        // the old route before starting this one. Read credentials in parallel
+        // because neither operation depends on the other.
+        const stopOtherRelay = active.zerotier
+          ? embeddedTailscale.stop()
+          : active.tailscale
+            ? embeddedZeroTier.stop()
+            : Promise.all([embeddedZeroTier.stop(), embeddedTailscale.stop()]).then(() => undefined)
+        const [password] = await Promise.all([
+          SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`),
+          stopOtherRelay,
+        ])
+        const auth = buildAuth(active.username, password)
         if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
         // Do not restart a live ZeroTier relay because a one-shot health probe
         // timed out. The probe uses a separate short-lived socket and can fail
@@ -596,10 +602,6 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         // disconnect the current screen. SSE reconnects request a forced
         // restart after repeated failures instead.
         const resolved = await resolveConnectionRoute(active, forceRestart)
-        if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
-
-        if (resolved.route !== "zerotier") await embeddedZeroTier.stop()
-        if (resolved.route !== "tailscale") await embeddedTailscale.stop()
         if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
 
         if (get().clientBase?.baseUrl === resolved.baseUrl) {
