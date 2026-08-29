@@ -262,6 +262,42 @@ export default function AddConnectionScreen() {
       }
       setIsConnecting(false)
       awaitingTailscaleLogin.current = false
+      if (type === "zerotier") {
+        Alert.alert(
+          t("connection.shared.alerts.connectionFailedTitle"),
+          result.error || t("connection.shared.alerts.unknownError"),
+          [
+            { text: t("common.cancel"), style: "cancel" },
+            {
+              text: t("connection.add.saveAnyway"),
+              onPress: async () => {
+                try {
+                  await addConnection(
+                    {
+                      name: name.trim(),
+                      type,
+                      url: connectionUrl,
+                      directory: directory.trim() || undefined,
+                      username: username.trim() || undefined,
+                      zerotier,
+                      tailscale,
+                    },
+                    password || undefined,
+                  )
+                  clearConnectionDraft(ADD_DRAFT_KEY)
+                  router.back()
+                } catch {
+                  Alert.alert(
+                    t("connection.shared.alerts.saveFailedTitle"),
+                    t("connection.shared.alerts.saveFailedMessage"),
+                  )
+                }
+              },
+            },
+          ],
+        )
+        return
+      }
       Alert.alert(
         t("connection.shared.alerts.connectionFailedTitle"),
         result.error || t("connection.shared.alerts.unknownError"),
@@ -399,6 +435,7 @@ export default function AddConnectionScreen() {
           placeholderTextColor={isDark ? "#666666" : "#999999"}
           value={name}
           onChangeText={setName}
+          testID="connection-name-input"
         />
 
         {/* Password if needed */}
@@ -581,6 +618,7 @@ export default function AddConnectionScreen() {
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
+        testID="connection-url-input"
       />
        {type === "zerotier" ? (
         <Text style={[styles.hint, isDark && styles.hintDark]}>{t("connection.zerotier.httpHint")}</Text>
@@ -616,6 +654,7 @@ export default function AddConnectionScreen() {
             onChangeText={setZeroTierNetworkId}
             autoCapitalize="none"
             autoCorrect={false}
+            testID="zerotier-network-id-input"
           />
 
           <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.zerotier.planet")}</Text>
@@ -670,6 +709,7 @@ export default function AddConnectionScreen() {
                 autoCorrect={false}
                 multiline
                 textAlignVertical="top"
+                testID="zerotier-planet-base64-input"
               />
               <TouchableOpacity
                 style={[styles.base64Confirm, isDark && styles.connectButtonDark, (!planetBase64.trim() || isImportingPlanet) && styles.disabledButton]}

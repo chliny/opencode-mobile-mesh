@@ -279,6 +279,7 @@
         "directoryHint": "Leave empty to use the server's current directory, or specify a path to work in a different folder.",
         "saveButton": "Save Connection"
       },
+      "saveAnyway": "Save Anyway",
       "alerts": {
         "enterIp": "Please enter your computer's IP address",
         "connectionFailedMessage": "{{summary}}\n\nTarget: {{target}}\nError: {{error}}"

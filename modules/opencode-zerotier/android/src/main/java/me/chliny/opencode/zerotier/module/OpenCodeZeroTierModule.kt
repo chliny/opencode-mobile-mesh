@@ -264,7 +264,8 @@ class OpenCodeZeroTierModule : Module() {
     relay?.close()
     relay = null
     node?.let {
-      stopNodeAndWait(it)
+      runCatching { OpenCodeZeroTierNative.safeNodeStop() }
+      waitForNodeStopped(it)
       node = null
     }
 
@@ -419,19 +420,25 @@ class OpenCodeZeroTierModule : Module() {
   private fun stopInternal() = synchronized(lock) {
     relay?.close()
     relay = null
-    node?.let { stopNodeAndWait(it) }
+    // libzt owns a process-global service. It can survive after the Java node
+    // reference was lost during a failed start, so always stop that service
+    // before the next initFromStorage() call.
+    runCatching { OpenCodeZeroTierNative.safeNodeStop() }
+    node?.let { waitForNodeStopped(it) }
     node = null
     currentKey = null
     status = mapOf("state" to "stopped")
   }
 
-  private fun stopNodeAndWait(currentNode: ZeroTierNode) {
-    runCatching { OpenCodeZeroTierNative.safeNodeStop() }
+  private fun waitForNodeStopped(currentNode: ZeroTierNode) {
     val deadline = System.currentTimeMillis() + NODE_STOP_TIMEOUT_MS
     while (System.currentTimeMillis() < deadline) {
       if (!runCatching { currentNode.isOnline() }.getOrDefault(false)) return
       Thread.sleep(50)
     }
+    // The service thread clears libzt's global service pointer shortly after
+    // node stop. Give it a bounded grace period before a new initialization.
+    Thread.sleep(250)
   }
 
   private fun installPlanet(uriText: String): Map<String, Any> {
