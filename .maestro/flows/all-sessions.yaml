@@ -1,4 +1,4 @@
-appId: me.chliny.opencode.zerotier
+appId: me.chliny.opencode.mesh
 name: All sessions across directories - list + open-across-project (regression #46/#48)
 ---
 # New-feature regression coverage for the "all sessions across all projects"

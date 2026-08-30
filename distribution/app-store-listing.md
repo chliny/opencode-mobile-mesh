@@ -328,7 +328,7 @@ To use: you need opencode running somewhere accessible (local Wi-Fi, Tailscale, 
 ## Pending Before First Submission
 
 - [ ] Apple Developer Program enrollment approved (D-U-N-S 142059652, VIBE TECHNOLOGIES LLC)
-- [ ] App Store Connect app record created (bundle ID: me.chliny.opencode.zerotier)
+- [ ] App Store Connect app record created (bundle ID: me.chliny.opencode.mesh)
 - [x] App icon 1024×1024 PNG (no alpha, no rounded corners)
 - [ ] Capture current iPhone screenshots (6.7" minimum; 6.5" strongly recommended)
 - [ ] Capture current iPad screenshots (12.9" minimum)

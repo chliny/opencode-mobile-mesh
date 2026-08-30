@@ -1,6 +1,6 @@
 {
   "platforms": ["android"],
   "android": {
-    "modules": ["me.chliny.opencode.zerotier.module.OpenCodeZeroTierModule"]
+    "modules": ["me.chliny.opencode.mesh.module.OpenCodeZeroTierModule"]
   }
 }

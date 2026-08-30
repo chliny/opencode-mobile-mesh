@@ -1,6 +1,6 @@
 # Google Play Store Listing — OpenCode Mobile
 
-Copy-paste reference for the Play Console store listing for `me.chliny.opencode.zerotier`.
+Copy-paste reference for the Play Console store listing for `me.chliny.opencode.mesh`.
 Paste these values directly into Play Console. Fields are validated against Play limits.
 
 > **Status: live.** The app is publicly available on the production track —

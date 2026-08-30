@@ -32,7 +32,7 @@ export default function Nav() {
             </Link>
           ))}
           <a
-            href="https://play.google.com/store/apps/details?id=me.chliny.opencode.zerotier"
+            href="https://play.google.com/store/apps/details?id=me.chliny.opencode.mesh"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm font-medium px-4 py-2 rounded-lg transition-all"
@@ -67,7 +67,7 @@ export default function Nav() {
           {[
             { href: 'https://opencode.ai', label: 'Docs', external: true },
             { href: 'https://github.com/chliny/opencode-mobile-zerotier', label: 'GitHub', external: true },
-            { href: 'https://play.google.com/store/apps/details?id=me.chliny.opencode.zerotier', label: 'Download', external: true },
+            { href: 'https://play.google.com/store/apps/details?id=me.chliny.opencode.mesh', label: 'Download', external: true },
           ].map((link) => (
             <Link
               key={link.href}

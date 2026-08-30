@@ -1,4 +1,4 @@
-appId: me.chliny.opencode.zerotier
+appId: me.chliny.opencode.mesh
 name: Directory picker - browse server folders and create a session in one
 ---
 # New-feature regression coverage for DirectoryBrowserSheet

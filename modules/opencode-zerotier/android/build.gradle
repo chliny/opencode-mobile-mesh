@@ -1,11 +1,11 @@
 apply plugin: 'com.android.library'
 apply plugin: 'expo-module-gradle-plugin'
 
-group = 'me.chliny.opencode.zerotier.module'
+group = 'me.chliny.opencode.mesh.module'
 version = '0.1.0'
 
 android {
-  namespace 'me.chliny.opencode.zerotier.module'
+  namespace 'me.chliny.opencode.mesh.module'
   ndkVersion rootProject.ext.ndkVersion
 
   defaultConfig {

@@ -1,6 +1,6 @@
 # Google Play Console Setup — OpenCode Mobile
 
-Package: `me.chliny.opencode.zerotier`
+Package: `me.chliny.opencode.mesh`
 Developer: Vibe Technologies, LLC
 
 ## Status
@@ -11,7 +11,7 @@ Developer: Vibe Technologies, LLC
 - [ ] Service account created + JSON key downloaded
 - [ ] Play Developer API enabled
 - [ ] Service account linked to Play Console
-- [ ] App created in Play Console (`me.chliny.opencode.zerotier`)
+- [ ] App created in Play Console (`me.chliny.opencode.mesh`)
 - [ ] First AAB manually uploaded (internal track)
 - [ ] GitHub secret set: `PLAY_STORE_SERVICE_ACCOUNT_JSON`
 
@@ -29,7 +29,7 @@ Developer: Vibe Technologies, LLC
 1. IAM & Admin → Service Accounts
 2. "Create Service Account"
 3. Name: `playstore-deploy`
-4. Description: `Automated Play Store deployment for me.chliny.opencode.zerotier`
+4. Description: `Automated Play Store deployment for me.chliny.opencode.mesh`
 5. "Create and Continue" → skip role → "Done"
 
 ## Step 3: Download JSON Key
@@ -48,7 +48,7 @@ Developer: Vibe Technologies, LLC
 ## Step 5: Link Cloud Project to Play Console
 
 1. https://play.google.com/console/
-2. All apps → (select `me.chliny.opencode.zerotier`)
+2. All apps → (select `me.chliny.opencode.mesh`)
 3. Setup → API access
 4. "Link a Google Cloud project" → select `opencode-mobile-deploy`
 5. "Link"

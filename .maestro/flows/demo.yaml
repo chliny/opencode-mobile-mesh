@@ -1,4 +1,4 @@
-appId: me.chliny.opencode.zerotier
+appId: me.chliny.opencode.mesh
 name: Demo mode - offline scripted walkthrough (no server, zero-server activation)
 ---
 # Covers the "Try a demo" activation path added for the ~0% 7-day retention

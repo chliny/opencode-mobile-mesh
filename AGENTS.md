@@ -35,7 +35,7 @@ See [`.agents/retro.md`](.agents/retro.md) for lessons from past tasks. Read ent
 React Native / Expo mobile client for opencode. Connects to an opencode server instance via HTTP + SSE for real-time updates.
 
 **Repo**: `chliny/opencode-mobile-zerotier` (standalone, not part of opencode monorepo)
-**Package name**: `me.chliny.opencode.zerotier`
+**Package name**: `me.chliny.opencode.mesh`
 
 ## Architecture
 
@@ -256,7 +256,7 @@ For pushes/gh CLI on this repo: `source ~/.env.d/github-dzianisv.env`
 ## Google Play Console
 
 - **Developer account**: VIBE TECHNOLOGIES, LLC (ID: `8842655543970815326`), Google login `vibeteaichnologies@gmail.com`. The `/u/N/` index is NOT stable — if a console URL bounces to accept-terms/create-developer-account you're on the wrong Google account (e.g. `dzianisvv@gmail.com` hits a ToS gate); use the developer-account chooser to reach VIBE.
-- **Historical rebrands**: `ai.opencode.mobile` → `cc.agentlabs.opencode` → `me.chliny.opencode.zerotier`. The former repository published to Play's internal track; this repository releases signed APKs through GitHub Releases. CI `packageName` = `me.chliny.opencode.zerotier`.
+- **Historical rebrands**: `ai.opencode.mobile` → `cc.agentlabs.opencode` → `me.chliny.opencode.mesh`. The former repository published to Play's internal track; this repository releases signed APKs through GitHub Releases. CI `packageName` = `me.chliny.opencode.mesh`.
 - **Legacy app (orphaned)**: `ai.opencode.mobile`, app ID `4975545755653045321` — published v19 to internal track (run 26662900471), superseded by the rebrand.
 - **Track**: Internal testing (no review required, up to 100 testers)
 - **Service account**: `playstore-deploy@opencode-mobile-deploy.iam.gserviceaccount.com` (account-level API access already granted)

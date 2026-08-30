@@ -1,4 +1,4 @@
-package me.chliny.opencode.zerotier
+package me.chliny.opencode.mesh
 
 import android.os.Build
 import android.os.Bundle

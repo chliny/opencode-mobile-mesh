@@ -1,6 +1,6 @@
 # ASO Audit: OpenCode Mobile
 **Store:** Google Play
-**Current package:** `me.chliny.opencode.zerotier`
+**Current package:** `me.chliny.opencode.mesh`
 **Audit date:** 2026-05-30
 **Brand tier:** Challenger — new app, internal testing only, zero public ratings, no brand recognition outside the opencode/sst community
 **Overall Score:** 38/100 (Grade: D)
@@ -348,7 +348,7 @@ This is defensible, differentiating, and accurate.
 | Single language (English only) | Low | Acceptable for v1; revisit at 1,000+ DAU |
 | No LiveOps/Promotional content | Low | Not applicable until Production track |
 | Data Safety form not yet submitted | BLOCKER (for Production) | Required before Production submit |
-| Package ID recently changed (`ai.opencode.mobile` → `cc.agentlabs.opencode` → `me.chliny.opencode.zerotier`) | Historical note | Current external links and package references use `me.chliny.opencode.zerotier` |
+| Package ID recently changed (`ai.opencode.mobile` → `cc.agentlabs.opencode` → `me.chliny.opencode.mesh`) | Historical note | Current external links and package references use `me.chliny.opencode.mesh` |
 
 ---
 

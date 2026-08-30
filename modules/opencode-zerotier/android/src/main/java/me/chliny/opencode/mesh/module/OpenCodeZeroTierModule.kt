@@ -1,4 +1,4 @@
-package me.chliny.opencode.zerotier.module
+package me.chliny.opencode.mesh.module
 
 import android.app.Activity
 import android.content.Context

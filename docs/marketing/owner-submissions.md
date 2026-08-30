@@ -27,7 +27,7 @@ These directories drive real, durable discovery (organic search + their own audi
 > Title: [AppRequest] OpenCode Mobile
 >
 > - App name: OpenCode Mobile
-> - Package id: me.chliny.opencode.zerotier
+> - Package id: me.chliny.opencode.mesh
 > - Source code: https://github.com/chliny/opencode-mobile-zerotier
 > - License: MIT (FOSS)
 > - Releases (signed APK attached to each tag): https://github.com/chliny/opencode-mobile-zerotier/releases

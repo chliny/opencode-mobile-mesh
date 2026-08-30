@@ -45,7 +45,7 @@ OpenCode Mobile is a React Native / Expo app that brings the power of the [openc
   <img src="distribution/demo.gif" width="240" alt="OpenCode Mobile demo — connect to your server, browse sessions, and watch the AI agent stream a reply" />
 </p>
 
-<sub>Real on-device capture: add a connection, browse sessions, and watch the agent stream a response. Verified end-to-end on an Android emulator against a live opencode server (build me.chliny.opencode.zerotier).</sub>
+<sub>Real on-device capture: add a connection, browse sessions, and watch the agent stream a response. Verified end-to-end on an Android emulator against a live opencode server (build me.chliny.opencode.mesh).</sub>
 
 ---
 

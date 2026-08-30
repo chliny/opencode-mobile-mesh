@@ -127,8 +127,8 @@ While waiting for Apple's verification call and approval:
    - Platform: iOS
    - Name: `OpenCode`
    - Primary Language: English (U.S.)
-    - Bundle ID: `me.chliny.opencode.zerotier` — register this explicit App ID first at https://developer.apple.com/account/resources/identifiers/
-    - SKU: `me.chliny.opencode.zerotier` (can match bundle ID)
+    - Bundle ID: `me.chliny.opencode.mesh` — register this explicit App ID first at https://developer.apple.com/account/resources/identifiers/
+    - SKU: `me.chliny.opencode.mesh` (can match bundle ID)
 
 2. Configure App ID capabilities needed:
    - Push Notifications (for `expo-notifications`)

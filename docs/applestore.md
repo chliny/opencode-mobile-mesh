@@ -1,6 +1,6 @@
 # Apple App Store — opencode-mobile
 
-Operational doc for shipping `me.chliny.opencode.zerotier` to Apple App Store under VIBE TECHNOLOGIES, LLC.
+Operational doc for shipping `me.chliny.opencode.mesh` to Apple App Store under VIBE TECHNOLOGIES, LLC.
 
 For full company facts (D-U-N-S, address, governor) see `~/.agents/skills/vibetechnologies-llc/SKILL.md`.
 
@@ -27,7 +27,7 @@ Apple or EAS credentials and cannot confirm enrollment status.
 
 | Field | Value |
 |---|---|
-| Bundle identifier | `me.chliny.opencode.zerotier` (same as Android) |
+| Bundle identifier | `me.chliny.opencode.mesh` (same as Android) |
 | Apple Team ID | ⏸ assigned at enrollment |
 | App Store Connect App ID | ⏸ assigned on first app creation |
 
@@ -99,7 +99,7 @@ Because the answer is "No", no ERN (Encryption Registration Number) is required 
 
 ## Publishing process (after enrollment + assets ready)
 
-1. (manual) Sign in to App Store Connect, create app with bundle id `me.chliny.opencode.zerotier`.
+1. (manual) Sign in to App Store Connect, create app with bundle id `me.chliny.opencode.mesh`.
 2. (manual) Generate App Store Connect API key (App Manager role) → download `.p8` → base64 encode → add as GitHub secret.
 3. (manual) Update `eas.json` placeholders (Team ID, ASC App ID).
 4. (manual) `eas login` + `eas init` + `eas build:configure`; add the generated project UUID as repository variable `EAS_PROJECT_ID`.

@@ -1,4 +1,4 @@
-appId: me.chliny.opencode.zerotier
+appId: me.chliny.opencode.mesh
 name: Variant picker - reasoning-effort chip renders, selects, and still sends
 ---
 # New-feature regression coverage for VariantPicker
