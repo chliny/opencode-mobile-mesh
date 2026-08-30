@@ -58,8 +58,10 @@ export default function AddConnectionScreen() {
   const [isConnecting, setIsConnecting] = useState(false)
   const awaitingTailscaleLogin = useRef(false)
   const completedTailscaleLogin = useRef(false)
+  const completingTailscaleLogin = useRef(false)
   const tailscaleWebView = useRef<WebView>(null)
   const [tailscaleLoginUrl, setTailscaleLoginUrl] = useState<string | null>(null)
+  const [tailscaleLoginPending, setTailscaleLoginPending] = useState(false)
   const [tailscaleHostname, setTailscaleHostname] = useState(draft?.tailscaleHostname || "")
 
   useEffect(() => {
@@ -257,6 +259,7 @@ export default function AddConnectionScreen() {
         }
         awaitingTailscaleLogin.current = true
         completedTailscaleLogin.current = false
+        setTailscaleLoginPending(true)
         setTailscaleLoginUrl(result.loginUrl)
         return
       }
@@ -320,28 +323,34 @@ export default function AddConnectionScreen() {
     )
   }
 
+  const completeTailscaleLogin = async () => {
+    if (completedTailscaleLogin.current || completingTailscaleLogin.current) return
+    completingTailscaleLogin.current = true
+    try {
+      const status = await embeddedTailscale.getStatus().catch(() => null)
+      if (status?.state !== "ready") return
+      completedTailscaleLogin.current = true
+      setTailscaleLoginPending(false)
+      setTailscaleLoginUrl(null)
+      awaitingTailscaleLogin.current = false
+      // Keep the original save operation active while the authorized relay
+      // becomes usable, then finish the same flow without another tap.
+      void handleAdvancedSave()
+    } finally {
+      completingTailscaleLogin.current = false
+    }
+  }
+
   useEffect(() => {
-    if (!tailscaleLoginUrl) return
+    if (!tailscaleLoginPending) return
     const interval = setInterval(() => {
-      void embeddedTailscale.getStatus().then((status) => {
-        if (status.state !== "ready") return
-        if (completedTailscaleLogin.current) return
-        completedTailscaleLogin.current = true
-        setTailscaleLoginUrl(null)
-        awaitingTailscaleLogin.current = false
-        // Keep the original save operation active while the authorized relay
-        // becomes usable, then finish the same flow without another tap.
-        void handleAdvancedSave()
-      })
+      void completeTailscaleLogin()
     }, 1_000)
     return () => clearInterval(interval)
-  }, [tailscaleLoginUrl])
+  }, [tailscaleLoginPending])
 
   const closeTailscaleLogin = () => {
     setTailscaleLoginUrl(null)
-    awaitingTailscaleLogin.current = false
-    completedTailscaleLogin.current = false
-    setIsConnecting(false)
   }
 
   const handleImportPlanet = async () => {
@@ -831,10 +840,13 @@ export default function AddConnectionScreen() {
             true;
           `}
           onMessage={({ nativeEvent }) => {
-            if (nativeEvent.data === "tailscale-authorized") return
+            if (nativeEvent.data === "tailscale-authorized") {
+              void completeTailscaleLogin()
+            }
           }}
           onLoadEnd={({ nativeEvent }) => {
             if (nativeEvent.title.includes("Machines")) {
+              void completeTailscaleLogin()
               return
             }
             tailscaleWebView.current?.injectJavaScript(`
@@ -848,6 +860,7 @@ export default function AddConnectionScreen() {
             // The login flow has several redirects before authorization. The
             // machines page is only reached after Tailscale accepts the node.
             if (!/^https:\/\/([a-z0-9-]+\.)?tailscale\.com\/admin\/machines/.test(url)) return
+            void completeTailscaleLogin()
           }}
         />
       ) : null}
