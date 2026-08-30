@@ -60,6 +60,7 @@ import { extractPromptFromParts } from "../../src/lib/prompt-from-parts"
 import type { Message, PromptFileReference } from "../../src/lib/sdk"
 import { cacheDiffs, cacheVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../../src/lib/session-file-cache"
 import { turnDiffsFromMessages, turnSummaryRecorded } from "../../src/lib/review-diffs"
+import { isCompactionMessage } from "../../src/lib/message-kind"
 
 // --- Builtin slash commands ---
 const BUILTIN_COMMANDS: SlashCommand[] = [
@@ -428,7 +429,7 @@ export default function SessionScreen() {
   const forkSession = useCallback(async () => {
     if (!sessionClient || !currentSession) return
     const candidates = messages
-      .filter((message) => message.role === "user")
+      .filter((message) => message.role === "user" && !isCompactionMessage(parts[message.id] || []))
       .slice()
       .reverse()
     if (candidates.length === 0) {
@@ -448,7 +449,7 @@ export default function SessionScreen() {
   }, [currentSession, router, sessionClient, t])
 
   const undoSession = useCallback(async () => {
-    const visible = messages.filter((message) => message.role === "user")
+    const visible = messages.filter((message) => message.role === "user" && !isCompactionMessage(parts[message.id] || []))
     const boundary = currentSession?.revert?.messageID
     const index = boundary ? visible.findIndex((message) => message.id === boundary) : visible.length
     const target = visible[index - 1]
@@ -502,7 +503,7 @@ export default function SessionScreen() {
     const state = useSessions.getState()
     const message = (state.messages || []).find((m) => m.id === messageID)
     const messageParts = (state.parts && state.parts[messageID]) || []
-    const isUser = message?.role === "user"
+    const isUser = message?.role === "user" && !isCompactionMessage(messageParts)
     const copyable = hasCopyableText(messageParts)
     const copyText = extractCopyText(messageParts)
 
@@ -1376,7 +1377,7 @@ export default function SessionScreen() {
 
       <ForkMessageSheet
         visible={forkOpen}
-        messages={messages.filter((message) => message.role === "user")}
+        messages={messages.filter((message) => message.role === "user" && !isCompactionMessage(parts[message.id] || []))}
         textFor={(messageID) => extractPromptFromParts(parts[messageID]).text.replace(/\s+/g, " ").slice(0, 200)}
         isDark={isDark}
         onSelect={selectForkMessage}

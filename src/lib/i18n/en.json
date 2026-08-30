@@ -113,6 +113,10 @@
       "promptDisabled": "Subagent sessions cannot be prompted.",
       "backToParent": "Main session"
     },
+    "system": {
+      "compacted": "System",
+      "compactedDescription": "Context was automatically compacted"
+    },
     "loadingOlder": "Loading older messages...",
     "input": {
       "placeholderListening": "Listening...",

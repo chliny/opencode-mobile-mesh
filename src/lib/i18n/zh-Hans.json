@@ -113,6 +113,10 @@
       "promptDisabled": "子 Agent 会话无法发送消息。",
       "backToParent": "返回主会话"
     },
+    "system": {
+      "compacted": "系统",
+      "compactedDescription": "上下文已自动压缩"
+    },
     "loadingOlder": "正在加载更早的消息...",
     "input": {
       "placeholderListening": "正在聆听...",

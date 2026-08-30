@@ -10,6 +10,8 @@ import { messageErrorText } from "../../lib/model-error"
 import { modelNameFor } from "../../lib/model-display"
 import { useCatalog } from "../../stores/catalog"
 import { messageTextFromParts } from "../../lib/message-text"
+import { isCompactionMessage } from "../../lib/message-kind"
+import { useTranslation } from "react-i18next"
 
 const SCREEN_WIDTH = Dimensions.get("window").width
 
@@ -33,7 +35,9 @@ interface Props {
 export const MessageBubble = memo(
   function MessageBubble({ message, parts, isDark, reviewDiffs, onLongPress }: Props) {
     const isUser = message.role === "user"
+    const isCompaction = isCompactionMessage(parts)
     const error = !isUser ? messageErrorText(message.error) : undefined
+    const { t } = useTranslation()
 
     // Show the catalog display name ("ox alpha free"), not the raw model ID
     const providers = useCatalog((s) => s.providers)
@@ -54,7 +58,7 @@ export const MessageBubble = memo(
     const referenceParts = fileParts.filter((p) => !isImageMime(p.mime))
     const text = messageTextFromParts(parts)
     const reasoning = reasoningParts.map((p) => p.text).join("\n") || ""
-    const canLongPress = !!onLongPress && (isUser || text.trim().length > 0)
+    const canLongPress = !!onLongPress && !isCompaction && (isUser || text.trim().length > 0)
 
     return (
       <TouchableOpacity
@@ -63,25 +67,30 @@ export const MessageBubble = memo(
         disabled={!canLongPress}
         style={[
           s.bubble,
-          isUser ? s.user : s.assistant,
+          isCompaction ? s.compaction : isUser ? s.user : s.assistant,
           isUser && isDark && s.userDark,
           !isUser && isDark && s.assistantDark,
+          isCompaction && isDark && s.compactionDark,
         ]}
         testID={`chat-bubble-${message.role}`}
       >
         {/* Role indicator */}
         <View style={s.header}>
           <Ionicons
-            name={isUser ? "person" : "sparkles"}
+            name={isCompaction ? "construct-outline" : isUser ? "person" : "sparkles"}
             size={14}
-            color={isUser ? (isDark ? "#ffffff" : "#0a0a0a") : "#8b5cf6"}
+            color={isCompaction ? "#64748b" : isUser ? (isDark ? "#ffffff" : "#0a0a0a") : "#8b5cf6"}
           />
-          <Text style={[s.role, isUser && s.roleUser, isDark && s.textWhite]}>{isUser ? "You" : "Assistant"}</Text>
-          {modelTag && <Text style={[s.modelTag, isDark && s.modelTagDark]}>{modelTag}</Text>}
+          <Text style={[s.role, isUser && s.roleUser, isDark && s.textWhite]}>
+            {isCompaction ? t("session.system.compacted") : isUser ? "You" : "Assistant"}
+          </Text>
+          {!isCompaction && modelTag && <Text style={[s.modelTag, isDark && s.modelTagDark]}>{modelTag}</Text>}
         </View>
 
+        {isCompaction && <Text style={[s.compactionText, isDark && s.compactionTextDark]}>{t("session.system.compactedDescription")}</Text>}
+
         {/* Image attachments */}
-        {imageParts.length > 0 && (
+        {!isCompaction && imageParts.length > 0 && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -101,7 +110,7 @@ export const MessageBubble = memo(
           </ScrollView>
         )}
 
-        {isUser && referenceParts.length > 0 && (
+        {!isCompaction && isUser && referenceParts.length > 0 && (
           <View style={s.fileRow}>
             {referenceParts.map((fp) => {
               const name = fp.filename || fp.source?.path || fp.url || "file"
@@ -116,10 +125,10 @@ export const MessageBubble = memo(
         )}
 
         {/* Reasoning (collapsible) */}
-        {reasoning.length > 0 && <ReasoningBlock text={reasoning} isDark={isDark} />}
+        {!isCompaction && reasoning.length > 0 && <ReasoningBlock text={reasoning} isDark={isDark} />}
 
         {/* Message text */}
-        {text.length > 0 &&
+        {!isCompaction && text.length > 0 &&
           (isUser ? (
             <Text style={[s.messageText, isDark && s.textWhite]} selectable>
               {text}
@@ -130,7 +139,7 @@ export const MessageBubble = memo(
             </View>
           ))}
 
-        {error && (
+        {!isCompaction && error && (
           <View style={[s.errorBox, isDark && s.errorBoxDark]}>
             <Ionicons name="alert-circle-outline" size={16} color="#dc2626" />
             <Text style={[s.errorText, isDark && s.errorTextDark]} selectable>
@@ -140,14 +149,14 @@ export const MessageBubble = memo(
         )}
 
         {/* Tool calls */}
-        {toolParts.map((tool) => (
+        {!isCompaction && toolParts.map((tool) => (
           <ToolCallCard key={tool.id} tool={tool} isDark={isDark} />
         ))}
 
-        {!isUser && reviewDiffs && reviewDiffs.length > 0 && <ReviewChanges diffs={reviewDiffs} isDark={isDark} />}
+        {!isCompaction && !isUser && reviewDiffs && reviewDiffs.length > 0 && <ReviewChanges diffs={reviewDiffs} isDark={isDark} />}
 
         {/* Tokens/cost for assistant messages */}
-        {!isUser && message.tokens && (
+        {!isCompaction && !isUser && message.tokens && (
           <Text style={[s.tokens, isDark && s.tokensDark]}>
             {message.tokens.input + message.tokens.output} tokens
             {message.cost ? ` · $${message.cost.toFixed(4)}` : ""}
@@ -181,11 +190,15 @@ const s = StyleSheet.create({
   userDark: { backgroundColor: "#1a1a1a" },
   assistant: { backgroundColor: "#f0f0ff" },
   assistantDark: { backgroundColor: "#1a1a2e" },
+  compaction: { backgroundColor: "#e2e8f0", marginLeft: 16, marginRight: 16 },
+  compactionDark: { backgroundColor: "#1e293b" },
 
   header: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
   role: { fontSize: 13, fontWeight: "600", color: "#666666" },
   roleUser: { color: "#0a0a0a" },
   textWhite: { color: "#ffffff" },
+  compactionText: { color: "#475569", fontSize: 13, lineHeight: 18 },
+  compactionTextDark: { color: "#cbd5e1" },
 
   modelTag: {
     fontSize: 11,
