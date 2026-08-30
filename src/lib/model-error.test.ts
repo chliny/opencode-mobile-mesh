@@ -19,3 +19,10 @@ test("extracts provider messages embedded in a JSON response body", () => {
 test("keeps flat errors compatible", () => {
   assert.equal(messageErrorText({ message: "Model request failed" }), "Model request failed")
 })
+
+test("preserves stream transport errors", () => {
+  assert.equal(
+    messageErrorText('Post "https://chatgpt.com/backend-api/codex/responses": stream error: stream ID 1; PROTOCOL_ERROR; received from peer'),
+    'Post "https://chatgpt.com/backend-api/codex/responses": stream error: stream ID 1; PROTOCOL_ERROR; received from peer',
+  )
+})

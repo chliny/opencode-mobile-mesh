@@ -348,6 +348,22 @@ export const useEvents = create<EventsState>((set, get) => ({
             case "message.updated": {
               const info = props.info as Message | undefined
               if (!info) break
+              const errorText = info.role === "assistant" ? messageErrorText(info.error) : undefined
+              if (errorText) {
+                erroredSessions.add(info.sessionID)
+                useSessions.setState((state) => ({
+                  sending: { ...state.sending, [info.sessionID]: false },
+                  sessionErrors: { ...state.sessionErrors, [info.sessionID]: errorText },
+                }))
+                notify({
+                  category: "errors",
+                  title: "Session error",
+                  body: errorNotificationBody(errorText),
+                  sessionId: info.sessionID,
+                  dedupeKey: `session-error-${info.sessionID}`,
+                  dedupeCooldownMs: 60_000,
+                })
+              }
               useSessions.getState().handleEvent({ type, properties: { info } } as any)
               break
             }
@@ -408,6 +424,8 @@ export const useEvents = create<EventsState>((set, get) => ({
                 title: "Session error",
                 body: errorNotificationBody(errorText),
                 sessionId: sessionID,
+                dedupeKey: `session-error-${sessionID}`,
+                dedupeCooldownMs: 60_000,
               })
               break
             }

@@ -10,6 +10,7 @@ import { isColdSessionLoad, isLiveEventForSession } from "../lib/session-load-re
 import { log } from "../lib/logbuffer"
 import { shouldApplyTranscriptRefresh } from "../lib/transcript-refresh"
 import { buildReferenceParts } from "../lib/file-review"
+import { messageErrorText } from "../lib/model-error"
 
 // Helper to convert API response to our internal format
 function parseMessages(response: MessageWithParts[]): { messages: Message[]; parts: Record<string, Part[]> } {
@@ -22,6 +23,16 @@ function parseMessages(response: MessageWithParts[]): { messages: Message[]; par
   }
 
   return { messages, parts }
+}
+
+function latestMessageError(messages: Message[]): string | undefined {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i]
+    if (message.role !== "assistant") continue
+    const error = messageErrorText(message.error)
+    if (error) return error
+  }
+  return undefined
 }
 
 function pageSize(): number {
@@ -468,10 +479,12 @@ export const useSessions = create<SessionsState>((set, get) => ({
         return
       }
       const { messages, parts } = parseMessages(response)
+      const messageError = latestMessageError(messages)
       set((current) => ({
         messages,
         parts,
         transcriptRevision: nextTranscriptRevision(current, session.id),
+        ...(messageError ? { sessionErrors: { ...current.sessionErrors, [session.id]: messageError } } : {}),
       }))
     } catch (error) {
       if (!options?.silent && get().currentSession?.id === session.id) {
@@ -576,9 +589,11 @@ export const useSessions = create<SessionsState>((set, get) => ({
         const message = (props.info || props.message) as Message | undefined
         if (!message || !isLiveEventForSession(message.sessionID, currentSession.id)) return
 
+        const messageError = message.role === "assistant" ? messageErrorText(message.error) : undefined
         set((state) => ({
           messages: mergeIncomingMessage(state.messages, message),
           transcriptRevision: nextTranscriptRevision(state, currentSession.id),
+          ...(messageError ? { sessionErrors: { ...state.sessionErrors, [currentSession.id]: messageError } } : {}),
           // A live update for the session on screen is proof it has content
           // to show — clear any stuck spinner even if the initial (or a
           // redundant re-focus) GET hasn't resolved yet, or never does
