@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react"
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from "react-native"
+import { Alert, KeyboardAvoidingView, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from "react-native"
 import { useFocusEffect } from "expo-router"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
-import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated"
 import { useTerminal } from "../../src/stores/terminal"
 import { useConnections } from "../../src/stores/connections"
 import { PtyOutputDecoder } from "../../src/lib/pty-output"
+import { terminalRuns } from "../../src/lib/terminal-screen"
 
 export default function TerminalScreen() {
   const isDark = useColorScheme() === "dark"
@@ -23,12 +23,10 @@ export default function TerminalScreen() {
   const append = useTerminal((state) => state.append)
   const clear = useTerminal((state) => state.clear)
   const [input, setInput] = useState("")
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
   const socket = useRef<WebSocket | null>(null)
   const scroll = useRef<ScrollView>(null)
-  const keyboard = useAnimatedKeyboard()
-  const keyboardStyle = useAnimatedStyle(() => ({
-    paddingBottom: Platform.OS === "android" ? Math.max(0, keyboard.height.value - insets.bottom) : 0,
-  }))
+  const cursors = useRef<Record<string, number>>({})
 
   useFocusEffect(() => {
     void load()
@@ -42,16 +40,18 @@ export default function TerminalScreen() {
     const connect = async () => {
       const token = await client.pty.connectToken(activeID).catch(() => undefined)
       if (closed) return
-      current = new WebSocket(client.pty.websocketUrl(activeID, 0, token))
+      current = new WebSocket(client.pty.websocketUrl(activeID, cursors.current[activeID] || 0, token))
       socket.current = current
       current.binaryType = "arraybuffer"
       current.onmessage = (event) => {
         if (typeof event.data === "string") {
           append(activeID, decoder.decodeText(event.data))
+          cursors.current[activeID] = decoder.cursor
           return
         }
         if (event.data instanceof ArrayBuffer) {
           append(activeID, decoder.decode(event.data))
+          cursors.current[activeID] = decoder.cursor
         }
       }
     }
@@ -63,6 +63,15 @@ export default function TerminalScreen() {
       socket.current = null
     }
   }, [activeID, client, append])
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", (event) => setKeyboardHeight(event.endCoordinates.height))
+    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0))
+    return () => {
+      show.remove()
+      hide.remove()
+    }
+  }, [])
 
   useEffect(() => {
     scroll.current?.scrollToEnd({ animated: false })
@@ -77,7 +86,7 @@ export default function TerminalScreen() {
   const active = sessions.find((item) => item.id === activeID)
   return (
     <KeyboardAvoidingView style={[styles.root, isDark && styles.rootDark]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Animated.View style={[styles.content, keyboardStyle]}>
+      <View style={styles.content}>
       <View style={[styles.toolbar, isDark && styles.borderDark]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
           {sessions.map((item) => (
@@ -95,17 +104,23 @@ export default function TerminalScreen() {
       </View>
       {!client ? <Text style={[styles.empty, isDark && styles.textDark]}>{t("terminal.noConnection")}</Text> : !active ? <Text style={[styles.empty, isDark && styles.textDark]}>{t("terminal.empty")}</Text> : (
         <>
-          <ScrollView ref={scroll} style={[styles.output, isDark && styles.outputDark]} contentContainerStyle={styles.outputContent}>
-            <Text selectable style={styles.outputText}>{output[active.id] || ""}</Text>
+          <ScrollView ref={scroll} horizontal style={[styles.output, isDark && styles.outputDark]} contentContainerStyle={[styles.outputContent, { paddingBottom: keyboardHeight ? 170 : 14 }]}>
+            <View>
+              {terminalRuns(output[active.id] || "").map((line, index) => (
+                <Text key={index} selectable numberOfLines={1} style={styles.outputText}>
+                  {line.map((run, runIndex) => <Text key={runIndex} style={{ color: run.color, fontWeight: run.bold ? "700" : "400" }}>{run.text}</Text>)}
+                </Text>
+              ))}
+            </View>
           </ScrollView>
-          <View style={[styles.inputBar, isDark && styles.borderDark]}>
+          <View style={[styles.inputBar, isDark && styles.borderDark, keyboardHeight > 0 && { position: "absolute", left: 0, right: 0, bottom: Math.max(0, keyboardHeight - insets.bottom) }]}>
             <TextInput value={input} onChangeText={setInput} onSubmitEditing={send} returnKeyType="send" blurOnSubmit={false} placeholder={t("terminal.inputPlaceholder")} placeholderTextColor="#777" style={[styles.input, isDark && styles.textDark]} autoCapitalize="none" autoCorrect={false} />
             <Pressable onPress={() => clear(active.id)} style={styles.iconButton}><Ionicons name="trash-outline" size={20} color="#888" /></Pressable>
             <Pressable onPress={send} style={styles.send}><Ionicons name="arrow-up" size={20} color="#fff" /></Pressable>
           </View>
         </>
       )}
-      </Animated.View>
+      </View>
     </KeyboardAvoidingView>
   )
 }
