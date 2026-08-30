@@ -18,6 +18,25 @@ function blank(): Cell {
   return { char: " ", color: DEFAULT_COLOR, bold: false }
 }
 
+function cellWidth(char: string): number {
+  const code = char.codePointAt(0) || 0
+  if (code < 0x1100) return 1
+  if (
+    code <= 0x115f ||
+    code === 0x2329 ||
+    code === 0x232a ||
+    (code >= 0x2e80 && code <= 0xa4cf) ||
+    (code >= 0xac00 && code <= 0xd7a3) ||
+    (code >= 0xf900 && code <= 0xfaff) ||
+    (code >= 0xfe10 && code <= 0xfe19) ||
+    (code >= 0xfe30 && code <= 0xfe6f) ||
+    (code >= 0xff00 && code <= 0xff60) ||
+    (code >= 0xffe0 && code <= 0xffe6) ||
+    (code >= 0x1f300 && code <= 0x1faff)
+  ) return 2
+  return 1
+}
+
 function color256(value: number): string {
   if (value < 16) return value < 8 ? COLORS[value] : BRIGHT_COLORS[value - 8]
   if (value < 232) {
@@ -151,7 +170,7 @@ export function terminalRuns(output: string, cols = 120): TerminalRun[][] {
       continue
     }
     if (char === "\n") {
-      move(row + 1, col)
+      move(row + 1, col >= cols ? 0 : col)
       continue
     }
     if (char === "\b") {
@@ -164,9 +183,15 @@ export function terminalRuns(output: string, cols = 120): TerminalRun[][] {
       continue
     }
     if (char < " " || char === "\u007f") continue
+    const width = cellWidth(char)
+    if (col + width > cols) move(row + 1, 0)
     ensure(row, col)
     rows[row][col] = { char, color, bold }
-    col = Math.min(cols - 1, col + 1)
+    if (width === 2) {
+      ensure(row, col + 1)
+      rows[row][col + 1] = { char: "", color, bold }
+    }
+    col += width
   }
 
   return rows.map((line) => {

@@ -55,3 +55,18 @@ test("renders cursor movement without misaligning output", () => {
   const lines = terminalRuns("abc\u001b[2DXY")
   assert.deepEqual(lines[0], [{ text: "aXY", color: "#d4d4d4", bold: false }])
 })
+
+test("wraps printable output at the terminal column width", () => {
+  const lines = terminalRuns("abcdef", 3)
+  assert.deepEqual(lines.map((line) => line[0]?.text), ["abc", "def"])
+})
+
+test("starts a following newline at column zero after a wrapped line", () => {
+  const lines = terminalRuns("abc\ndef", 3)
+  assert.deepEqual(lines.map((line) => line[0]?.text), ["abc", "def"])
+})
+
+test("keeps wide CJK characters aligned to terminal cells", () => {
+  const lines = terminalRuns("中ab", 4)
+  assert.deepEqual(lines.map((line) => line.map((run) => run.text).join("")), ["中ab"])
+})
