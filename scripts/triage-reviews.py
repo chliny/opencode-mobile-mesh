@@ -21,7 +21,7 @@ creates the issue (first run) or updates it in place.
 Required env vars:
   GOOGLE_SERVICE_ACCOUNT_JSON  — full JSON key for the service account
   GH_TOKEN                     — GitHub token with issues:write scope
-  PACKAGE_NAME                 — Android package (me.chliny.opencode.zerotier)
+  PACKAGE_NAME                 — Android package (me.chliny.opencode.mesh)
   DAYS_BACK                    — how many days back to look (default 7)
 """
 
@@ -38,7 +38,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 REPO = os.environ.get("GITHUB_REPOSITORY", "chliny/opencode-mobile-zerotier")
-PACKAGE_NAME = os.environ.get("PACKAGE_NAME", "me.chliny.opencode.zerotier")
+PACKAGE_NAME = os.environ.get("PACKAGE_NAME", "me.chliny.opencode.mesh")
 DAYS_BACK = int(os.environ.get("DAYS_BACK", "7"))
 GH_TOKEN = os.environ.get("GH_TOKEN", "")
 
