@@ -3,7 +3,7 @@
     "name": "OpenCode Mobile (Mesh Edition)",
     "slug": "opencode-mobile",
     "version": "1.0.1",
-    "orientation": "portrait",
+    "orientation": "default",
     "scheme": "opencode",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
