@@ -36,7 +36,6 @@ export default function TerminalScreen() {
   const [input, setInput] = useState("")
   const [ctrl, setCtrl] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
-  const [keyboardTop, setKeyboardTop] = useState(0)
   const [outputHeight, setOutputHeight] = useState(0)
   const [outputWidth, setOutputWidth] = useState(0)
   const socket = useRef<WebSocket | null>(null)
@@ -95,11 +94,9 @@ export default function TerminalScreen() {
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", (event) => {
       setKeyboardHeight(event.endCoordinates.height)
-      setKeyboardTop(event.endCoordinates.screenY)
     })
     const hide = Keyboard.addListener("keyboardDidHide", () => {
       setKeyboardHeight(0)
-      setKeyboardTop(0)
     })
     return () => {
       show.remove()
@@ -149,7 +146,7 @@ export default function TerminalScreen() {
   }, [activeID, client, columns, outputHeight, rows])
 
   return (
-    <KeyboardAvoidingView style={[styles.root, isDark && styles.rootDark]} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+    <KeyboardAvoidingView style={[styles.root, isDark && styles.rootDark]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={styles.content}>
       <View style={[styles.toolbar, isDark && styles.borderDark]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
@@ -189,7 +186,7 @@ export default function TerminalScreen() {
               </ScrollView>
             </Pressable>
           <TextInput ref={inputRef} value={input} onChangeText={sendInput} onSubmitEditing={sendLine} blurOnSubmit={false} style={styles.hiddenInput} autoCapitalize="none" autoCorrect={false} caretHidden />
-          <View style={[styles.shortcuts, !landscape && keyboardTop > 0 && { bottom: Math.max(0, height - keyboardTop) }, { zIndex: 2, elevation: 2 }, landscape && styles.shortcutsLandscape, isDark && styles.shortcutsDark]}>
+          <View style={[styles.shortcuts, !landscape && keyboardHeight > 0 && { bottom: keyboardHeight }, landscape && styles.shortcutsLandscape, isDark && styles.shortcutsDark]}>
             <Pressable onPress={() => shortcut("\u001b[D")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>←</Text></Pressable>
             <Pressable onPress={() => shortcut("\u001b[C")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>→</Text></Pressable>
             <Pressable onPress={() => shortcut("\u001b")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>Esc</Text></Pressable>
