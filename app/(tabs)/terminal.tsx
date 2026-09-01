@@ -3,6 +3,7 @@ import { Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView,
 import { useFocusEffect } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useTerminal } from "../../src/stores/terminal"
 import { useConnections } from "../../src/stores/connections"
 import { PtyOutputDecoder } from "../../src/lib/pty-output"
@@ -18,6 +19,7 @@ function controlCode(char: string): string {
 export default function TerminalScreen() {
   const isDark = useColorScheme() === "dark"
   const { width, height } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
   const landscape = width > height
   const { t } = useTranslation()
   const client = useConnections((state) => state.client)
@@ -186,7 +188,7 @@ export default function TerminalScreen() {
               </ScrollView>
             </Pressable>
           <TextInput ref={inputRef} value={input} onChangeText={sendInput} onSubmitEditing={sendLine} blurOnSubmit={false} style={styles.hiddenInput} autoCapitalize="none" autoCorrect={false} caretHidden />
-          <View style={[styles.shortcuts, !landscape && keyboardHeight > 0 && { bottom: keyboardHeight }, landscape && styles.shortcutsLandscape, isDark && styles.shortcutsDark]}>
+          <View style={[styles.shortcuts, !landscape && keyboardHeight > 0 && { bottom: Math.max(0, keyboardHeight - insets.bottom) }, landscape && styles.shortcutsLandscape, isDark && styles.shortcutsDark]}>
             <Pressable onPress={() => shortcut("\u001b[D")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>←</Text></Pressable>
             <Pressable onPress={() => shortcut("\u001b[C")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>→</Text></Pressable>
             <Pressable onPress={() => shortcut("\u001b")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>Esc</Text></Pressable>
