@@ -36,6 +36,7 @@ export default function TerminalScreen() {
   const [input, setInput] = useState("")
   const [ctrl, setCtrl] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
+  const [keyboardTop, setKeyboardTop] = useState(0)
   const [outputHeight, setOutputHeight] = useState(0)
   const [outputWidth, setOutputWidth] = useState(0)
   const socket = useRef<WebSocket | null>(null)
@@ -92,8 +93,14 @@ export default function TerminalScreen() {
   }, [activeID, output[activeID || ""]])
 
   useEffect(() => {
-    const show = Keyboard.addListener("keyboardDidShow", (event) => setKeyboardHeight(event.endCoordinates.height))
-    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0))
+    const show = Keyboard.addListener("keyboardDidShow", (event) => {
+      setKeyboardHeight(event.endCoordinates.height)
+      setKeyboardTop(event.endCoordinates.screenY)
+    })
+    const hide = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0)
+      setKeyboardTop(0)
+    })
     return () => {
       show.remove()
       hide.remove()
@@ -142,7 +149,7 @@ export default function TerminalScreen() {
   }, [activeID, client, columns, outputHeight, rows])
 
   return (
-    <KeyboardAvoidingView style={[styles.root, isDark && styles.rootDark]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView style={[styles.root, isDark && styles.rootDark]} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <View style={styles.content}>
       <View style={[styles.toolbar, isDark && styles.borderDark]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
@@ -168,6 +175,7 @@ export default function TerminalScreen() {
             }} onPress={() => inputRef.current?.focus()}>
               <ScrollView
                 ref={scroll}
+                onTouchStart={() => inputRef.current?.focus()}
                 style={[styles.output, isDark && styles.outputDark]}
                 contentContainerStyle={[styles.outputContent, { width: terminalWidth, paddingBottom: keyboardHeight ? 62 : 14 }]}
               >
@@ -181,7 +189,7 @@ export default function TerminalScreen() {
               </ScrollView>
             </Pressable>
           <TextInput ref={inputRef} value={input} onChangeText={sendInput} onSubmitEditing={sendLine} blurOnSubmit={false} style={styles.hiddenInput} autoCapitalize="none" autoCorrect={false} caretHidden />
-          <View style={[styles.shortcuts, landscape && styles.shortcutsLandscape, isDark && styles.shortcutsDark]}>
+          <View style={[styles.shortcuts, !landscape && keyboardTop > 0 && { bottom: Math.max(0, height - keyboardTop) }, { zIndex: 2, elevation: 2 }, landscape && styles.shortcutsLandscape, isDark && styles.shortcutsDark]}>
             <Pressable onPress={() => shortcut("\u001b[D")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>←</Text></Pressable>
             <Pressable onPress={() => shortcut("\u001b[C")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>→</Text></Pressable>
             <Pressable onPress={() => shortcut("\u001b")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>Esc</Text></Pressable>
