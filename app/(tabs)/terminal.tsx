@@ -46,6 +46,7 @@ export default function TerminalScreen() {
   const terminalRef = useRef<View>(null)
   const keyboardScreenY = useRef(0)
   const keyboardBottomRef = useRef(0)
+  const pending = useRef<string[]>([])
   const inputValue = useRef("")
   const scroll = useRef<ScrollView>(null)
   const cursors = useRef<Record<string, number>>({})
@@ -84,10 +85,16 @@ export default function TerminalScreen() {
     const connect = async () => {
       const token = await client.pty.connectToken(activeID).catch(() => undefined)
       if (closed) return
-      current = new WebSocket(client.pty.websocketUrl(activeID, cursors.current[activeID] || 0, token))
-      socket.current = current
-      current.binaryType = "arraybuffer"
-      current.onmessage = (event) => {
+      const websocket = new WebSocket(client.pty.websocketUrl(activeID, cursors.current[activeID] || 0, token))
+      current = websocket
+      socket.current = websocket
+      websocket.binaryType = "arraybuffer"
+      websocket.onopen = () => {
+        if (socket.current !== websocket) return
+        for (const value of pending.current) websocket.send(value)
+        pending.current = []
+      }
+      websocket.onmessage = (event) => {
         if (typeof event.data === "string") {
           append(activeID, decoder.decodeText(event.data))
           cursors.current[activeID] = decoder.cursor
@@ -105,6 +112,7 @@ export default function TerminalScreen() {
       decoder.flush()
       current?.close()
       socket.current = null
+      pending.current = []
     }
   }, [activeID, client, append])
 
@@ -138,8 +146,12 @@ export default function TerminalScreen() {
   }, [insets.top, landscape])
 
   const send = (value: string) => {
-    if (!value || !socket.current || socket.current.readyState !== WebSocket.OPEN) return
-    socket.current.send(value)
+    if (!value) return
+    if (socket.current?.readyState === WebSocket.OPEN) {
+      socket.current.send(value)
+      return
+    }
+    pending.current.push(value)
   }
 
   const sendInput = (value: string) => {
@@ -201,7 +213,7 @@ export default function TerminalScreen() {
           <View ref={terminalRef} onLayout={() => {
             if (!landscape) requestAnimationFrame(measureKeyboardBottom)
           }} style={[styles.terminalArea, !landscape && keyboardBottom > 0 && { marginBottom: keyboardBottom }, landscape && styles.terminalAreaLandscape]}>
-            <Pressable style={[styles.outputArea, landscape && styles.outputAreaLandscape]} onLayout={(event) => {
+            <Pressable style={styles.outputArea} onLayout={(event) => {
               setOutputHeight(event.nativeEvent.layout.height)
               setOutputWidth(event.nativeEvent.layout.width)
             }} onPress={() => inputRef.current?.focus()}>
@@ -221,7 +233,7 @@ export default function TerminalScreen() {
               </ScrollView>
             </Pressable>
           <TextInput ref={inputRef} value={input} onChangeText={sendInput} onSubmitEditing={sendLine} blurOnSubmit={false} style={styles.hiddenInput} autoCapitalize="none" autoCorrect={false} caretHidden />
-          <View onLayout={(event) => setShortcutHeight(event.nativeEvent.layout.height)} style={[styles.shortcuts, landscape && styles.shortcutsLandscape, isDark && styles.shortcutsDark]}>
+          <View onLayout={(event) => setShortcutHeight(event.nativeEvent.layout.height)} style={[styles.shortcuts, landscape && styles.shortcutsLandscape, landscape && { position: "relative", left: 0, right: 0, top: 0, bottom: 0, flexShrink: 0 }, isDark && styles.shortcutsDark]}>
             <Pressable onPress={() => shortcut("\u001b[D")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>←</Text></Pressable>
             <Pressable onPress={() => shortcut("\u001b[C")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>→</Text></Pressable>
             <Pressable onPress={() => shortcut("\u001b")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>Esc</Text></Pressable>
