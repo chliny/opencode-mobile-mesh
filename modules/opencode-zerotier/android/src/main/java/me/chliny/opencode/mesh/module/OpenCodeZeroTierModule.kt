@@ -250,8 +250,9 @@ class OpenCodeZeroTierModule : Module() {
     val key = listOf(profileId, networkIdText, remoteHost, remotePort, planetId ?: "default").joinToString("|")
 
     val existingNode = node
-    if (!forceRestart && currentKey == key && existingNode != null) {
+    if (currentKey == key && existingNode != null) {
       if (
+        !forceRestart &&
         status["state"] == "ready" &&
         existingNode.isOnline() &&
         assignedAddress(existingNode, networkId) != null &&
@@ -260,6 +261,15 @@ class OpenCodeZeroTierModule : Module() {
 
       relay?.close()
       relay = null
+
+      // A force refresh repairs the libzt socket used by the app-local relay.
+      // Keep the online node alive: restarting the whole service makes resume
+      // wait for control-plane online/joining again and is much slower.
+      if (
+        existingNode.isOnline() &&
+        assignedAddress(existingNode, networkId) != null
+      ) return finishNetworkJoin(existingNode, networkId, remoteHost, remotePort)
+
       waitForNodeOnline(existingNode, timeoutMs)
       checkResult(existingNode.join(networkId), "join network")
       return finishNetworkJoin(existingNode, networkId, remoteHost, remotePort)

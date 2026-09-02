@@ -101,14 +101,15 @@ function RootLayout() {
   // profiles always keep the SDK/SSE client on the app-local libzt relay;
   // foreground and periodic retries also pick up controller authorization.
   useEffect(() => {
-    const refreshRoute = () => {
+    const refreshRoute = (forceRestart = false) => {
       if (useConnections.getState().routeStatus !== "checking") {
-        void useConnections.getState().refreshActiveRoute()
+        const active = useConnections.getState().activeConnection
+        void useConnections.getState().refreshActiveRoute(forceRestart && Boolean(active?.zerotier))
       }
     }
     const timer = setInterval(refreshRoute, 30_000)
     const sub = AppState.addEventListener("change", (next) => {
-      if (next === "active") refreshRoute()
+      if (next === "active") refreshRoute(true)
     })
     return () => {
       clearInterval(timer)
@@ -153,6 +154,7 @@ function RootLayout() {
       if (next !== "active") return
       const events = useEvents.getState()
       if (!shouldReconnectOnResume(events)) return
+      if (useConnections.getState().routeStatus === "checking") return
       if (!useConnections.getState().client) return
       events.connect()
     })

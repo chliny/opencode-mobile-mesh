@@ -32,6 +32,8 @@ let routeGeneration = 0
 let routeRefreshQueue = Promise.resolve()
 let lastNetworkRefreshAt = 0
 let networkRefreshTimer: ReturnType<typeof setTimeout> | null = null
+let zeroTierNetworkAvailable: boolean | null = null
+let tailscaleNetworkAvailable: boolean | null = null
 
 // Cached auth so we can create directory-scoped clients without async SecureStore lookups
 interface ClientBase {
@@ -649,21 +651,24 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
 
 // Network changes invalidate the physical path used by both embedded relays.
 // Let the native node recover first, then rebuild only the active route.
-function refreshEmbeddedRouteOnNetworkChange(available: boolean) {
+function refreshEmbeddedRouteOnNetworkChange(route: "zerotier" | "tailscale", available: boolean) {
   const active = useConnections.getState().activeConnection
-  if (!(active?.zerotier || active?.tailscale)) return
-  if (!available) return
+  if (!active?.[route]) return
+  const previous = route === "zerotier" ? zeroTierNetworkAvailable : tailscaleNetworkAvailable
+  if (route === "zerotier") zeroTierNetworkAvailable = available
+  else tailscaleNetworkAvailable = available
+  if (!available || previous !== false) return
   if (Date.now() - lastNetworkRefreshAt < 1000) return
   if (networkRefreshTimer) clearTimeout(networkRefreshTimer)
   // A ZeroTier node owns its libzt sockets and cannot rebind them to Android's
-  // replacement network. Recreate it after a handover instead of reusing a
-  // relay that is still marked ready but backed by the old physical path.
+  // replacement network. Recreate it only after an actual loss/recovery pair;
+  // the initial available callback must not restart an already-ready node.
   networkRefreshTimer = setTimeout(() => {
     networkRefreshTimer = null
     lastNetworkRefreshAt = Date.now()
-    void useConnections.getState().refreshActiveRoute(Boolean(active.zerotier))
-  }, active.zerotier ? 2500 : 0)
+    void useConnections.getState().refreshActiveRoute(route === "zerotier")
+  }, route === "zerotier" ? 2500 : 0)
 }
 
-embeddedZeroTier.addNetworkListener((event) => refreshEmbeddedRouteOnNetworkChange(event.available))
-embeddedTailscale.addNetworkListener((event) => refreshEmbeddedRouteOnNetworkChange(event.available))
+embeddedZeroTier.addNetworkListener((event) => refreshEmbeddedRouteOnNetworkChange("zerotier", event.available))
+embeddedTailscale.addNetworkListener((event) => refreshEmbeddedRouteOnNetworkChange("tailscale", event.available))
