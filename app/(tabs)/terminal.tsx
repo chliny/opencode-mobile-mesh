@@ -121,6 +121,8 @@ export default function TerminalScreen() {
     const hide = Keyboard.addListener("keyboardDidHide", () => {
       keyboardScreenY.current = 0
       keyboardBottomRef.current = 0
+      inputValue.current = ""
+      setInput("")
       setKeyboardBottom(0)
     })
     const appState = AppState.addEventListener("change", (state) => {
