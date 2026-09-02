@@ -37,11 +37,13 @@ export default function TerminalScreen() {
   const clear = useTerminal((state) => state.clear)
   const [input, setInput] = useState("")
   const [ctrl, setCtrl] = useState(false)
-  const [keyboardHeight, setKeyboardHeight] = useState(0)
+  const [keyboardBottom, setKeyboardBottom] = useState(0)
+  const [shortcutHeight, setShortcutHeight] = useState(0)
   const [outputHeight, setOutputHeight] = useState(0)
   const [outputWidth, setOutputWidth] = useState(0)
   const socket = useRef<WebSocket | null>(null)
   const inputRef = useRef<TextInput>(null)
+  const terminalRef = useRef<View>(null)
   const inputValue = useRef("")
   const scroll = useRef<ScrollView>(null)
   const cursors = useRef<Record<string, number>>({})
@@ -95,16 +97,18 @@ export default function TerminalScreen() {
 
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", (event) => {
-      setKeyboardHeight(event.endCoordinates.height)
+      terminalRef.current?.measureInWindow((_, y, __, terminalHeight) => {
+        setKeyboardBottom(Math.max(0, y + terminalHeight - event.endCoordinates.screenY + insets.top))
+      })
     })
     const hide = Keyboard.addListener("keyboardDidHide", () => {
-      setKeyboardHeight(0)
+      setKeyboardBottom(0)
     })
     return () => {
       show.remove()
       hide.remove()
     }
-  }, [])
+  }, [insets.top])
 
   const send = (value: string) => {
     if (!value || !socket.current || socket.current.readyState !== WebSocket.OPEN) return
@@ -140,7 +144,7 @@ export default function TerminalScreen() {
   const active = sessions.find((item) => item.id === activeID)
   const terminalWidth = outputWidth || width
   const columns = Math.max(20, Math.floor((terminalWidth - 28) / 7.8))
-  const rows = Math.max(2, Math.floor((outputHeight - (landscape ? 0 : 48)) / 19))
+  const rows = Math.max(2, Math.floor((outputHeight - (landscape ? 0 : shortcutHeight)) / 19))
 
   useEffect(() => {
     if (!client || !activeID || !outputHeight) return
@@ -167,7 +171,7 @@ export default function TerminalScreen() {
       </View>
       {!client ? <Text style={[styles.empty, isDark && styles.textDark]}>{t("terminal.noConnection")}</Text> : !active ? <Text style={[styles.empty, isDark && styles.textDark]}>{t("terminal.empty")}</Text> : (
         <>
-          <View style={[styles.terminalArea, landscape && styles.terminalAreaLandscape]}>
+          <View ref={terminalRef} style={[styles.terminalArea, !landscape && keyboardBottom > 0 && { marginBottom: keyboardBottom }, landscape && styles.terminalAreaLandscape]}>
             <Pressable style={[styles.outputArea, landscape && styles.outputAreaLandscape]} onLayout={(event) => {
               setOutputHeight(event.nativeEvent.layout.height)
               setOutputWidth(event.nativeEvent.layout.width)
@@ -176,7 +180,7 @@ export default function TerminalScreen() {
                 ref={scroll}
                 onTouchStart={() => inputRef.current?.focus()}
                 style={[styles.output, isDark && styles.outputDark]}
-                contentContainerStyle={[styles.outputContent, { width: terminalWidth, paddingBottom: keyboardHeight ? 62 : 14 }]}
+                contentContainerStyle={[styles.outputContent, { width: terminalWidth, paddingBottom: shortcutHeight + 14 }]}
               >
                 <View style={{ width: terminalWidth - 28 }}>
                   {terminalRuns(output[active.id] || "", columns).map((line, index) => (
@@ -188,7 +192,7 @@ export default function TerminalScreen() {
               </ScrollView>
             </Pressable>
           <TextInput ref={inputRef} value={input} onChangeText={sendInput} onSubmitEditing={sendLine} blurOnSubmit={false} style={styles.hiddenInput} autoCapitalize="none" autoCorrect={false} caretHidden />
-          <View style={[styles.shortcuts, !landscape && keyboardHeight > 0 && { bottom: Math.max(0, keyboardHeight - insets.bottom) }, landscape && styles.shortcutsLandscape, isDark && styles.shortcutsDark]}>
+          <View onLayout={(event) => setShortcutHeight(event.nativeEvent.layout.height)} style={[styles.shortcuts, landscape && styles.shortcutsLandscape, isDark && styles.shortcutsDark]}>
             <Pressable onPress={() => shortcut("\u001b[D")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>←</Text></Pressable>
             <Pressable onPress={() => shortcut("\u001b[C")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>→</Text></Pressable>
             <Pressable onPress={() => shortcut("\u001b")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>Esc</Text></Pressable>
