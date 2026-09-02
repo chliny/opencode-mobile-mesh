@@ -59,7 +59,8 @@ export default function TerminalScreen() {
     }
     if (!keyboardScreenY.current) return
     terminalRef.current?.measureInWindow((_, y, __, terminalHeight) => {
-      setKeyboardBottom(Math.max(0, y + terminalHeight - keyboardScreenY.current + insets.top))
+      const bottom = Math.max(0, y + terminalHeight - keyboardScreenY.current + insets.top)
+      setKeyboardBottom((value) => value === bottom ? value : bottom)
     })
   }
 
@@ -191,9 +192,7 @@ export default function TerminalScreen() {
       </View>
       {!client ? <Text style={[styles.empty, isDark && styles.textDark]}>{t("terminal.noConnection")}</Text> : !active ? <Text style={[styles.empty, isDark && styles.textDark]}>{t("terminal.empty")}</Text> : (
         <>
-          <View ref={terminalRef} onLayout={() => {
-            if (!landscape) requestAnimationFrame(measureKeyboardBottom)
-          }} style={[styles.terminalArea, !landscape && keyboardBottom > 0 && { marginBottom: keyboardBottom }, landscape && styles.terminalAreaLandscape]}>
+          <View ref={terminalRef} style={[styles.terminalArea, !landscape && keyboardBottom > 0 && { marginBottom: keyboardBottom }, landscape && styles.terminalAreaLandscape]}>
             <Pressable style={[styles.outputArea, landscape && styles.outputAreaLandscape]} onLayout={(event) => {
               setOutputHeight(event.nativeEvent.layout.height)
               setOutputWidth(event.nativeEvent.layout.width)
