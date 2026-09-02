@@ -586,8 +586,9 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         set({ routeStatus: "checking", routeError: null })
         log.info("route", "refresh start", `force=${forceRestart}`)
         // The embedded relays are process-wide native singletons. Tear down
-        // the old route before starting this one. Read credentials in parallel
-        // because neither operation depends on the other.
+        // only the relay for the other technology; both native start methods
+        // can reuse an already-running node for the active route. Read
+        // credentials in parallel because neither operation depends on the other.
         const stopOtherRelay = active.zerotier
           ? embeddedTailscale.stop()
           : active.tailscale
