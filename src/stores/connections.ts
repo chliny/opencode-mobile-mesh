@@ -31,6 +31,7 @@ const CONNECTION_TEST_TIMEOUT_MS = 40_000
 let routeGeneration = 0
 let routeRefreshQueue = Promise.resolve()
 let lastNetworkRefreshAt = 0
+let networkRefreshTimer: ReturnType<typeof setTimeout> | null = null
 
 // Cached auth so we can create directory-scoped clients without async SecureStore lookups
 interface ClientBase {
@@ -653,12 +654,15 @@ function refreshEmbeddedRouteOnNetworkChange(available: boolean) {
   if (!(active?.zerotier || active?.tailscale)) return
   if (!available) return
   if (Date.now() - lastNetworkRefreshAt < 1000) return
-  lastNetworkRefreshAt = Date.now()
-  // Do not force-restart an embedded node for every Android callback. Both
-  // native modules observe the same physical network and callbacks can arrive
-  // in pairs while a network is handed over. A normal refresh reuses a healthy
-  // relay and only rebuilds a failed one, preventing a restart loop.
-  void useConnections.getState().refreshActiveRoute()
+  if (networkRefreshTimer) clearTimeout(networkRefreshTimer)
+  // A ZeroTier node owns its libzt sockets and cannot rebind them to Android's
+  // replacement network. Recreate it after a handover instead of reusing a
+  // relay that is still marked ready but backed by the old physical path.
+  networkRefreshTimer = setTimeout(() => {
+    networkRefreshTimer = null
+    lastNetworkRefreshAt = Date.now()
+    void useConnections.getState().refreshActiveRoute(Boolean(active.zerotier))
+  }, active.zerotier ? 2500 : 0)
 }
 
 embeddedZeroTier.addNetworkListener((event) => refreshEmbeddedRouteOnNetworkChange(event.available))

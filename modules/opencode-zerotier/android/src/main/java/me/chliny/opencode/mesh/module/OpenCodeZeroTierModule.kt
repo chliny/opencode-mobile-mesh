@@ -66,7 +66,11 @@ class OpenCodeZeroTierModule : Module() {
       val context = appContext.reactContext?.applicationContext ?: return@OnCreate
       connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
       networkCallback = object : ConnectivityManager.NetworkCallback() {
-        override fun onAvailable(network: Network) = publishNetworkState(network, true)
+        override fun onAvailable(network: Network) {
+          // onAvailable can arrive before DHCP and validation complete. Publish
+          // the state now, but let the native node wait for a usable path.
+          publishNetworkState(network, true)
+        }
         override fun onLost(network: Network) = publishNetworkState(network, false)
       }
       runCatching { connectivityManager?.registerDefaultNetworkCallback(networkCallback!!) }
