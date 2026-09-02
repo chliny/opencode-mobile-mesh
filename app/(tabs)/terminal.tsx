@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, useWindowDimensions, View } from "react-native"
+import { Alert, AppState, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, useWindowDimensions, View } from "react-native"
 import { useFocusEffect } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
@@ -44,11 +44,24 @@ export default function TerminalScreen() {
   const socket = useRef<WebSocket | null>(null)
   const inputRef = useRef<TextInput>(null)
   const terminalRef = useRef<View>(null)
+  const keyboardScreenY = useRef(0)
   const inputValue = useRef("")
   const scroll = useRef<ScrollView>(null)
   const cursors = useRef<Record<string, number>>({})
 
   const cwd = currentProject?.path?.absolute || activeConnection?.directory || serverDirectory
+
+  const measureKeyboardBottom = () => {
+    if (landscape) return
+    if (Keyboard.isVisible()) {
+      const metrics = Keyboard.metrics()
+      if (metrics?.screenY) keyboardScreenY.current = metrics.screenY
+    }
+    if (!keyboardScreenY.current) return
+    terminalRef.current?.measureInWindow((_, y, __, terminalHeight) => {
+      setKeyboardBottom(Math.max(0, y + terminalHeight - keyboardScreenY.current + insets.top))
+    })
+  }
 
   useFocusEffect(useCallback(() => {
     if (!client) return
@@ -97,18 +110,25 @@ export default function TerminalScreen() {
 
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", (event) => {
-      terminalRef.current?.measureInWindow((_, y, __, terminalHeight) => {
-        setKeyboardBottom(Math.max(0, y + terminalHeight - event.endCoordinates.screenY + insets.top))
-      })
+      keyboardScreenY.current = event.endCoordinates.screenY
+      measureKeyboardBottom()
+      requestAnimationFrame(measureKeyboardBottom)
     })
     const hide = Keyboard.addListener("keyboardDidHide", () => {
+      keyboardScreenY.current = 0
       setKeyboardBottom(0)
+    })
+    const appState = AppState.addEventListener("change", (state) => {
+      if (state !== "active") return
+      requestAnimationFrame(measureKeyboardBottom)
+      setTimeout(measureKeyboardBottom, 100)
     })
     return () => {
       show.remove()
       hide.remove()
+      appState.remove()
     }
-  }, [insets.top])
+  }, [insets.top, landscape])
 
   const send = (value: string) => {
     if (!value || !socket.current || socket.current.readyState !== WebSocket.OPEN) return
@@ -171,7 +191,9 @@ export default function TerminalScreen() {
       </View>
       {!client ? <Text style={[styles.empty, isDark && styles.textDark]}>{t("terminal.noConnection")}</Text> : !active ? <Text style={[styles.empty, isDark && styles.textDark]}>{t("terminal.empty")}</Text> : (
         <>
-          <View ref={terminalRef} style={[styles.terminalArea, !landscape && keyboardBottom > 0 && { marginBottom: keyboardBottom }, landscape && styles.terminalAreaLandscape]}>
+          <View ref={terminalRef} onLayout={() => {
+            if (!landscape) requestAnimationFrame(measureKeyboardBottom)
+          }} style={[styles.terminalArea, !landscape && keyboardBottom > 0 && { marginBottom: keyboardBottom }, landscape && styles.terminalAreaLandscape]}>
             <Pressable style={[styles.outputArea, landscape && styles.outputAreaLandscape]} onLayout={(event) => {
               setOutputHeight(event.nativeEvent.layout.height)
               setOutputWidth(event.nativeEvent.layout.width)
