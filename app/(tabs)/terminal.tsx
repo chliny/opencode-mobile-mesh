@@ -18,9 +18,8 @@ function controlCode(char: string): string {
 
 export default function TerminalScreen() {
   const isDark = useColorScheme() === "dark"
-  const { width, height } = useWindowDimensions()
+  const { width } = useWindowDimensions()
   const insets = useSafeAreaInsets()
-  const landscape = width > height
   const { t } = useTranslation()
   const client = useConnections((state) => state.client)
   const currentProject = useConnections((state) => state.currentProject)
@@ -54,7 +53,6 @@ export default function TerminalScreen() {
   const cwd = currentProject?.path?.absolute || activeConnection?.directory || serverDirectory
 
   const measureKeyboardBottom = () => {
-    if (landscape) return
     if (Keyboard.isVisible()) {
       const metrics = Keyboard.metrics()
       if (metrics?.screenY) keyboardScreenY.current = metrics.screenY
@@ -143,7 +141,7 @@ export default function TerminalScreen() {
       hide.remove()
       appState.remove()
     }
-  }, [insets.top, landscape])
+  }, [insets.top])
 
   const send = (value: string) => {
     if (!value) return
@@ -183,7 +181,7 @@ export default function TerminalScreen() {
   const active = sessions.find((item) => item.id === activeID)
   const terminalWidth = outputWidth || width
   const columns = Math.max(20, Math.floor((terminalWidth - 28) / 7.8))
-  const rows = Math.max(2, Math.floor((outputHeight - (landscape ? 0 : shortcutHeight)) / 19))
+  const rows = Math.max(2, Math.floor((outputHeight - shortcutHeight) / 19))
 
   useEffect(() => {
     if (!client || !activeID || !outputHeight) return
@@ -210,9 +208,7 @@ export default function TerminalScreen() {
       </View>
       {!client ? <Text style={[styles.empty, isDark && styles.textDark]}>{t("terminal.noConnection")}</Text> : !active ? <Text style={[styles.empty, isDark && styles.textDark]}>{t("terminal.empty")}</Text> : (
         <>
-          <View ref={terminalRef} onLayout={() => {
-            if (!landscape) requestAnimationFrame(measureKeyboardBottom)
-          }} style={[styles.terminalArea, !landscape && keyboardBottom > 0 && { marginBottom: keyboardBottom }, landscape && styles.terminalAreaLandscape]}>
+          <View ref={terminalRef} onLayout={() => requestAnimationFrame(measureKeyboardBottom)} style={[styles.terminalArea, keyboardBottom > 0 && { marginBottom: keyboardBottom }]}>
             <Pressable style={styles.outputArea} onLayout={(event) => {
               setOutputHeight(event.nativeEvent.layout.height)
               setOutputWidth(event.nativeEvent.layout.width)
@@ -233,14 +229,14 @@ export default function TerminalScreen() {
               </ScrollView>
             </Pressable>
           <TextInput ref={inputRef} value={input} onChangeText={sendInput} onSubmitEditing={sendLine} blurOnSubmit={false} style={styles.hiddenInput} autoCapitalize="none" autoCorrect={false} caretHidden />
-          <View onLayout={(event) => setShortcutHeight(event.nativeEvent.layout.height)} style={[styles.shortcuts, landscape && styles.shortcutsLandscape, landscape && { position: "relative", left: 0, right: 0, top: 0, bottom: 0, flexShrink: 0 }, isDark && styles.shortcutsDark]}>
-            <Pressable onPress={() => shortcut("\u001b[D")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>←</Text></Pressable>
-            <Pressable onPress={() => shortcut("\u001b[C")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>→</Text></Pressable>
-            <Pressable onPress={() => shortcut("\u001b")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>Esc</Text></Pressable>
-            <Pressable onPress={() => shortcut("\t")} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>Tab</Text></Pressable>
-            <Pressable onPress={() => setCtrl((value) => !value)} style={[styles.shortcut, landscape && styles.shortcutLandscape, ctrl && styles.shortcutActive]}><Text style={styles.shortcutText}>Ctrl</Text></Pressable>
-            <Pressable onPress={sendLine} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Text style={styles.shortcutText}>Enter</Text></Pressable>
-            <Pressable onPress={() => clear(active.id)} style={[styles.shortcut, landscape && styles.shortcutLandscape]}><Ionicons name="trash-outline" size={20} color="#777" /></Pressable>
+          <View onLayout={(event) => setShortcutHeight(event.nativeEvent.layout.height)} style={[styles.shortcuts, { height: 40 }, isDark && styles.shortcutsDark]}>
+            <Pressable onPress={() => shortcut("\u001b[D")} style={styles.shortcut}><Text style={styles.shortcutText}>←</Text></Pressable>
+            <Pressable onPress={() => shortcut("\u001b[C")} style={styles.shortcut}><Text style={styles.shortcutText}>→</Text></Pressable>
+            <Pressable onPress={() => shortcut("\u001b")} style={styles.shortcut}><Text style={styles.shortcutText}>Esc</Text></Pressable>
+            <Pressable onPress={() => shortcut("\t")} style={styles.shortcut}><Text style={styles.shortcutText}>Tab</Text></Pressable>
+            <Pressable onPress={() => setCtrl((value) => !value)} style={[styles.shortcut, ctrl && styles.shortcutActive]}><Text style={styles.shortcutText}>Ctrl</Text></Pressable>
+            <Pressable onPress={sendLine} style={styles.shortcut}><Text style={styles.shortcutText}>Enter</Text></Pressable>
+            <Pressable onPress={() => clear(active.id)} style={styles.shortcut}><Ionicons name="trash-outline" size={20} color="#777" /></Pressable>
           </View>
           </View>
         </>
