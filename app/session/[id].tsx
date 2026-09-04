@@ -57,7 +57,7 @@ import { modelNameFor } from "../../src/lib/model-display"
 import { activeMention, insertMention } from "../../src/lib/file-review"
 import { childSessionTitle } from "../../src/lib/subagent"
 import { extractPromptFromParts } from "../../src/lib/prompt-from-parts"
-import type { Message, PromptFileReference } from "../../src/lib/sdk"
+import type { FileEntry, Message, PromptFileReference } from "../../src/lib/sdk"
 import { cacheDiffs, cacheVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../../src/lib/session-file-cache"
 import { turnDiffsFromMessages, turnSummaryRecorded } from "../../src/lib/review-diffs"
 import { isCompactionMessage } from "../../src/lib/message-kind"
@@ -342,7 +342,33 @@ export default function SessionScreen() {
     const timer = setTimeout(() => {
       setMentionLoading(true)
       sessionClient.find.files({ query: mention.query, type: "file", limit: 40 })
-        .then((files) => { if (active) setMentionFiles(files) })
+        .then(async (files) => {
+          if (files.length >= 40) {
+            if (active) setMentionFiles(files)
+            return
+          }
+          const query = mention.query.toLowerCase()
+          const found = new Set(files)
+          const pending = ["."]
+          const visited = new Set<string>()
+          let scanned = 0
+          while (pending.length > 0 && scanned < 300) {
+            const current = pending.shift()
+            if (!current || visited.has(current)) continue
+            visited.add(current)
+            const entries: FileEntry[] = await sessionClient.file.list({ path: current })
+            scanned += entries.length
+            for (const entry of entries) {
+              if (entry.type === "directory") {
+                pending.push(entry.path)
+                continue
+              }
+              if (entry.path.toLowerCase().includes(query)) found.add(entry.path)
+              if (found.size >= 40) break
+            }
+          }
+          if (active) setMentionFiles([...found].slice(0, 40))
+        })
         .catch(() => { if (active) setMentionFiles([]) })
         .finally(() => { if (active) setMentionLoading(false) })
     }, 180)
