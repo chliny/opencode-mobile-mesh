@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useTerminal } from "../../src/stores/terminal"
 import { useConnections } from "../../src/stores/connections"
+import { useSessions } from "../../src/stores/sessions"
 import { PtyOutputDecoder } from "../../src/lib/pty-output"
 import { terminalRuns } from "../../src/lib/terminal-screen"
 
@@ -25,6 +26,7 @@ export default function TerminalScreen() {
   const currentProject = useConnections((state) => state.currentProject)
   const activeConnection = useConnections((state) => state.activeConnection)
   const serverDirectory = useConnections((state) => state.serverDirectory)
+  const sessionDirectory = useSessions((state) => state.currentSession?.directory)
   const sessions = useTerminal((state) => state.sessions)
   const activeID = useTerminal((state) => state.activeID)
   const output = useTerminal((state) => state.output)
@@ -50,7 +52,7 @@ export default function TerminalScreen() {
   const scroll = useRef<ScrollView>(null)
   const cursors = useRef<Record<string, number>>({})
 
-  const cwd = currentProject?.path?.absolute || activeConnection?.directory || serverDirectory
+  const cwd = sessionDirectory || currentProject?.path?.absolute || activeConnection?.directory || serverDirectory
 
   const measureKeyboardBottom = () => {
     if (Keyboard.isVisible()) {
