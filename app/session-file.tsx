@@ -10,6 +10,7 @@ import { turnDiffsFromMessages, turnSummaryRecorded } from "../src/lib/review-di
 import { useConnections } from "../src/stores/connections"
 import { useSessions } from "../src/stores/sessions"
 import { cacheDiffs, cacheVcsDiffs, getCachedDiffs, getCachedVcsDiffs } from "../src/lib/session-file-cache"
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated"
 
 interface DisplayLine extends SharedDiffLine {
   number: number
@@ -27,6 +28,10 @@ export default function SessionFileScreen() {
   const isDark = useColorScheme() === "dark"
   const { client, clientForDirectory } = useConnections()
   const api = useMemo(() => clientForDirectory(directory) ?? client, [clientForDirectory, directory, client])
+  const keyboard = useAnimatedKeyboard()
+  const keyboardStyle = useAnimatedStyle(() => ({
+    paddingBottom: Platform.OS === "android" ? keyboard.height.value : 0,
+  }))
   const [lines, setLines] = useState<DisplayLine[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -160,6 +165,7 @@ export default function SessionFileScreen() {
   return (
     <KeyboardAvoidingView style={[s.container, isDark && s.containerDark]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Stack.Screen options={{ title: path?.split("/").pop() || t("files.fileTitle") }} />
+      <Animated.View style={[s.container, keyboardStyle]}>
       <FullScreenDiffReview title={path || t("files.fileTitle")} lines={mode === "diff" ? lines : []} isDark={isDark} visibleLineIndex={mode === "diff" ? visibleLine : null} onBack={() => router.back()} onNavigateHunk={(index) => scrollToLine(index, true)} headerLabel={mode === "diff" ? "DIFF" : "FILE"} footer={start !== null && end !== null ? (
         <View style={[s.commentBox, isDark && s.commentBoxDark]}>
           <View style={s.selectionHead}><Text style={[s.selectionText, isDark && s.textDark]}>{t("files.selectedLines", { start, end })}</Text><TouchableOpacity onPress={() => { setAnchor(null); setFocus(null); setComment("") }}><Text style={s.clear}>{t("common.cancel")}</Text></TouchableOpacity></View>
@@ -189,6 +195,7 @@ export default function SessionFileScreen() {
           />
         )}
       </FullScreenDiffReview>
+      </Animated.View>
     </KeyboardAvoidingView>
   )
 }
