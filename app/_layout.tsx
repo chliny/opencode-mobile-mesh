@@ -125,7 +125,6 @@ function RootLayout() {
     const transportUrl = clientBase?.baseUrl || null
     if (transportUrl && !sseStarted.current) {
       sseStarted.current = true
-      useEvents.getState().connect()
       useCatalog.getState().load()
       // App-local relays become ready after the session tab's initial focus
       // load. Refresh here once the client exists so that early empty request
@@ -143,7 +142,13 @@ function RootLayout() {
         notifPermissionRequested.current = true
         void notifications.setup()
       }
-    } else if (!transportUrl && sseStarted.current) {
+    }
+    if (transportUrl) {
+      // A relay rebuild changes its ephemeral localhost port. Abort an SSE
+      // attempt still targeting the old listener instead of waiting for its
+      // retry delay to reach the new transport.
+      useEvents.getState().connect()
+    } else if (sseStarted.current) {
       sseStarted.current = false
       useEvents.getState().disconnect()
     }

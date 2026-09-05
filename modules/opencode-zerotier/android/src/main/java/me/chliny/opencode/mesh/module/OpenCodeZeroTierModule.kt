@@ -53,6 +53,9 @@ class OpenCodeZeroTierModule : Module() {
   @Volatile private var node: ZeroTierNode? = null
   @Volatile private var relay: AppLocalRelay? = null
   @Volatile private var currentKey: String? = null
+  // Retain numeric peer addresses only while the current node stays online so
+  // foreground relay rebuilds cannot block on Android DNS again.
+  @Volatile private var relayAddresses = emptyList<String>()
   @Volatile private var status: Map<String, Any?> = mapOf("state" to "stopped")
   private var pendingPlanetPickerPromise: Promise? = null
   private var connectivityManager: ConnectivityManager? = null
@@ -259,7 +262,7 @@ class OpenCodeZeroTierModule : Module() {
         relay != null
       ) return status
 
-      relay?.close()
+      relay?.closeImmediately()
       relay = null
 
       // A force refresh repairs the libzt socket used by the app-local relay.
@@ -268,7 +271,7 @@ class OpenCodeZeroTierModule : Module() {
       if (
         existingNode.isOnline() &&
         assignedAddress(existingNode, networkId) != null
-      ) return finishNetworkJoin(existingNode, networkId, remoteHost, remotePort)
+      ) return finishNetworkJoin(existingNode, networkId, remoteHost, remotePort, reuseResolvedAddresses = true)
 
       waitForNodeOnline(existingNode, timeoutMs)
       checkResult(existingNode.join(networkId), "join network")
@@ -277,6 +280,7 @@ class OpenCodeZeroTierModule : Module() {
 
     relay?.close()
     relay = null
+    relayAddresses = emptyList()
     node?.let {
       runCatching { OpenCodeZeroTierNative.safeNodeStop() }
       waitForNodeStopped(it)
@@ -320,6 +324,7 @@ class OpenCodeZeroTierModule : Module() {
     networkId: Long,
     remoteHost: String,
     remotePort: Int,
+    reuseResolvedAddresses: Boolean = false,
   ): Map<String, Any?> {
     val nodeId = formatNodeId(currentNode.id)
     val settleDeadline = System.currentTimeMillis() + NETWORK_ASSIGNMENT_SETTLE_MS
@@ -368,7 +373,9 @@ class OpenCodeZeroTierModule : Module() {
     // Resolve hostnames with Android's normal resolver, then pass only numeric
     // addresses into libzt. The resulting TCP socket still belongs entirely to
     // libzt and does not use Android's system socket/VPN path.
-    val remoteAddresses = try {
+    val remoteAddresses = if (reuseResolvedAddresses && relayAddresses.isNotEmpty()) {
+      relayAddresses
+    } else try {
       InetAddress.getAllByName(remoteHost)
         .mapNotNull { it.hostAddress }
         .distinct()
@@ -399,10 +406,12 @@ class OpenCodeZeroTierModule : Module() {
         )
       }
     }
+    relayAddresses = remoteAddresses
 
     lateinit var nextRelay: AppLocalRelay
     nextRelay = AppLocalRelay(remoteHost, remoteAddresses, remotePort, relayExecutor) { error ->
       if (relay === nextRelay) {
+        relayAddresses = emptyList()
         status = mapOf(
           "state" to "error",
           "nodeId" to nodeId,
@@ -434,6 +443,7 @@ class OpenCodeZeroTierModule : Module() {
   private fun stopInternal() = synchronized(lock) {
     relay?.close()
     relay = null
+    relayAddresses = emptyList()
     // libzt owns a process-global service. It can survive after the Java node
     // reference was lost during a failed start, so always stop that service
     // before the next initFromStorage() call.
@@ -605,12 +615,24 @@ private class AppLocalRelay(
     )
   }
 
+  fun closeImmediately() {
+    closeClients(waitForClients = false)
+  }
+
   override fun close() {
+    closeClients(waitForClients = true)
+  }
+
+  private fun closeClients(waitForClients: Boolean) {
     if (!running.getAndSet(false)) return
     runCatching { server.close() }
     val activeClients = synchronized(clients) { clients.toList() }
     val closeTasks = activeClients.map { client ->
       executor.submit { client.close() }
+    }
+    if (!waitForClients) {
+      clients.clear()
+      return
     }
     val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
     closeTasks.forEach { task ->
