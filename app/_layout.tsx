@@ -30,7 +30,7 @@ function RootLayout() {
   const { t } = useTranslation()
 
   const { initialize: initAuth, isLoading: authLoading } = useAuth()
-  const { loadConnections, isLoading: connectionsLoading, clientBase } = useConnections()
+  const { loadConnections, isLoading: connectionsLoading, clientBase, routeStatus } = useConnections()
   const sseStarted = useRef(false)
   const notifPermissionRequested = useRef(false)
 
@@ -148,6 +148,15 @@ function RootLayout() {
       useEvents.getState().disconnect()
     }
   }, [clientBase?.baseUrl])
+
+  // A catalog request can fail while the transport is still coming online.
+  // Route refreshes transition through "checking" even when they reuse the
+  // same client, so reload the catalog whenever that transport becomes ready.
+  useEffect(() => {
+    if (routeStatus === "lan" || routeStatus === "zerotier" || routeStatus === "tailscale") {
+      void useCatalog.getState().load()
+    }
+  }, [routeStatus])
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next) => {

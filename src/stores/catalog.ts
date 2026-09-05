@@ -73,6 +73,17 @@ export const useCatalog = create<CatalogState>((set, get) => ({
     const agents = Array.isArray(agentResult) ? agentResult : []
     const commands = Array.isArray(commandResult) ? commandResult : []
 
+    // A failed provider request is different from a successful response with
+    // no connected providers. Keep the last usable catalog and leave `loaded`
+    // unchanged so an initial failure can be retried when the route recovers.
+    if (providerResult === null) {
+      set((state) => ({
+        agents: agents.length > 0 ? agents.filter((a) => !a.hidden) : state.agents,
+        commands: commandResult ? commands : state.commands,
+      }))
+      return
+    }
+
     // Parse provider response: { all: [...], default: {...}, connected: [...] }
     const raw = providerResult
     const connected = new Set(Array.isArray(raw?.connected) ? raw.connected : [])
