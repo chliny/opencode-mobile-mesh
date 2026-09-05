@@ -4,7 +4,7 @@
 AI-assisted coding from your phone — Android, via a direct APK or a build from source.
 
 > **This edition** is a feature fork of [dzianisv/opencode-mobile](https://github.com/dzianisv/opencode-mobile)
-> that embeds **ZeroTier mesh networking** directly in the app (no VPN slot, no tunnel service), adds a
+> that embeds **ZeroTier and Tailscale networking** directly in the app, adds a
 > **session file browser with fullscreen diff review**, **subagent session navigation**, and a long list of
 > reliability and performance fixes. See [Features](#features) and [ZeroTier Networking](#zerotier-networking).
 > Based on upstream **v0.4.15**.
@@ -20,7 +20,7 @@ AI-assisted coding from your phone — Android, via a direct APK or a build from
 
 **New: tap "Try a Demo" in the app to see the agent fix a real bug — reasoning, a grep, a diff, a permission prompt — in about 30 seconds, no server needed.**
 
-**Also new: embedded ZeroTier networking — reach your self-hosted server over a ZeroTier mesh from anywhere, with automatic LAN ↔ ZeroTier failover and zero tunnel setup.**
+**Also new: embedded ZeroTier and Tailscale networking — reach your self-hosted server over either mesh from anywhere, without a separate VPN app or tunnel service.**
 
 ---
 
@@ -37,7 +37,7 @@ There are **two ways** to install OpenCode Mobile today, both for Android:
 
 ---
 
-OpenCode Mobile is a React Native / Expo app that brings the power of the [opencode](https://github.com/sst/opencode) AI coding agent to your phone. Connect to your own self-hosted opencode server over your local network, a Cloudflare Tunnel, ngrok, Tailscale, or an embedded ZeroTier mesh network — and write, review, and ship code from anywhere. The mobile client is **free and open-source** under the MIT license. There is no feature gate, no telemetry you did not opt into, and no ad network.
+OpenCode Mobile is a React Native / Expo app that brings the power of the [opencode](https://github.com/sst/opencode) AI coding agent to your phone. Connect to your own self-hosted opencode server over your local network, a Cloudflare Tunnel, ngrok, or the app's embedded Tailscale or ZeroTier networking — and write, review, and ship code from anywhere. The mobile client is **free and open-source** under the MIT license. There is no feature gate, no telemetry you did not opt into, and no ad network.
 
 ---
 
@@ -53,9 +53,10 @@ OpenCode Mobile is a React Native / Expo app that brings the power of the [openc
 
 ### Networking & connections
 
-- **Embedded ZeroTier networking** — join a ZeroTier mesh network from inside the app (userspace `libzt`, no Android VPN slot) and reach your server from anywhere; the app probes LAN first and switches to ZeroTier only when needed, then switches back automatically ([details](#zerotier-networking))
+- **Embedded ZeroTier networking** — join a ZeroTier mesh network from inside the app using userspace `libzt`, with no Android VPN slot or separate ZeroTier app ([details](#zerotier-networking))
+- **Embedded Tailscale networking** — authenticate and join your tailnet from inside the app, then reach your server through an app-local relay without a separate Tailscale app ([details](#tailscale-networking))
 - **Custom planet files** — point the embedded ZeroTier node at your own controller root via the document picker (content-addressed, SHA-256 verified)
-- **Multi-connection** — manage multiple opencode servers (local network, Cloudflare Tunnel, ngrok, Tailscale, or ZeroTier)
+- **Multi-connection** — manage multiple opencode servers (local network, Cloudflare Tunnel, ngrok, embedded Tailscale, or embedded ZeroTier)
 
 ### Coding sessions
 
@@ -113,8 +114,8 @@ Open the app, tap **Add Connection**, and choose your connection type:
 
 - **Local network** — your machine's LAN IP, e.g. `http://192.168.1.100:4096`
 - **Tunnel** — a Cloudflare Tunnel or ngrok URL, e.g. `https://my-opencode.trycloudflare.com`
-- **Tailscale** — your machine's Tailscale IP, e.g. `http://100.x.x.x:4096`
-- **ZeroTier** — your machine's ZeroTier-managed IP, e.g. `http://10.147.x.x:4096` — with this edition the app can join the ZeroTier network itself, no system VPN required ([details](#zerotier-networking))
+- **Tailscale** — your machine's Tailscale IP or MagicDNS hostname, e.g. `http://100.x.x.x:4096`; the app authenticates and connects through its embedded Tailscale node ([details](#tailscale-networking))
+- **ZeroTier** — your machine's ZeroTier-managed IP, e.g. `http://10.147.x.x:4096`; the app joins the ZeroTier network through its embedded userspace node ([details](#zerotier-networking))
 
 Enter the password you set in Step 1, tap **Connect**, and you're in.
 
@@ -130,7 +131,7 @@ OpenCode Mobile is a thin client. It speaks the opencode HTTP + SSE API: listing
 │  (React Native / Expo, this repo)   │
 └──────────────┬──────────────────────┘
                 │  HTTP + SSE
-                │  (LAN / tunnel / Tailscale / ZeroTier)
+                │  (LAN / tunnel / embedded Tailscale / embedded ZeroTier)
                ▼
 ┌─────────────────────────────────────┐
 │       opencode server               │
@@ -148,6 +149,18 @@ OpenCode Mobile is a thin client. It speaks the opencode HTTP + SSE API: listing
 
 ---
 
+## Tailscale Networking
+
+The Android build embeds a Tailscale node and connects it to your tailnet from inside the app. The
+first connection may require interactive authentication in a browser. After authentication, the app
+uses an app-local relay to forward HTTP + SSE traffic to the configured Tailscale address.
+
+Constraints: the opencode endpoint must use `http://` when accessed through the embedded relay. You can
+use a Tailscale IPv4 address such as `100.x.x.x` or a MagicDNS hostname. HTTPS endpoints are rejected by
+the embedded relay rather than silently weakening certificate validation.
+
+---
+
 ## ZeroTier Networking
 
 This edition embeds the official [`zerotier/libzt`](https://github.com/zerotier/libzt) userspace socket
@@ -157,12 +170,10 @@ still run alongside it.
 
 How it works:
 
-1. **LAN first** — the app probes the connection's normal LAN URL and uses it directly when reachable.
-2. **ZeroTier fallback** — if the probe fails, the app starts the embedded ZeroTier node, joins the
-   configured network, and relays HTTP + SSE traffic to your server's ZeroTier IP over a localhost listener.
-3. **Automatic failback** — while active, LAN is re-probed every 30 seconds; a successful probe switches
-   back to LAN and stops the node.
-4. **Approvable joins** — if the network requires authorization, the connection error shows the stable
+1. **Embedded node** — the app starts its userspace ZeroTier node and joins the configured network.
+2. **Local relay** — HTTP + SSE traffic is forwarded to your server's ZeroTier IP over an app-local
+   localhost listener.
+3. **Approvable joins** — if the network requires authorization, the connection error shows the stable
    ZeroTier node ID to approve in your network controller.
 
 Constraints: the opencode endpoint must be a numeric IPv4/IPv6 address over `http://` (HTTPS is rejected
@@ -178,6 +189,7 @@ planet files and build requirements: [docs/embedded-zerotier.md](docs/embedded-z
 | Feature | Status |
 |---|---|
 | Embedded ZeroTier networking | Stable |
+| Embedded Tailscale networking | Stable |
 | Session file browser + fullscreen diff review | Stable |
 | Subagent session navigation | Stable |
 | Offline demo mode | Stable |
@@ -192,7 +204,6 @@ planet files and build requirements: [docs/embedded-zerotier.md](docs/embedded-z
 | Sentry crash reporting (opt-in) | Stable |
 | Custom ZeroTier planet files | Stable |
 | Cloudflare / ngrok tunnel wizard | Beta |
-| Built-in Tailscale networking | Planned |
 
 ---
 
