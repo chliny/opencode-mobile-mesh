@@ -31,7 +31,7 @@ const faqs = [
   },
   {
     q: 'The app crashes or I see an error. What should I do?',
-    a: `Please open a GitHub Issue at github.com/chliny/opencode-mobile-zerotier/issues with: your device model, Android/iOS version, app version (Settings → About), and a description of what happened. If you opted in to crash reporting, we may already have the stack trace — your issue report helps us match it to the right bug.`,
+    a: `Please open a GitHub Issue at github.com/chliny/opencode-mobile-mesh/issues with: your device model, Android/iOS version, app version (Settings → About), and a description of what happened. If you opted in to crash reporting, we may already have the stack trace — your issue report helps us match it to the right bug.`,
   },
 ]
 
@@ -66,7 +66,7 @@ export default function SupportPage() {
         </a>
 
         <a
-          href="https://github.com/chliny/opencode-mobile-zerotier/issues"
+          href="https://github.com/chliny/opencode-mobile-mesh/issues"
           target="_blank"
           rel="noopener noreferrer"
           className="card flex items-start gap-4 hover:border-blue-500/60 transition-colors"
@@ -106,7 +106,7 @@ export default function SupportPage() {
 
       <div className="mt-12 p-5 rounded-xl text-sm" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--muted)' }}>
         Still stuck? Open a{' '}
-        <a href="https://github.com/chliny/opencode-mobile-zerotier/issues/new" target="_blank"
+        <a href="https://github.com/chliny/opencode-mobile-mesh/issues/new" target="_blank"
           rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
           GitHub Issue
         </a>{' '}

@@ -24,8 +24,8 @@ Drive your self-hosted AI coding agent from your phone
 
 ## Links
 
-- GitHub: https://github.com/chliny/opencode-mobile-zerotier
-- Direct APK: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
+- GitHub: https://github.com/chliny/opencode-mobile-mesh
+- Direct APK: https://github.com/chliny/opencode-mobile-mesh/releases/latest
 
 ---
 

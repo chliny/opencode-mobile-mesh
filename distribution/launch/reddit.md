@@ -28,9 +28,9 @@ The interesting engineering bits:
 
 **Stack:** React Native / Expo, TypeScript, React Query for server state, Zustand for local state, Sentry for crash reporting (opt-in, off by default).
 
-MIT licensed, source at https://github.com/chliny/opencode-mobile-zerotier.
+MIT licensed, source at https://github.com/chliny/opencode-mobile-mesh.
 
-Get it: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
+Get it: https://github.com/chliny/opencode-mobile-mesh/releases/latest
 
 Happy to get into any of the implementation details — the SSE + approval flow coordination was the trickiest part.
 
@@ -57,7 +57,7 @@ OpenCode Mobile connects to your own opencode server over whatever you already u
 - Tool call approval — you explicitly approve file writes and shell commands before they execute
 - Multiple saved connections (home server, work VPN, etc.)
 - Biometric unlock
-- MIT licensed, Android source at https://github.com/chliny/opencode-mobile-zerotier
+- MIT licensed, Android source at https://github.com/chliny/opencode-mobile-mesh
 
 **What it is not:**
 
@@ -65,7 +65,7 @@ Not a standalone AI model. You need opencode running: `npm install -g opencode-a
 
 No accounts, no analytics, no proprietary backend. Sentry crash reporting is opt-in and off by default.
 
-Direct APK: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
+Direct APK: https://github.com/chliny/opencode-mobile-mesh/releases/latest
 
 ---
 
@@ -90,8 +90,8 @@ opencode supports any OpenAI-compatible API via its provider config. Point it at
 - Tool call approval UI — explicitly OK file writes and shell commands
 - Works with any model opencode supports: local LLMs, Claude, GPT-4, Gemini, or mixed
 
-**Source / license:** MIT, https://github.com/chliny/opencode-mobile-zerotier
+**Source / license:** MIT, https://github.com/chliny/opencode-mobile-mesh
 
-Get it: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
+Get it: https://github.com/chliny/opencode-mobile-mesh/releases/latest
 
 I'm interested in feedback from anyone running local models — particularly around latency on the SSE stream when the model is slow. Does the streaming UI feel OK when tokens come in at 3–5/sec?

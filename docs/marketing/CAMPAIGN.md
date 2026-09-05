@@ -1,6 +1,6 @@
 # OpenCode Mobile — Launch Campaign Plan
 
-> Repository: `chliny/opencode-mobile-zerotier`. All copy in this folder is verified-true. Do not invent metrics, ratings, or store claims.
+> Repository: `chliny/opencode-mobile-mesh`. All copy in this folder is verified-true. Do not invent metrics, ratings, or store claims.
 > The supported install channel is the signed APK attached to GitHub Releases. Do not claim Google Play, F-Droid, or a hosted website without verifying this repository operates that channel.
 
 ---

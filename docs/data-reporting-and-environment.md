@@ -135,7 +135,7 @@ telemetry consent is granted.
 On Android, the app checks GitHub Releases at:
 
 ```text
-https://api.github.com/repos/chliny/opencode-mobile-zerotier/releases/latest
+https://api.github.com/repos/chliny/opencode-mobile-mesh/releases/latest
 ```
 
 The check is unauthenticated, throttled to once per 24 hours, and does not

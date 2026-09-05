@@ -1,7 +1,7 @@
 # Publishing Releases
 
 This repository distributes Android builds as signed APKs through GitHub Releases:
-`https://github.com/chliny/opencode-mobile-zerotier/releases`.
+`https://github.com/chliny/opencode-mobile-mesh/releases`.
 
 Google Play, F-Droid, and iOS publishing are not maintained here.
 

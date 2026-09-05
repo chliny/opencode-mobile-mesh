@@ -10,7 +10,7 @@ AI-assisted coding from your phone — Android, via a direct APK or a build from
 > Based on upstream **v0.4.15**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Download APK](https://img.shields.io/badge/Download-APK-green?logo=android)](https://github.com/chliny/opencode-mobile-zerotier/releases/latest)
+[![Download APK](https://img.shields.io/badge/Download-APK-green?logo=android)](https://github.com/chliny/opencode-mobile-mesh/releases/latest)
 
 > **Not affiliated with opencode.** OpenCode Mobile is an independent, community-built client and is
 > not made by, endorsed by, or affiliated with the opencode / Anomaly team. It talks to an opencode
@@ -29,7 +29,7 @@ AI-assisted coding from your phone — Android, via a direct APK or a build from
 There are **two ways** to install OpenCode Mobile today, both for Android:
 
 1. **Direct signed APK** — download the latest release and install it manually:
-   **https://github.com/chliny/opencode-mobile-zerotier/releases/latest**
+   **https://github.com/chliny/opencode-mobile-mesh/releases/latest**
 
 2. **Build from source** — follow the instructions in [Contributing](#contributing).
 

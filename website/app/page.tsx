@@ -74,7 +74,7 @@ export default function HomePage() {
           {/* Install / Download */}
           <div className="flex flex-wrap gap-3 mb-4">
             <a
-              href="https://github.com/chliny/opencode-mobile-zerotier/releases/latest"
+              href="https://github.com/chliny/opencode-mobile-mesh/releases/latest"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary text-sm"
@@ -82,7 +82,7 @@ export default function HomePage() {
               Download APK
             </a>
             <a
-              href="https://github.com/chliny/opencode-mobile-zerotier/releases"
+              href="https://github.com/chliny/opencode-mobile-mesh/releases"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary text-sm"
@@ -90,7 +90,7 @@ export default function HomePage() {
               GitHub Releases
             </a>
             <a
-              href="https://github.com/chliny/opencode-mobile-zerotier/releases/latest"
+              href="https://github.com/chliny/opencode-mobile-mesh/releases/latest"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary text-sm"
@@ -184,7 +184,7 @@ export default function HomePage() {
               </p>
             </div>
             <a
-              href="https://github.com/chliny/opencode-mobile-zerotier"
+              href="https://github.com/chliny/opencode-mobile-mesh"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary text-sm shrink-0"

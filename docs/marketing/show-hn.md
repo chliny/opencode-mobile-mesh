@@ -10,7 +10,7 @@
 Show HN: OpenCode Mobile – drive your self-hosted AI coding agent from your phone
 ```
 
-**URL field:** `https://github.com/chliny/opencode-mobile-zerotier`
+**URL field:** `https://github.com/chliny/opencode-mobile-mesh`
 
 ---
 
@@ -58,7 +58,7 @@ OPENCODE_SERVER_PASSWORD=yourpassword opencode serve --hostname 0.0.0.0 --port 4
 
 Stable on Android, MIT licensed. No accounts, no ads. Sentry crash reporting is opt-in and off by default. Install today via a direct signed APK.
 
-- Source: https://github.com/chliny/opencode-mobile-zerotier
-- Direct APK: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
+- Source: https://github.com/chliny/opencode-mobile-mesh
+- Direct APK: https://github.com/chliny/opencode-mobile-mesh/releases/latest
 
 Happy to answer questions about the SSE streaming implementation, the Expo build pipeline, or the opencode API surface.

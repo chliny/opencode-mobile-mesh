@@ -34,7 +34,7 @@ See [`.agents/retro.md`](.agents/retro.md) for lessons from past tasks. Read ent
 
 React Native / Expo mobile client for opencode. Connects to an opencode server instance via HTTP + SSE for real-time updates.
 
-**Repo**: `chliny/opencode-mobile-zerotier` (standalone, not part of opencode monorepo)
+**Repo**: `chliny/opencode-mobile-mesh` (standalone, not part of opencode monorepo)
 **Package name**: `me.chliny.opencode.mesh`
 
 ## Architecture
@@ -218,7 +218,7 @@ Secrets stored in vault:
 - `SENTRY_ORG` — `vibetechnologies`
 - `SENTRY_PROJECT` — `opencode-mobile`
 
-Configure these values as GitHub Actions secrets on `chliny/opencode-mobile-zerotier` before enabling CI builds.
+Configure these values as GitHub Actions secrets on `chliny/opencode-mobile-mesh` before enabling CI builds.
 
 **Do NOT store secrets in `.env` files committed to the repo.** `.env` is gitignored — local copy only.
 

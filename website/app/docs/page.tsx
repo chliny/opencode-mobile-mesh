@@ -17,25 +17,25 @@ const quickLinks = [
   {
     title: 'README',
     description: 'Installation, building from source, and quick start guide.',
-    href: 'https://github.com/chliny/opencode-mobile-zerotier#readme',
+    href: 'https://github.com/chliny/opencode-mobile-mesh#readme',
     external: true,
   },
   {
     title: 'Releases',
     description: 'Download APKs and view changelog for every release.',
-    href: 'https://github.com/chliny/opencode-mobile-zerotier/releases',
+    href: 'https://github.com/chliny/opencode-mobile-mesh/releases',
     external: true,
   },
   {
     title: 'Bug Reports',
     description: 'Found a bug? Open an issue on GitHub.',
-    href: 'https://github.com/chliny/opencode-mobile-zerotier/issues/new',
+    href: 'https://github.com/chliny/opencode-mobile-mesh/issues/new',
     external: true,
   },
   {
     title: 'Contributing',
     description: 'Want to contribute? See CONTRIBUTING.md in the repo.',
-    href: 'https://github.com/chliny/opencode-mobile-zerotier/blob/main/CONTRIBUTING.md',
+    href: 'https://github.com/chliny/opencode-mobile-mesh/blob/main/CONTRIBUTING.md',
     external: true,
   },
 ]
@@ -93,7 +93,7 @@ export default function DocsPage() {
           and the opencode Cloud. Want to help write docs?
         </p>
         <a
-          href="https://github.com/chliny/opencode-mobile-zerotier/discussions"
+          href="https://github.com/chliny/opencode-mobile-mesh/discussions"
           target="_blank"
           rel="noopener noreferrer"
           className="btn-primary text-sm"

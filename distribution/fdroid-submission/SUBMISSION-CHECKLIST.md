@@ -111,7 +111,7 @@ MR description template:
 **Package:** me.chliny.opencode.mesh
 **License:** MIT
 **Category:** Development
-**Source:** https://github.com/chliny/opencode-mobile-zerotier
+**Source:** https://github.com/chliny/opencode-mobile-mesh
 
 OpenCode Mobile is a free, open-source mobile client for the opencode AI
 coding agent (sst/opencode). MIT licensed. Crash reporting opt-in default OFF.

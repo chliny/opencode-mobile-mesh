@@ -60,8 +60,8 @@ Tool-call approval required coordinating two async streams: the inbound SSE stre
 
 ## Open source
 
-MIT licensed. Source at [github.com/chliny/opencode-mobile-zerotier](https://github.com/chliny/opencode-mobile-zerotier). Issues and PRs welcome.
+MIT licensed. Source at [github.com/chliny/opencode-mobile-mesh](https://github.com/chliny/opencode-mobile-mesh). Issues and PRs welcome.
 
-Install the [direct APK](https://github.com/chliny/opencode-mobile-zerotier/releases/latest).
+Install the [direct APK](https://github.com/chliny/opencode-mobile-mesh/releases/latest).
 
 If you run opencode and try it, I'm especially interested in feedback on latency with local models — the streaming UI has a minimum render interval to avoid thrashing, and I don't know where that threshold feels wrong on slow hardware.

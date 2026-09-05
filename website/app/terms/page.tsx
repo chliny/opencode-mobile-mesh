@@ -51,8 +51,8 @@ export default function TermsPage() {
           The App is released under the{' '}
           <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">MIT License</a>.
           Source code is available at{' '}
-          <a href="https://github.com/chliny/opencode-mobile-zerotier" target="_blank" rel="noopener noreferrer">
-            github.com/chliny/opencode-mobile-zerotier
+          <a href="https://github.com/chliny/opencode-mobile-mesh" target="_blank" rel="noopener noreferrer">
+            github.com/chliny/opencode-mobile-mesh
           </a>.
         </p>
         <p>
@@ -124,7 +124,7 @@ export default function TermsPage() {
           VIBE TECHNOLOGIES, LLC provides OpenCode Mobile free of charge and has no obligation to
           provide technical support, maintenance, updates, or bug fixes. We genuinely try to respond
           to issues on{' '}
-          <a href="https://github.com/chliny/opencode-mobile-zerotier/issues" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/chliny/opencode-mobile-mesh/issues" target="_blank" rel="noopener noreferrer">
             GitHub Issues
           </a>{' '}
           and via{' '}

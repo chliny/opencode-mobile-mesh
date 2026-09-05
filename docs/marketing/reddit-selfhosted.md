@@ -41,7 +41,7 @@ Your API keys stay on your server. No accounts, no analytics, no proprietary bac
 
 **Install**
 
-- Direct APK: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
-- Source: https://github.com/chliny/opencode-mobile-zerotier
+- Direct APK: https://github.com/chliny/opencode-mobile-mesh/releases/latest
+- Source: https://github.com/chliny/opencode-mobile-mesh
 
 Happy to answer anything about the tunnel setup or the API. Feedback welcome, especially from anyone already self-hosting opencode.

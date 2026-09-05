@@ -384,7 +384,7 @@ export default function SettingsScreen() {
           label={t("settings.about.github.label")}
           description={t("settings.about.github.description")}
           isDark={isDark}
-          onPress={() => Linking.openURL("https://github.com/chliny/opencode-mobile-zerotier")}
+          onPress={() => Linking.openURL("https://github.com/chliny/opencode-mobile-mesh")}
           right={<Ionicons name="open-outline" size={20} color={isDark ? "#9a9a9a" : "#999999"} />}
         />
         <SettingRow
@@ -392,7 +392,7 @@ export default function SettingsScreen() {
           label={t("settings.about.docs.label")}
           description={t("settings.about.docs.description")}
           isDark={isDark}
-          onPress={() => Linking.openURL("https://github.com/chliny/opencode-mobile-zerotier#readme")}
+          onPress={() => Linking.openURL("https://github.com/chliny/opencode-mobile-mesh#readme")}
           right={<Ionicons name="open-outline" size={20} color={isDark ? "#9a9a9a" : "#999999"} />}
         />
       </SettingSection>

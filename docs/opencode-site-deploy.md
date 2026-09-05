@@ -1,7 +1,7 @@
 # Historical Site Deployment Notes
 
 > This document records a deployment owned by the former repository. It is not a deployment
-> runbook for `chliny/opencode-mobile-zerotier`.
+> runbook for `chliny/opencode-mobile-mesh`.
 
 ## Former status
 

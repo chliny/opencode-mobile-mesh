@@ -32,7 +32,7 @@ opencode supports any OpenAI-compatible API via its provider config. Point it at
 
 **Source / install**
 
-- Source (MIT): https://github.com/chliny/opencode-mobile-zerotier
-- Direct APK: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
+- Source (MIT): https://github.com/chliny/opencode-mobile-mesh
+- Direct APK: https://github.com/chliny/opencode-mobile-mesh/releases/latest
 
 I'm especially interested in feedback from people running local models: how does the streaming UI feel when tokens arrive at 3–5 tok/s on slower hardware? The renderer has a minimum repaint interval to avoid thrashing and I'm not sure the threshold is right for slow generation. Also curious which local backends people are pairing with opencode.

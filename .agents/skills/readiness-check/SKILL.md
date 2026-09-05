@@ -47,9 +47,9 @@ Gates are grouped. REQUIRED gates decide the verdict; nice-to-have gates only WA
   - `npm run typecheck` exits clean.
   - `npm test` passes.
 - **B. GitHub Releases LIVE** (REQUIRED)
-  - `https://github.com/chliny/opencode-mobile-zerotier/releases/latest` returns 200/3xx.
+  - `https://github.com/chliny/opencode-mobile-mesh/releases/latest` returns 200/3xx.
 - **F. Repo discoverability** (nice-to-have, WARN only)
-  - `gh repo view chliny/opencode-mobile-zerotier --json repositoryTopics,homepageUrl` shows topics + homepage. Skipped gracefully if `gh` is missing/unauthenticated.
+  - `gh repo view chliny/opencode-mobile-mesh --json repositoryTopics,homepageUrl` shows topics + homepage. Skipped gracefully if `gh` is missing/unauthenticated.
 
 ## Interpreting results
 

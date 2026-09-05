@@ -142,13 +142,13 @@ OpenCode Mobile is a thin client for the opencode CLI (github.com/sst/opencode).
 Install opencode on any machine: npm install -g opencode-ai, then run opencode serve. Enter the server URL in the app. That's it — your AI coding agent is now on your phone.
 
 <b>OPEN SOURCE</b>
-OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discussion at github.com/chliny/opencode-mobile-zerotier. Contributions welcome.
+OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discussion at github.com/chliny/opencode-mobile-mesh. Contributions welcome.
 
 <b>PRIVACY</b>
 OpenCode Mobile does not collect your code, prompts, or AI responses. All traffic goes directly from the app to YOUR opencode server — never through our infrastructure. We use Sentry for crash diagnostics only (no PII, no message content, opt-in available).
 
 Support: support@agentlabs.cc
-Issues: github.com/chliny/opencode-mobile-zerotier/issues
+Issues: github.com/chliny/opencode-mobile-mesh/issues
 ```
 
 (Approx. 2,750 chars — within 4,000 char limit, room to expand)

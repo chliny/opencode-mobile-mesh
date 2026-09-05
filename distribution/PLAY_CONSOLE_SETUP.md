@@ -86,14 +86,14 @@ Then in Play Console:
 ```bash
 # After downloading the JSON key from Google Cloud:
 cat /path/to/service-account.json | \
-  gh secret set PLAY_STORE_SERVICE_ACCOUNT_JSON --repo dzianisv/opencode-mobile
+  gh secret set PLAY_STORE_SERVICE_ACCOUNT_JSON --repo chliny/opencode-mobile-mesh
 ```
 
 ## Step 9: Test CI Deployment
 
 Trigger workflow manually:
 ```bash
-gh workflow run publish-play-store.yml --repo dzianisv/opencode-mobile
+gh workflow run publish-play-store.yml --repo chliny/opencode-mobile-mesh
 ```
 
 ---

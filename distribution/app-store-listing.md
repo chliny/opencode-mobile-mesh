@@ -61,7 +61,7 @@ WHAT IT IS NOT
 OPEN SOURCE
 
 OpenCode Mobile is MIT licensed. Source code, issue tracker, and community discussion:
-https://github.com/chliny/opencode-mobile-zerotier
+https://github.com/chliny/opencode-mobile-mesh
 
 PRIVACY
 
@@ -79,7 +79,7 @@ If you cannot self-host, contact support@agentlabs.cc and we will provide a temp
 SUPPORT
 
 Email: support@agentlabs.cc
-Issues: https://github.com/chliny/opencode-mobile-zerotier/issues
+Issues: https://github.com/chliny/opencode-mobile-mesh/issues
 ```
 
 (Character count: ~1,750 — well under 4,000 limit. Add more feature detail or FAQ if desired.)
@@ -102,7 +102,7 @@ Alternative / supplemental terms to rotate in A/B: `code review`, `AI assistant`
 | Field | Value |
 |---|---|
 | Support URL | https://agentlabs.cc/opencode |
-| Marketing URL | https://github.com/chliny/opencode-mobile-zerotier |
+| Marketing URL | https://github.com/chliny/opencode-mobile-mesh |
 | Privacy Policy URL | Publish `docs/privacy/index.html` at a URL controlled by this repository before submission. |
 
 ---

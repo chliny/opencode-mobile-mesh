@@ -2,7 +2,7 @@
 
 App: **`cc.agentlabs.opencode`** (OpenCode Mobile) — Expo/React Native Android client
 for a user self-hosted opencode AI server. Owner: VIBE TECHNOLOGIES, LLC.
-Repo: `dzianisv/opencode-mobile`. Full running log: `context.md`.
+Repo: `chliny/opencode-mobile-mesh`. Full running log: `context.md`.
 Goal: bug-free E2E + published on F-Droid & Play + 1k downloads.
 
 ---
@@ -88,7 +88,7 @@ Add diff viewer + tool-call approval screenshots. Upload via Play Developer API 
 
 ## App URLs
 
-- **Direct APK (works now):** https://github.com/dzianisv/opencode-mobile/releases/latest
+- **Direct APK (works now):** https://github.com/chliny/opencode-mobile-mesh/releases/latest
 - **F-Droid self-hosted repo:** https://dzianisv.github.io/opencode-mobile/fdroid/repo
   (add this URL in any F-Droid client). **LIVE @ v0.4.3** — verified 2026-06-02.
 - **Google Play (NOT public yet):** https://play.google.com/store/apps/details?id=cc.agentlabs.opencode

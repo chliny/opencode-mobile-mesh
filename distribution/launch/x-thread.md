@@ -68,7 +68,7 @@ Your keys. Your hardware. Your inference budget.
 
 **Tweet 6 (OSS / trust)**
 ```
-MIT licensed. Source at github.com/chliny/opencode-mobile-zerotier
+MIT licensed. Source at github.com/chliny/opencode-mobile-mesh
 
 No subscription. No ads. Sentry crash reporting is opt-in and off by default. Credentials live in Android Keystore.
 
@@ -82,8 +82,8 @@ F-Droid submission in progress.
 ```
 Now on Android.
 
-Get it: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
-Source + docs: github.com/chliny/opencode-mobile-zerotier
+Get it: https://github.com/chliny/opencode-mobile-mesh/releases/latest
+Source + docs: github.com/chliny/opencode-mobile-mesh
 
 If you run opencode, give it a try — issues and PRs welcome.
 ```

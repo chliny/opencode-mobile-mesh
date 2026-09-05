@@ -59,14 +59,14 @@ MIT licensed. No subscription. No ads.
 
 Sentry crash reporting is opt-in and OFF by default. Connection secrets live in the Android Keystore.
 
-Source: github.com/chliny/opencode-mobile-zerotier
+Source: github.com/chliny/opencode-mobile-mesh
 ```
 
 **Tweet 7 (CTA)**
 ```
 On Android now:
 
-Install: github.com/chliny/opencode-mobile-zerotier/releases/latest
+Install: github.com/chliny/opencode-mobile-mesh/releases/latest
 
 If you run opencode, give it a try. Issues + PRs welcome.
 ```

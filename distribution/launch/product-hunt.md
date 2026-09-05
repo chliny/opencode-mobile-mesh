@@ -20,9 +20,9 @@ You get token-by-token streaming output, a full inline diff viewer for every fil
 Free and MIT licensed. No subscription, no ads, no telemetry you didn't opt into.
 
 **Links:**
-- Get it: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
-- Direct APK: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
-- Source: https://github.com/chliny/opencode-mobile-zerotier
+- Get it: https://github.com/chliny/opencode-mobile-mesh/releases/latest
+- Direct APK: https://github.com/chliny/opencode-mobile-mesh/releases/latest
+- Source: https://github.com/chliny/opencode-mobile-mesh
 
 ---
 
@@ -37,7 +37,7 @@ I built this because I run long opencode sessions on my home server and needed a
 - This is a client for [opencode](https://github.com/sst/opencode) (by the sst team, MIT). You need opencode running somewhere — your laptop, a home server, a VPS. Setup is `npm install -g opencode-ai && opencode serve`. Then paste the URL into the app.
 - Supports any connection method you already use to reach home: local network, Tailscale, Cloudflare Tunnel, ngrok.
 - Works with any model opencode supports: Claude, GPT-4, Gemini, or local LLMs via any OpenAI-compatible endpoint.
-- MIT licensed. Source is public at https://github.com/chliny/opencode-mobile-zerotier. F-Droid submission is not maintained by this repository.
+- MIT licensed. Source is public at https://github.com/chliny/opencode-mobile-mesh. F-Droid submission is not maintained by this repository.
 
 Happy to answer questions about the implementation — particularly the SSE streaming + tool call approval flow, which was the trickiest part to get right. Thanks for hunting it!
 

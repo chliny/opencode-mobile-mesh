@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
 const APP_ID = "me.chliny.opencode.mesh";
-const RELEASES = "https://github.com/chliny/opencode-mobile-zerotier/releases/latest";
+const RELEASES = "https://github.com/chliny/opencode-mobile-mesh/releases/latest";
 const TIMEOUT_MS = 20_000;
 
 type Status = "PASS" | "FAIL" | "WARN" | "UNKNOWN";
@@ -109,7 +109,7 @@ if (!has("gh")) {
 } else if (spawnSync("gh", ["auth", "status"], { encoding: "utf8" }).status !== 0) {
   record("F_repo", "gh-repo-meta", "WARN", "gh unauthenticated — skipped");
 } else {
-  const r = spawnSync("gh", ["repo", "view", "chliny/opencode-mobile-zerotier", "--json", "repositoryTopics,homepageUrl"], { encoding: "utf8" });
+  const r = spawnSync("gh", ["repo", "view", "chliny/opencode-mobile-mesh", "--json", "repositoryTopics,homepageUrl"], { encoding: "utf8" });
   try {
     const m = JSON.parse(r.stdout) as { repositoryTopics?: Array<{ name: string }>; homepageUrl?: string };
     const topics = (m.repositoryTopics ?? []).map(t => t.name).join(",");

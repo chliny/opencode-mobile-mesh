@@ -42,7 +42,7 @@ REQUIREMENTS
 
 PRIVACY AND SECURITY
 
-- MIT licensed, fully open source: https://github.com/chliny/opencode-mobile-zerotier
+- MIT licensed, fully open source: https://github.com/chliny/opencode-mobile-mesh
 - Your code, prompts, and AI responses travel only between your phone and your own server
 - Crash reporting (Sentry) is opt-in and OFF by default
 - Connection credentials stored in the Android Keystore (expo-secure-store)
@@ -56,5 +56,5 @@ NonFreeNet: The opencode server you connect to may call proprietary AI services 
 SUPPORT
 
 Email: support@agentlabs.cc
-Issues: https://github.com/chliny/opencode-mobile-zerotier/issues
+Issues: https://github.com/chliny/opencode-mobile-mesh/issues
 Privacy policy: https://opencode.agentlabs.cc/privacy/

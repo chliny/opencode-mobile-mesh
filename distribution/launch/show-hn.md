@@ -39,7 +39,7 @@ It's not a standalone AI model and not a code editor. You need a running opencod
 
 Stable on Android. MIT licensed. Available now via a direct signed APK.
 
-Source: https://github.com/chliny/opencode-mobile-zerotier
-Direct APK: https://github.com/chliny/opencode-mobile-zerotier/releases/latest
+Source: https://github.com/chliny/opencode-mobile-mesh
+Direct APK: https://github.com/chliny/opencode-mobile-mesh/releases/latest
 
 Happy to answer questions about the SSE streaming implementation, the Expo build pipeline, or the opencode API surface.

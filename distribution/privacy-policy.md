@@ -14,7 +14,7 @@ OpenCode Mobile is developed and distributed by **VIBE TECHNOLOGIES, LLC**, a Wa
 
 - Address: 519 S Henderson St, Seattle, WA 98108-4522, USA
 - Contact: support@agentlabs.cc
-- Source code: https://github.com/chliny/opencode-mobile-zerotier (MIT license)
+- Source code: https://github.com/chliny/opencode-mobile-mesh (MIT license)
 
 ---
 

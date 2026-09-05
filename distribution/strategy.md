@@ -99,7 +99,7 @@ Rejected alternatives:
    App name: OpenCode Mobile
     Package: me.chliny.opencode.mesh
    License: MIT
-   GitHub release: https://github.com/chliny/opencode-mobile-zerotier/releases
+   GitHub release: https://github.com/chliny/opencode-mobile-mesh/releases
    APK SHA-256: <sha256>
    Description: Mobile client for the opencode AI coding agent CLI. Self-hosted backend.
    Note: NonFreeNet anti-feature applies (connects to user-self-hosted opencode server).
