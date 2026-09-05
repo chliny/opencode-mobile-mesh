@@ -1,0 +1,6 @@
+v1.1.0 - Terminal and connection reliability improvements
+
+- Adds landscape terminal support with responsive output sizing and keyboard shortcuts.
+- Improves terminal rendering for wrapped output and wide characters.
+- Improves ZeroTier recovery and reconnect behavior.
+- Fixes session directory handling and model catalog refresh after network recovery.
