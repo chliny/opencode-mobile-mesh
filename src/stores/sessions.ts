@@ -10,6 +10,7 @@ import { isColdSessionLoad, isLiveEventForSession } from "../lib/session-load-re
 import { log } from "../lib/logbuffer"
 import { shouldApplyTranscriptRefresh } from "../lib/transcript-refresh"
 import { buildReferenceParts } from "../lib/file-review"
+import { replaceSessionError } from "../lib/session-error-state"
 import { messageErrorText } from "../lib/model-error"
 
 // Helper to convert API response to our internal format
@@ -26,13 +27,8 @@ function parseMessages(response: MessageWithParts[]): { messages: Message[]; par
 }
 
 function latestMessageError(messages: Message[]): string | undefined {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const message = messages[i]
-    if (message.role !== "assistant") continue
-    const error = messageErrorText(message.error)
-    if (error) return error
-  }
-  return undefined
+  const message = messages[messages.length - 1]
+  return message?.role === "assistant" ? messageErrorText(message.error) : undefined
 }
 
 function pageSize(): number {
@@ -245,12 +241,14 @@ export const useSessions = create<SessionsState>((set, get) => ({
       // Parse the API response format: array of { info, parts }
       const { messages, parts } = parseMessages(messagesResponse)
 
+      const messageError = latestMessageError(messages)
       set((state) => ({
         currentSession: session,
         messages,
         parts,
         transcriptRevision: nextTranscriptRevision(state, session.id),
         isLoading: false,
+        sessionErrors: replaceSessionError(state.sessionErrors, session.id, messageError),
         // If we got exactly PAGE_SIZE messages, there are probably more
         hasMore: messagesResponse.length >= pageSize(),
       }))
@@ -484,7 +482,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
         messages,
         parts,
         transcriptRevision: nextTranscriptRevision(current, session.id),
-        ...(messageError ? { sessionErrors: { ...current.sessionErrors, [session.id]: messageError } } : {}),
+        sessionErrors: replaceSessionError(current.sessionErrors, session.id, messageError),
       }))
     } catch (error) {
       if (!options?.silent && get().currentSession?.id === session.id) {
@@ -593,7 +591,9 @@ export const useSessions = create<SessionsState>((set, get) => ({
         set((state) => ({
           messages: mergeIncomingMessage(state.messages, message),
           transcriptRevision: nextTranscriptRevision(state, currentSession.id),
-          ...(messageError ? { sessionErrors: { ...state.sessionErrors, [currentSession.id]: messageError } } : {}),
+          sessionErrors: messageError
+            ? replaceSessionError(state.sessionErrors, currentSession.id, messageError)
+            : state.sessionErrors,
           // A live update for the session on screen is proof it has content
           // to show — clear any stuck spinner even if the initial (or a
           // redundant re-focus) GET hasn't resolved yet, or never does
