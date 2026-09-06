@@ -66,6 +66,14 @@ OpenCode Mobile is a React Native / Expo app that brings the power of the [openc
 - **Tool call approval** — review and approve (or reject) tool calls before the agent executes them
 - **Model clarity** — proper catalog display names and actionable model errors surfaced in chat
 
+### Terminal
+
+- **Integrated terminal** — open a terminal for the active project or session directly from the app
+- **Multiple PTY sessions** — create, switch between, and close independent terminal sessions
+- **Interactive shell** — send commands over a live WebSocket connection with real-time output
+- **Terminal controls** — use arrow keys, Escape, Tab, Ctrl, Enter, and clear-screen shortcuts on mobile
+- **ANSI output** — render terminal colors, cursor movement, carriage returns, and wide characters
+
 ### Code review
 
 - **Fullscreen diff review** — every file change rendered as a colored, syntax-highlighted diff in a dedicated review screen at task end
@@ -88,7 +96,6 @@ OpenCode Mobile is a React Native / Expo app that brings the power of the [openc
 ### Extras
 
 - **Offline demo mode** — tap "Try a Demo" to see a full bug-fix walkthrough (reasoning → grep → diff → permission prompt) with zero setup, right from the empty state
-- **Comfortable input** — keyboard-overlap handling on Android, assistant text copy & selection, forgiving gestures for wide content, improved dark-mode contrast
 
 ---
 
@@ -184,7 +191,7 @@ planet files and build requirements: [docs/embedded-zerotier.md](docs/embedded-z
 
 ## Project Status
 
-**Current version: v0.4.15 (Mesh Edition)**
+**Current version: v1.1.0 (Mesh Edition)**
 
 | Feature | Status |
 |---|---|
@@ -197,6 +204,7 @@ planet files and build requirements: [docs/embedded-zerotier.md](docs/embedded-z
 | Multi-connection management | Stable |
 | Session list + creation + per-session drafts | Stable |
 | Streaming chat | Stable |
+| Integrated terminal with multiple PTY sessions | Stable |
 | Diff viewer (inline + fullscreen) | Stable |
 | Biometric unlock | Stable |
 | Tool call approval UI | Stable |
