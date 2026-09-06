@@ -109,7 +109,14 @@ function RootLayout() {
     }
     const timer = setInterval(refreshRoute, 30_000)
     const sub = AppState.addEventListener("change", (next) => {
-      if (next === "active") refreshRoute(true)
+      if (next !== "active") return
+      const active = useConnections.getState().activeConnection
+      const events = useEvents.getState()
+      // A live or already-starting SSE stream has a usable relay. Only repair
+      // an idle ZeroTier stream here; network handovers have their own native
+      // loss/recovery path and do not need a redundant relay rebuild.
+      const forceRestart = Boolean(active?.zerotier && events.transport === "idle" && !events.attemptInFlight)
+      refreshRoute(forceRestart)
     })
     return () => {
       clearInterval(timer)
