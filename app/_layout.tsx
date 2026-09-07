@@ -20,7 +20,7 @@ import * as notifications from "../src/lib/notifications"
 import { addBreadcrumb, wrap } from "../src/lib/sentry"
 import { loadTelemetryConsent, setTelemetryConsent } from "../src/lib/telemetry"
 import { initAnalytics, trackAppOpened } from "../src/lib/analytics"
-import { shouldReconnectOnResume } from "../src/lib/sse-liveness"
+import { LIVENESS_TIMEOUT_MS, shouldReconnectOnResume } from "../src/lib/sse-liveness"
 
 const queryClient = new QueryClient()
 
@@ -33,6 +33,7 @@ function RootLayout() {
   const { loadConnections, isLoading: connectionsLoading, clientBase, routeStatus } = useConnections()
   const sseStarted = useRef(false)
   const notifPermissionRequested = useRef(false)
+  const backgroundAt = useRef<number | null>(null)
 
   // Telemetry consent state: null = loading, 'unknown' = show modal, else decided
   const [consentState, setConsentState] = useState<"loading" | "unknown" | "decided">("loading")
@@ -109,13 +110,23 @@ function RootLayout() {
     }
     const timer = setInterval(refreshRoute, 30_000)
     const sub = AppState.addEventListener("change", (next) => {
+      if (next === "background") {
+        backgroundAt.current = Date.now()
+        return
+      }
       if (next !== "active") return
       const active = useConnections.getState().activeConnection
       const events = useEvents.getState()
+      const backgroundedFor = backgroundAt.current ? Date.now() - backgroundAt.current : 0
+      backgroundAt.current = null
       // A live or already-starting SSE stream has a usable relay. Only repair
-      // an idle ZeroTier stream here; network handovers have their own native
-      // loss/recovery path and do not need a redundant relay rebuild.
-      const forceRestart = Boolean(active?.zerotier && events.transport === "idle" && !events.attemptInFlight)
+      // an idle ZeroTier stream here, unless Android may have suspended the
+      // relay during a long background period. Rebuild after the liveness
+      // window because a stale live flag otherwise suppresses resume repair.
+      const forceRestart = Boolean(
+        active?.zerotier &&
+          ((events.transport === "idle" && !events.attemptInFlight) || backgroundedFor >= LIVENESS_TIMEOUT_MS),
+      )
       refreshRoute(forceRestart)
     })
     return () => {
