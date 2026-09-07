@@ -668,7 +668,7 @@ function refreshEmbeddedRouteOnNetworkChange(route: "zerotier" | "tailscale", av
     networkRefreshTimer = null
     lastNetworkRefreshAt = Date.now()
     void useConnections.getState().refreshActiveRoute(route === "zerotier")
-  }, route === "zerotier" ? 2500 : 0)
+  }, route === "zerotier" ? 500 : 0)
 }
 
 embeddedZeroTier.addNetworkListener((event) => refreshEmbeddedRouteOnNetworkChange("zerotier", event.available))

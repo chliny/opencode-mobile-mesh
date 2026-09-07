@@ -60,6 +60,7 @@ class OpenCodeZeroTierModule : Module() {
   private var pendingPlanetPickerPromise: Promise? = null
   private var connectivityManager: ConnectivityManager? = null
   private var networkCallback: ConnectivityManager.NetworkCallback? = null
+  @Volatile private var defaultNetwork: Network? = null
 
   override fun definition() = ModuleDefinition {
     Name("OpenCodeZeroTier")
@@ -72,9 +73,16 @@ class OpenCodeZeroTierModule : Module() {
         override fun onAvailable(network: Network) {
           // onAvailable can arrive before DHCP and validation complete. Publish
           // the state now, but let the native node wait for a usable path.
+          defaultNetwork = network
           publishNetworkState(network, true)
         }
-        override fun onLost(network: Network) = publishNetworkState(network, false)
+        override fun onLost(network: Network) {
+          if (defaultNetwork != network) {
+            return
+          }
+          defaultNetwork = null
+          publishNetworkState(network, false)
+        }
       }
       runCatching { connectivityManager?.registerDefaultNetworkCallback(networkCallback!!) }
     }
@@ -189,6 +197,7 @@ class OpenCodeZeroTierModule : Module() {
 
     OnDestroy {
       runCatching { networkCallback?.let { connectivityManager?.unregisterNetworkCallback(it) } }
+      defaultNetwork = null
       stopInternal()
       controlExecutor.shutdownNow()
       relayExecutor.shutdownNow()
@@ -196,9 +205,8 @@ class OpenCodeZeroTierModule : Module() {
   }
 
   private fun publishNetworkState(network: Network, available: Boolean) {
-    val activeNetwork = connectivityManager?.activeNetwork
-    val effectiveAvailable = available || activeNetwork != null
-    val typeNetwork = if (available) network else activeNetwork ?: network
+    val effectiveAvailable = available && defaultNetwork == network
+    val typeNetwork = defaultNetwork ?: network
     val type = connectivityManager?.getNetworkCapabilities(typeNetwork)?.let(::networkType) ?: "unknown"
     val at = System.currentTimeMillis()
     status = status + mapOf(
@@ -259,7 +267,7 @@ class OpenCodeZeroTierModule : Module() {
         status["state"] == "ready" &&
         existingNode.isOnline() &&
         assignedAddress(existingNode, networkId) != null &&
-        relay != null
+        relay?.isRunning() == true
       ) return status
 
       relay?.closeImmediately()
@@ -618,6 +626,8 @@ private class AppLocalRelay(
   fun closeImmediately() {
     closeClients(waitForClients = false)
   }
+
+  fun isRunning(): Boolean = running.get() && !server.isClosed
 
   override fun close() {
     closeClients(waitForClients = true)
