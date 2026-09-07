@@ -25,6 +25,8 @@ import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -36,6 +38,7 @@ private const val NETWORK_ASSIGNMENT_SETTLE_MS = 5_000L
 private const val NODE_STOP_TIMEOUT_MS = 5_000L
 private const val RELAY_READ_TIMEOUT_SECONDS = 1
 private const val PICK_PLANET_FILE_REQUEST_CODE = 41739
+private val NETWORK_READY_RETRY_DELAYS_MS = longArrayOf(100L, 250L, 500L, 1_000L, 2_000L, 5_000L)
 
 private object OpenCodeZeroTierNative {
   init {
@@ -48,6 +51,7 @@ private object OpenCodeZeroTierNative {
 class OpenCodeZeroTierModule : Module() {
   private val controlExecutor = Executors.newSingleThreadExecutor()
   private val relayExecutor = Executors.newCachedThreadPool()
+  private val networkReadyExecutor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
   private val lock = Any()
 
   @Volatile private var node: ZeroTierNode? = null
@@ -61,6 +65,7 @@ class OpenCodeZeroTierModule : Module() {
   private var connectivityManager: ConnectivityManager? = null
   private var networkCallback: ConnectivityManager.NetworkCallback? = null
   @Volatile private var defaultNetwork: Network? = null
+  private var networkReadyTask: ScheduledFuture<*>? = null
 
   override fun definition() = ModuleDefinition {
     Name("OpenCodeZeroTier")
@@ -71,15 +76,21 @@ class OpenCodeZeroTierModule : Module() {
       connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
       networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-          // onAvailable can arrive before DHCP and validation complete. Publish
-          // the state now, but let the native node wait for a usable path.
+          // Android can announce the replacement default network before it
+          // reports the old one lost. Publish the interrupted state here so
+          // JS always observes a loss/recovery pair for a real handover.
+          val replacingNetwork = defaultNetwork != null && defaultNetwork != network
           defaultNetwork = network
-          publishNetworkState(network, true)
+          networkReadyTask?.cancel(false)
+          if (replacingNetwork) publishNetworkState(network, false)
+          scheduleNetworkReadyCheck(network, 0)
         }
         override fun onLost(network: Network) {
           if (defaultNetwork != network) {
             return
           }
+          networkReadyTask?.cancel(false)
+          networkReadyTask = null
           defaultNetwork = null
           publishNetworkState(network, false)
         }
@@ -197,10 +208,13 @@ class OpenCodeZeroTierModule : Module() {
 
     OnDestroy {
       runCatching { networkCallback?.let { connectivityManager?.unregisterNetworkCallback(it) } }
+      networkReadyTask?.cancel(false)
+      networkReadyTask = null
       defaultNetwork = null
       stopInternal()
       controlExecutor.shutdownNow()
       relayExecutor.shutdownNow()
+      networkReadyExecutor.shutdownNow()
     }
   }
 
@@ -217,6 +231,29 @@ class OpenCodeZeroTierModule : Module() {
       "diagnosticMessage" to if (effectiveAvailable) "Android reports an active network" else "Android reports no active network",
     )
     sendEvent("networkChanged", mapOf("available" to effectiveAvailable, "type" to type, "at" to at))
+  }
+
+  private fun scheduleNetworkReadyCheck(network: Network, attempt: Int) {
+    networkReadyTask = networkReadyExecutor.schedule({
+      if (defaultNetwork != network) return@schedule
+      if (isNetworkReady(network)) {
+        networkReadyTask = null
+        publishNetworkState(network, true)
+        return@schedule
+      }
+      scheduleNetworkReadyCheck(network, (attempt + 1).coerceAtMost(NETWORK_READY_RETRY_DELAYS_MS.lastIndex))
+    }, NETWORK_READY_RETRY_DELAYS_MS[attempt.coerceIn(0, NETWORK_READY_RETRY_DELAYS_MS.lastIndex)], TimeUnit.MILLISECONDS)
+  }
+
+  private fun isNetworkReady(network: Network): Boolean {
+    val manager = connectivityManager ?: return false
+    val capabilities = manager.getNetworkCapabilities(network) ?: return false
+    if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return false
+    if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) return false
+    val properties = manager.getLinkProperties(network) ?: return false
+    if (properties.linkAddresses.none { it.address is java.net.Inet4Address }) return false
+    if (properties.routes.none { it.isDefaultRoute }) return false
+    return properties.dnsServers.isNotEmpty()
   }
 
   private fun networkType(capabilities: NetworkCapabilities): String = when {

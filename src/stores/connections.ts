@@ -30,8 +30,6 @@ const CONNECTION_TEST_TIMEOUT_MS = 40_000
 
 let routeGeneration = 0
 let routeRefreshQueue = Promise.resolve()
-let lastNetworkRefreshAt = 0
-let networkRefreshTimer: ReturnType<typeof setTimeout> | null = null
 let zeroTierNetworkAvailable: boolean | null = null
 let tailscaleNetworkAvailable: boolean | null = null
 
@@ -574,6 +572,14 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
   },
 
   refreshActiveRoute: (forceRestart = false) => {
+    const active = get().activeConnection
+    if (active) {
+      set({
+        routeStatus: "checking",
+        routeError: null,
+        ...(forceRestart && active.zerotier ? { client: null, clientBase: null } : {}),
+      })
+    }
     const run = routeRefreshQueue.then(async () => {
       const generation = ++routeGeneration
       const active = get().activeConnection
@@ -583,7 +589,6 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
           return
         }
 
-        set({ routeStatus: "checking", routeError: null })
         log.info("route", "refresh start", `force=${forceRestart}`)
         // The embedded relays are process-wide native singletons. Tear down
         // only the relay for the other technology; both native start methods
@@ -658,17 +663,20 @@ function refreshEmbeddedRouteOnNetworkChange(route: "zerotier" | "tailscale", av
   const previous = route === "zerotier" ? zeroTierNetworkAvailable : tailscaleNetworkAvailable
   if (route === "zerotier") zeroTierNetworkAvailable = available
   else tailscaleNetworkAvailable = available
-  if (!available || previous !== false) return
-  if (Date.now() - lastNetworkRefreshAt < 1000) return
-  if (networkRefreshTimer) clearTimeout(networkRefreshTimer)
+  if (!available) {
+    // The app-local relay is bound to the lost physical path. Remove its
+    // client now so the layout aborts SSE instead of retrying its old port
+    // until Android reports a fully validated replacement network.
+    if (route === "zerotier") {
+      useConnections.setState({ client: null, clientBase: null, routeStatus: "checking", routeError: null })
+    }
+    return
+  }
+  if (previous !== false) return
   // A ZeroTier node owns its libzt sockets and cannot rebind them to Android's
-  // replacement network. Recreate it only after an actual loss/recovery pair;
-  // the initial available callback must not restart an already-ready node.
-  networkRefreshTimer = setTimeout(() => {
-    networkRefreshTimer = null
-    lastNetworkRefreshAt = Date.now()
-    void useConnections.getState().refreshActiveRoute(route === "zerotier")
-  }, route === "zerotier" ? 500 : 0)
+  // replacement network. Native only emits available after the replacement
+  // network has an address, default route, DNS, and validation.
+  void useConnections.getState().refreshActiveRoute(route === "zerotier")
 }
 
 embeddedZeroTier.addNetworkListener((event) => refreshEmbeddedRouteOnNetworkChange("zerotier", event.available))
