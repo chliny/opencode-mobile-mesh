@@ -21,6 +21,8 @@ import { addBreadcrumb, wrap } from "../src/lib/sentry"
 import { loadTelemetryConsent, setTelemetryConsent } from "../src/lib/telemetry"
 import { initAnalytics, trackAppOpened } from "../src/lib/analytics"
 import { LIVENESS_TIMEOUT_MS, shouldReconnectOnResume } from "../src/lib/sse-liveness"
+import { embeddedZeroTier } from "@opencode-ai/zerotier"
+import { embeddedTailscale } from "@opencode-ai/tailscale"
 
 const queryClient = new QueryClient()
 
@@ -112,10 +114,19 @@ function RootLayout() {
     const sub = AppState.addEventListener("change", (next) => {
       if (next === "background") {
         backgroundAt.current = Date.now()
+        const active = useConnections.getState().activeConnection
+        if (useSettings.getState().keepAlive && active?.zerotier) {
+          void embeddedZeroTier.startKeepAlive().catch(() => undefined)
+        }
+        if (useSettings.getState().keepAlive && active?.tailscale) {
+          void embeddedTailscale.startKeepAlive().catch(() => undefined)
+        }
         return
       }
       if (next !== "active") return
       const active = useConnections.getState().activeConnection
+      if (active?.zerotier) void embeddedZeroTier.stopKeepAlive()
+      if (active?.tailscale) void embeddedTailscale.stopKeepAlive()
       const events = useEvents.getState()
       const backgroundedFor = backgroundAt.current ? Date.now() - backgroundAt.current : 0
       backgroundAt.current = null

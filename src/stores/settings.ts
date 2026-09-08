@@ -14,6 +14,7 @@ interface Settings {
   pageSize: number
   sessionPageSize: number
   projectPageSize: number
+  keepAlive: boolean
   notifications: Record<Category, boolean>
   locale: LocalePreference
 }
@@ -22,6 +23,7 @@ const DEFAULTS: Settings = {
   pageSize: 25,
   sessionPageSize: 10,
   projectPageSize: 5,
+  keepAlive: false,
   notifications: { ...defaultPreferences },
   locale: "system",
 }
@@ -32,6 +34,7 @@ interface SettingsState extends Settings {
   setPageSize: (size: number) => Promise<void>
   setSessionPageSize: (size: number) => Promise<void>
   setProjectPageSize: (size: number) => Promise<void>
+  setKeepAlive: (enabled: boolean) => Promise<void>
   setNotification: (category: Category, enabled: boolean) => Promise<void>
   setLocale: (locale: LocalePreference) => Promise<void>
 }
@@ -41,6 +44,7 @@ function snapshot(get: () => SettingsState): Settings {
     pageSize: get().pageSize,
     sessionPageSize: get().sessionPageSize,
     projectPageSize: get().projectPageSize,
+    keepAlive: get().keepAlive,
     notifications: get().notifications,
     locale: get().locale,
   }
@@ -107,6 +111,13 @@ export const useSettings = create<SettingsState>((set, get) => ({
   setProjectPageSize: async (size) => {
     await get().load()
     const next = { ...snapshot(get), projectPageSize: clampProjectPageSize(size) }
+    set(next)
+    await enqueuePersist(next)
+  },
+
+  setKeepAlive: async (enabled) => {
+    await get().load()
+    const next = { ...snapshot(get), keepAlive: enabled }
     set(next)
     await enqueuePersist(next)
   },

@@ -13,6 +13,7 @@ const DEFAULTS = {
   pageSize: 25,
   sessionPageSize: 10,
   projectPageSize: 5,
+  keepAlive: false,
   notifications: { idle: true, error: true, permission: false },
   locale: "system" as const,
 }
@@ -60,6 +61,7 @@ test("normalizeStoredSettings validates page size, locale, categories and boolea
       pageSize: 999,
       sessionPageSize: 99,
       projectPageSize: 99,
+      keepAlive: "yes",
       locale: "future-locale",
       notifications: { idle: false, error: "yes", unknown: true },
     }),
@@ -71,6 +73,7 @@ test("normalizeStoredSettings validates page size, locale, categories and boolea
     pageSize: 200,
     sessionPageSize: 30,
     projectPageSize: 20,
+    keepAlive: false,
     locale: "system",
     notifications: { idle: false, error: true, permission: false },
   })
@@ -97,7 +100,7 @@ test("upgrade path: a category missing from storage gets its default", () => {
 })
 
 test("does not mutate the inputs", () => {
-  const defaults = { pageSize: 25, sessionPageSize: 10, projectPageSize: 5, notifications: { a: true } }
+  const defaults = { pageSize: 25, sessionPageSize: 10, projectPageSize: 5, keepAlive: false, notifications: { a: true } }
   const parsed = { notifications: { a: false } }
   const merged = mergeStoredSettings(defaults, parsed)
   assert.equal(defaults.notifications.a, true) // untouched

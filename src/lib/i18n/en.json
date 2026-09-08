@@ -19,6 +19,7 @@
     "sections": {
       "security": "Security",
       "notifications": "Notifications",
+      "connection": "Connection",
       "sessions": "Sessions",
       "privacy": "Privacy",
       "about": "About"
@@ -40,6 +41,12 @@
     },
     "notifications": {
       "disabledNotice": "Notifications are disabled at the system level. Enable them in Settings to receive alerts."
+    },
+    "connection": {
+      "keepAlive": {
+        "label": "Keep VPN connection alive",
+        "description": "Keep embedded ZeroTier or Tailscale running while the app is in the background for faster recovery."
+      }
     },
     "sessions": {
       "pageSizeLabel": "Sessions per project",

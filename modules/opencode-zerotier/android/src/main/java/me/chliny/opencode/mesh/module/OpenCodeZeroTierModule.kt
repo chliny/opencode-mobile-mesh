@@ -129,6 +129,20 @@ class OpenCodeZeroTierModule : Module() {
       }
     }
 
+    AsyncFunction("startKeepAlive") { promise: Promise ->
+      try {
+        OpenCodeZeroTierKeepAliveService.start(requireContext())
+        promise.resolve(null)
+      } catch (error: Throwable) {
+        promise.reject("ERR_ZEROTIER_KEEP_ALIVE", error.message ?: "Unable to maintain ZeroTier connection", error)
+      }
+    }
+
+    AsyncFunction("stopKeepAlive") { promise: Promise ->
+      OpenCodeZeroTierKeepAliveService.stop(requireContext())
+      promise.resolve(null)
+    }
+
     AsyncFunction("getStatus") {
       status
     }
@@ -208,6 +222,7 @@ class OpenCodeZeroTierModule : Module() {
 
     OnDestroy {
       runCatching { networkCallback?.let { connectivityManager?.unregisterNetworkCallback(it) } }
+      appContext.reactContext?.applicationContext?.let(OpenCodeZeroTierKeepAliveService::stop)
       networkReadyTask?.cancel(false)
       networkReadyTask = null
       defaultNetwork = null

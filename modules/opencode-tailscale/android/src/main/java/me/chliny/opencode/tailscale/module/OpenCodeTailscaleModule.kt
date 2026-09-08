@@ -108,6 +108,20 @@ class OpenCodeTailscaleModule : Module() {
       }
     }
 
+    AsyncFunction("startKeepAlive") { promise: Promise ->
+      try {
+        OpenCodeTailscaleKeepAliveService.start(requireContext())
+        promise.resolve(null)
+      } catch (error: Throwable) {
+        promise.reject("ERR_TAILSCALE_KEEP_ALIVE", error.message ?: "Unable to maintain Tailscale connection", error)
+      }
+    }
+
+    AsyncFunction("stopKeepAlive") { promise: Promise ->
+      OpenCodeTailscaleKeepAliveService.stop(requireContext())
+      promise.resolve(null)
+    }
+
     AsyncFunction("getStatus") {
       jsonToMap(OpenCodeTailscaleNative.statusNative())
     }
@@ -115,6 +129,7 @@ class OpenCodeTailscaleModule : Module() {
     OnDestroy {
       Log.i("OpenCodeTsnet", "module OnDestroy stopping native")
       runCatching { networkCallback?.let { connectivityManager?.unregisterNetworkCallback(it) } }
+      appContext.reactContext?.applicationContext?.let(OpenCodeTailscaleKeepAliveService::stop)
       OpenCodeTailscaleNative.stopNative()
       executor.shutdownNow()
     }
@@ -143,6 +158,9 @@ class OpenCodeTailscaleModule : Module() {
     return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
       && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
   }
+
+  private fun requireContext(): Context =
+    appContext.reactContext?.applicationContext ?: throw IllegalStateException("Android context is unavailable")
 
   private fun networkInterfaces(): String {
     val interfaces = JSONArray()

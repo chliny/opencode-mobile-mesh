@@ -39,6 +39,7 @@ export function normalizeStoredSettings<T extends {
   pageSize: number
   sessionPageSize: number
   projectPageSize: number
+  keepAlive: boolean
   notifications: Record<string, boolean>
   locale: string
 }>(raw: string, defaults: T, isLocale: (value: unknown) => value is T["locale"]): T | null {
@@ -61,9 +62,10 @@ export function normalizeStoredSettings<T extends {
       typeof parsed.sessionPageSize === "number" ? clampSessionPageSize(parsed.sessionPageSize) : defaults.sessionPageSize
     const projectPageSize =
       typeof parsed.projectPageSize === "number" ? clampProjectPageSize(parsed.projectPageSize) : defaults.projectPageSize
+    const keepAlive = typeof parsed.keepAlive === "boolean" ? parsed.keepAlive : defaults.keepAlive
     const locale = isLocale(parsed.locale) ? parsed.locale : defaults.locale
 
-    return { ...defaults, pageSize, sessionPageSize, projectPageSize, notifications, locale }
+    return { ...defaults, pageSize, sessionPageSize, projectPageSize, keepAlive, notifications, locale }
   } catch {
     return null
   }

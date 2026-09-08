@@ -19,6 +19,7 @@
     "sections": {
       "security": "安全",
       "notifications": "通知",
+      "connection": "连接",
       "sessions": "会话",
       "privacy": "隐私",
       "about": "关于"
@@ -40,6 +41,12 @@
     },
     "notifications": {
       "disabledNotice": "通知已在系统层面关闭。请在系统设置中启用通知以接收提醒。"
+    },
+    "connection": {
+      "keepAlive": {
+        "label": "保持 VPN 连接",
+        "description": "应用在后台时保持内置 ZeroTier 或 Tailscale 运行，以便更快恢复连接。"
+      }
     },
     "sessions": {
       "pageSizeLabel": "每个项目的会话数",

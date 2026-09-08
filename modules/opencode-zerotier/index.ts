@@ -43,6 +43,8 @@ export interface InstalledPlanet {
 interface NativeZeroTierModule {
   start(options: ZeroTierStartOptions): Promise<ZeroTierStatus>
   stop(): Promise<void>
+  startKeepAlive(): Promise<void>
+  stopKeepAlive(): Promise<void>
   getStatus(): Promise<ZeroTierStatus>
   addListener(event: "networkChanged", listener: (event: NetworkChangedEvent) => void): EventSubscription
   pickPlanetFile(): Promise<InstalledPlanet | null>
@@ -62,6 +64,8 @@ export const embeddedZeroTier = {
   isAvailable: Boolean(native),
   start: (options: ZeroTierStartOptions) => requireAndroidModule().start(options),
   stop: () => (native ? native.stop() : Promise.resolve()),
+  startKeepAlive: () => (native ? native.startKeepAlive() : Promise.resolve()),
+  stopKeepAlive: () => (native ? native.stopKeepAlive() : Promise.resolve()),
   getStatus: () =>
     native
       ? native.getStatus()

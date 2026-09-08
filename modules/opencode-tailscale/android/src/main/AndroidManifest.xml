@@ -1,3 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+  <application>
+    <service
+      android:name="me.chliny.opencode.tailscale.module.OpenCodeTailscaleKeepAliveService"
+      android:exported="false"
+      android:foregroundServiceType="dataSync" />
+  </application>
 </manifest>

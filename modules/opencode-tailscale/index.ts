@@ -36,6 +36,8 @@ export interface TailscaleStatus {
 interface NativeTailscaleModule {
   start(options: TailscaleStartOptions): Promise<TailscaleStatus>
   stop(): Promise<void>
+  startKeepAlive(): Promise<void>
+  stopKeepAlive(): Promise<void>
   getStatus(): Promise<TailscaleStatus>
   addListener(event: "networkChanged", listener: (event: NetworkChangedEvent) => void): EventSubscription
 }
@@ -57,6 +59,8 @@ export const embeddedTailscale = {
   isAvailable: Boolean(native),
   start: (options: TailscaleStartOptions) => requireAndroidModule().start(options),
   stop: () => (native ? native.stop() : Promise.resolve()),
+  startKeepAlive: () => (native ? native.startKeepAlive() : Promise.resolve()),
+  stopKeepAlive: () => (native ? native.stopKeepAlive() : Promise.resolve()),
   getStatus: () =>
     native
       ? native.getStatus()

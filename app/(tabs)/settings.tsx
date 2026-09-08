@@ -81,6 +81,8 @@ export default function SettingsScreen() {
   const {
     notifications,
     setNotification,
+    keepAlive,
+    setKeepAlive,
     sessionPageSize,
     setSessionPageSize,
     projectPageSize,
@@ -259,6 +261,22 @@ export default function SettingsScreen() {
             </Text>
           </View>
         )}
+      </SettingSection>
+
+      <SettingSection title={t("settings.sections.connection")} isDark={isDark}>
+        <SettingRow
+          icon="sync-outline"
+          label={t("settings.connection.keepAlive.label")}
+          description={t("settings.connection.keepAlive.description")}
+          isDark={isDark}
+          right={
+            <Switch
+              value={keepAlive}
+              onValueChange={setKeepAlive}
+              trackColor={{ false: "#767577", true: "#22c55e" }}
+            />
+          }
+        />
       </SettingSection>
 
       <SettingSection title={t("settings.sections.privacy")} isDark={isDark}>
