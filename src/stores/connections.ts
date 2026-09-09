@@ -32,6 +32,7 @@ let routeGeneration = 0
 let routeRefreshQueue = Promise.resolve()
 let zeroTierNetworkAvailable: boolean | null = null
 let tailscaleNetworkAvailable: boolean | null = null
+let embeddedRoute: "zerotier" | "tailscale" | null = null
 
 // Cached auth so we can create directory-scoped clients without async SecureStore lookups
 interface ClientBase {
@@ -590,15 +591,16 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         }
 
         log.info("route", "refresh start", `force=${forceRestart}`)
-        // The embedded relays are process-wide native singletons. Tear down
-        // only the relay for the other technology; both native start methods
-        // can reuse an already-running node for the active route. Read
-        // credentials in parallel because neither operation depends on the other.
-        const stopOtherRelay = active.zerotier
+        // Only stop the other embedded engine when changing technologies.
+        // Stopping an inactive tsnet instance can block long-background
+        // ZeroTier recovery for seconds, even though its relay is unrelated.
+        const stopOtherRelay = active.zerotier && embeddedRoute === "tailscale"
           ? embeddedTailscale.stop()
-          : active.tailscale
+          : active.tailscale && embeddedRoute === "zerotier"
             ? embeddedZeroTier.stop()
-            : Promise.all([embeddedZeroTier.stop(), embeddedTailscale.stop()]).then(() => undefined)
+            : !active.zerotier && !active.tailscale && embeddedRoute
+              ? Promise.all([embeddedZeroTier.stop(), embeddedTailscale.stop()]).then(() => undefined)
+              : Promise.resolve()
         const [password] = await Promise.all([
           SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`),
           stopOtherRelay,
@@ -614,12 +616,14 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         if (generation !== routeGeneration || get().activeConnection?.id !== active.id) return
 
         if (get().clientBase?.baseUrl === resolved.baseUrl) {
+          embeddedRoute = resolved.route === "lan" ? null : resolved.route
           set({ routeStatus: resolved.route, routeError: null })
           log.info("route", "refresh reused transport", resolved.route)
           return
         }
 
         const built = buildClient(resolved.baseUrl, active.directory, auth)
+        embeddedRoute = resolved.route === "lan" ? null : resolved.route
         set({
           client: built.client,
           clientBase: built.base,

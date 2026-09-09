@@ -105,7 +105,10 @@ function RootLayout() {
   // foreground and periodic retries also pick up controller authorization.
   useEffect(() => {
     const refreshRoute = (forceRestart = false) => {
-      if (useConnections.getState().routeStatus !== "checking") {
+      // A queued periodic refresh may run as Android resumes the JS runtime.
+      // Do not let it suppress the long-background repair: it can reuse a
+      // stale relay and leave SSE waiting for its liveness timeout.
+      if (forceRestart || useConnections.getState().routeStatus !== "checking") {
         const active = useConnections.getState().activeConnection
         void useConnections.getState().refreshActiveRoute(forceRestart && Boolean(active?.zerotier))
       }
