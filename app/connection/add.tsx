@@ -29,6 +29,7 @@ import { parseUrl } from "../../src/lib/diagnostics-classify"
 import { buildAuth } from "../../src/lib/auth"
 import { AnalyticsEvent, track } from "../../src/lib/analytics"
 import { clearConnectionDraft, getConnectionDraft, setConnectionDraft } from "../../src/lib/connection-drafts"
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated"
 
 const ADD_DRAFT_KEY = "new"
 
@@ -38,6 +39,10 @@ export default function AddConnectionScreen() {
   const { t } = useTranslation()
 
   const { addConnection, testConnection } = useConnections()
+  const keyboard = useAnimatedKeyboard()
+  const keyboardStyle = useAnimatedStyle(() => ({
+    paddingBottom: Platform.OS === "android" ? keyboard.height.value : 0,
+  }))
 
   const draft = getConnectionDraft(ADD_DRAFT_KEY)
   const [mode, setMode] = useState<"quick" | "advanced">(draft?.mode || "quick")
@@ -399,6 +404,7 @@ export default function AddConnectionScreen() {
         enabled={Platform.OS === "ios"}
         behavior="padding"
       >
+      <Animated.View style={[styles.container, keyboardStyle]}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.content}
@@ -535,6 +541,7 @@ export default function AddConnectionScreen() {
           <Ionicons name="chevron-forward" size={16} color={isDark ? "#888888" : "#666666"} />
         </TouchableOpacity>
       </ScrollView>
+      </Animated.View>
       </KeyboardAvoidingView>
     )
   }
@@ -546,6 +553,7 @@ export default function AddConnectionScreen() {
       enabled={Platform.OS === "ios"}
       behavior="padding"
     >
+    <Animated.View style={[styles.container, keyboardStyle]}>
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={styles.content}
@@ -816,6 +824,7 @@ export default function AddConnectionScreen() {
         )}
       </TouchableOpacity>
     </ScrollView>
+    </Animated.View>
     <Modal
       visible={Boolean(tailscaleLoginUrl)}
       animationType="slide"

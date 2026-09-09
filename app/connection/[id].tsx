@@ -27,6 +27,7 @@ import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { parseUrl } from "../../src/lib/diagnostics-classify"
 import { buildAuth } from "../../src/lib/auth"
 import { clearConnectionDraft, getConnectionDraft, setConnectionDraft } from "../../src/lib/connection-drafts"
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated"
 
 // labelKey (not literal text): this is a module-level constant evaluated
 // before i18next is guaranteed ready, so the label is resolved with t() at
@@ -49,6 +50,10 @@ export default function EditConnectionScreen() {
   const { t } = useTranslation()
 
   const { connections, updateConnection, removeConnection, testConnection } = useConnections()
+  const keyboard = useAnimatedKeyboard()
+  const keyboardStyle = useAnimatedStyle(() => ({
+    paddingBottom: Platform.OS === "android" ? keyboard.height.value : 0,
+  }))
 
   const connection = connections.find((c) => c.id === id)
   const draft = id ? getConnectionDraft(id) : undefined
@@ -327,6 +332,7 @@ export default function EditConnectionScreen() {
       enabled={Platform.OS === "ios"}
       behavior="padding"
     >
+    <Animated.View style={[styles.container, keyboardStyle]}>
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={styles.content}
@@ -580,6 +586,7 @@ export default function EditConnectionScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </Animated.View>
     </KeyboardAvoidingView>
   )
 }
