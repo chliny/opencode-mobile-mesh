@@ -83,7 +83,7 @@ export default function SessionFileScreen() {
     const request = async () => {
       if (mode === "diff") {
         const diffSource: "git" | "branch" = source === "branch" ? "branch" : "git"
-        let diffs = source === "turn" ? getCachedDiffs(directory, id, "turn") : getCachedDiffs(directory, id, diffSource)
+        let diffs = source === "turn" ? getCachedDiffs(directory, id, "turn") : undefined
         if (source === "turn") {
           // /session/:id/diff returns [] without a messageID — derive from the
           // live transcript's last user message (upstream's source of truth).
@@ -102,7 +102,6 @@ export default function SessionFileScreen() {
             diffs = await api.vcs.diff({ mode: diffSource, context: 10 })
             cacheVcsDiffs(directory, diffSource, diffs)
           }
-          cacheDiffs(directory, id, diffSource, diffs)
         }
         diffs = diffs || []
         const diff = diffs.find((item) => item.file === path)

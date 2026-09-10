@@ -220,7 +220,7 @@ export default function SessionScreen() {
           if (turn && active && !local.sending[sessionID] && (turn.length > 0 || turnSummaryRecorded(local.messages, currentSession.revert?.messageID))) {
             cacheDiffs(dir, sessionID, "turn", turn)
           }
-          if (!active || useSessions.getState().sending[sessionID] || getCachedDiffs(dir, sessionID, "git")) return
+          if (!active || useSessions.getState().sending[sessionID]) return
           const git = getCachedVcsDiffs(dir, "git")
           if (git) {
             cacheDiffs(dir, sessionID, "git", git)
@@ -229,13 +229,12 @@ export default function SessionScreen() {
               const value = await sessionClient.vcs.diff({ mode: "git", context: 10 })
               if (active) {
                 cacheVcsDiffs(dir, "git", value)
-                cacheDiffs(dir, sessionID, "git", value)
               }
             } catch {
               return
             }
           }
-          if (!active || useSessions.getState().sending[sessionID] || getCachedDiffs(dir, sessionID, "branch")) return
+          if (!active || useSessions.getState().sending[sessionID]) return
           const branch = getCachedVcsDiffs(dir, "branch")
           if (branch) {
             cacheDiffs(dir, sessionID, "branch", branch)
@@ -244,7 +243,6 @@ export default function SessionScreen() {
               const value = await sessionClient.vcs.diff({ mode: "branch", context: 10 })
               if (active) {
                 cacheVcsDiffs(dir, "branch", value)
-                cacheDiffs(dir, sessionID, "branch", value)
               }
             } catch {
               return

@@ -68,12 +68,6 @@ export default function SessionFilesScreen() {
           return
         }
       }
-      const cached = getCachedDiffs(directory, id, mode)
-      if (cached) {
-        if (currentRequest !== requestID.current) return
-        setDiffs(cached)
-        return
-      }
       if (mode === "git" || mode === "branch") {
         const shared = getCachedVcsDiffs(directory, mode)
         if (shared) {
