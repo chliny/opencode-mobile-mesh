@@ -13,6 +13,12 @@ export function getCachedDiffs(directory: string | undefined, sessionID: string,
 }
 
 export function cacheDiffs(directory: string | undefined, sessionID: string, mode: "git" | "turn" | "branch", value: FileDiff[]): void {
+  // An empty VCS result can mean the repository did not exist yet. Do not
+  // keep that result across sessions; the directory may be initialized later.
+  if ((mode === "git" || mode === "branch") && value.length === 0) {
+    diffs.delete(key(directory, sessionID, mode))
+    return
+  }
   diffs.set(key(directory, sessionID, mode), value)
 }
 
@@ -35,6 +41,10 @@ export function getCachedVcsDiffs(directory: string | undefined, mode: "git" | "
 }
 
 export function cacheVcsDiffs(directory: string | undefined, mode: "git" | "branch", value: FileDiff[]): void {
+  if (value.length === 0) {
+    vcsDiffs.delete(vcsKey(directory, mode))
+    return
+  }
   vcsDiffs.set(vcsKey(directory, mode), { value, expires: Date.now() + VCS_CACHE_TTL })
 }
 

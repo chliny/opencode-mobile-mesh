@@ -21,3 +21,9 @@ test("VCS diff cache clears one directory", () => {
   assert.deepEqual(getCachedVcsDiffs("/other", "git"), value)
   clearCachedVcsDiffs()
 })
+
+test("empty VCS diffs are not cached", () => {
+  clearCachedVcsDiffs()
+  cacheVcsDiffs("/repo", "git", [])
+  assert.equal(getCachedVcsDiffs("/repo", "git"), undefined)
+})

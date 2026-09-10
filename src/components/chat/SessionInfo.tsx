@@ -71,7 +71,7 @@ export function SessionInfo({
     return () => {
       active = false
     }
-  }, [client, visible])
+  }, [client, session?.directory, session?.id, visible])
   // Match TUI: last assistant message tokens (context window), cumulative cost
   const stats = useMemo(() => {
     let cost = 0
