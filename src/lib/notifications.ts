@@ -59,6 +59,10 @@ export interface Payload {
   title: string
   body: string
   sessionId: string
+  // Approval prompts can arrive for a child/background session while the user
+  // is still using the app. Unlike informational notifications, they must
+  // remain visible in the system notification shade while the app is active.
+  notifyWhenActive?: boolean
   dedupeKey?: string
   dedupeCooldownMs?: number
 }
@@ -134,7 +138,7 @@ async function ensureChannel() {
 export async function send(payload: Payload) {
   const prefs = preferences()
   if (!prefs[payload.category]) return
-  if (AppState.currentState === "active") return
+  if (AppState.currentState === "active" && !payload.notifyWhenActive) return
   if (!(await granted())) return
 
   if (payload.dedupeKey) {

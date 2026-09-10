@@ -446,6 +446,7 @@ export const useEvents = create<EventsState>((set, get) => ({
                 title: "Agent needs approval",
                 body: permissionNotificationBody(),
                 sessionId: req.sessionID,
+                notifyWhenActive: true,
                 dedupeKey: `perm-${req.id}`,
                 dedupeCooldownMs: 60_000,
               })
@@ -481,6 +482,7 @@ export const useEvents = create<EventsState>((set, get) => ({
                 title: "Input needed",
                 body: questionNotificationBody(),
                 sessionId: req.sessionID,
+                notifyWhenActive: true,
                 dedupeKey: `question-${req.id}`,
                 dedupeCooldownMs: 60_000,
               })
