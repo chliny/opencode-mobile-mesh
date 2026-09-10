@@ -56,7 +56,11 @@ class OpenCodeZeroTierModule : Module() {
 
   @Volatile private var node: ZeroTierNode? = null
   @Volatile private var relay: AppLocalRelay? = null
-  @Volatile private var currentKey: String? = null
+  // A node identity is independent of the server reached through its local
+  // relay. Reusing it avoids stopping libzt's process-global service when two
+  // saved connections share a ZeroTier network but target different servers.
+  @Volatile private var currentNodeKey: String? = null
+  @Volatile private var currentRelayKey: String? = null
   // Retain numeric peer addresses only while the current node stays online so
   // foreground relay rebuilds cannot block on Android DNS again.
   @Volatile private var relayAddresses = emptyList<String>()
@@ -310,20 +314,24 @@ class OpenCodeZeroTierModule : Module() {
       require(resolvePlanetFile(planetId)?.isFile == true) { "Configured planet file is missing" }
     }
     val timeoutMs = ((options["timeoutMs"] as? Number)?.toLong() ?: DEFAULT_START_TIMEOUT_MS).coerceIn(5_000L, 120_000L)
-    val key = listOf(profileId, networkIdText, remoteHost, remotePort, planetId ?: "default").joinToString("|")
+    val nodeKey = listOf(profileId, networkIdText, planetId ?: "default").joinToString("|")
+    val relayKey = listOf(nodeKey, remoteHost, remotePort).joinToString("|")
 
     val existingNode = node
-    if (currentKey == key && existingNode != null) {
+    if (currentNodeKey == nodeKey && existingNode != null) {
       if (
         !forceRestart &&
+        currentRelayKey == relayKey &&
         status["state"] == "ready" &&
         existingNode.isOnline() &&
         assignedAddress(existingNode, networkId) != null &&
         relay?.isRunning() == true
       ) return status
 
+      val reuseResolvedAddresses = currentRelayKey == relayKey
       relay?.closeImmediately()
       relay = null
+      currentRelayKey = null
 
       // A force refresh repairs the libzt socket used by the app-local relay.
       // Keep the online node alive: restarting the whole service makes resume
@@ -331,11 +339,11 @@ class OpenCodeZeroTierModule : Module() {
       if (
         existingNode.isOnline() &&
         assignedAddress(existingNode, networkId) != null
-      ) return finishNetworkJoin(existingNode, networkId, remoteHost, remotePort, reuseResolvedAddresses = true)
+      ) return finishNetworkJoin(existingNode, networkId, remoteHost, remotePort, relayKey, reuseResolvedAddresses)
 
       waitForNodeOnline(existingNode, timeoutMs)
       checkResult(existingNode.join(networkId), "join network")
-      return finishNetworkJoin(existingNode, networkId, remoteHost, remotePort)
+      return finishNetworkJoin(existingNode, networkId, remoteHost, remotePort, relayKey)
     }
 
     relay?.close()
@@ -369,8 +377,8 @@ class OpenCodeZeroTierModule : Module() {
     val nodeId = formatNodeId(nextNode.id)
     status = mapOf("state" to "starting", "phase" to "joining_network", "nodeId" to nodeId)
     checkResult(nextNode.join(networkId), "join network")
-    currentKey = key
-    return finishNetworkJoin(nextNode, networkId, remoteHost, remotePort)
+    currentNodeKey = nodeKey
+    return finishNetworkJoin(nextNode, networkId, remoteHost, remotePort, relayKey)
   }
 
   private fun waitForNodeOnline(currentNode: ZeroTierNode, timeoutMs: Long) {
@@ -384,6 +392,7 @@ class OpenCodeZeroTierModule : Module() {
     networkId: Long,
     remoteHost: String,
     remotePort: Int,
+    relayKey: String,
     reuseResolvedAddresses: Boolean = false,
   ): Map<String, Any?> {
     val nodeId = formatNodeId(currentNode.id)
@@ -486,6 +495,7 @@ class OpenCodeZeroTierModule : Module() {
       }
     }.also { it.start() }
     relay = nextRelay
+    currentRelayKey = relayKey
     status = mapOf(
       "state" to "ready",
       "baseUrl" to "http://127.0.0.1:${nextRelay.localPort}",
@@ -510,7 +520,8 @@ class OpenCodeZeroTierModule : Module() {
     runCatching { OpenCodeZeroTierNative.safeNodeStop() }
     node?.let { waitForNodeStopped(it) }
     node = null
-    currentKey = null
+    currentNodeKey = null
+    currentRelayKey = null
     status = mapOf("state" to "stopped")
   }
 
